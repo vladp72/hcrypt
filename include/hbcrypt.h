@@ -1596,7 +1596,7 @@ namespace bcrypt {
         buffer b_;
     };
 
-    void swap(hash&l, hash&r) noexcept {
+    inline void swap(hash&l, hash&r) noexcept {
         l.swap(r);
     }
     
@@ -1751,7 +1751,7 @@ namespace bcrypt {
         BCRYPT_SECRET_HANDLE h_{ nullptr };
     };
 
-    void swap(secret&l, secret&r) noexcept {
+    inline void swap(secret&l, secret&r) noexcept {
         l.swap(r);
     }
 
@@ -2303,7 +2303,7 @@ namespace bcrypt {
         buffer b_;
     };
 
-    void swap(key &l, key &r) noexcept {
+    inline void swap(key &l, key &r) noexcept {
         l.swap(r);
     }
 
@@ -3103,7 +3103,7 @@ namespace bcrypt {
         BCRYPT_ALG_HANDLE h_{ nullptr };
     };
 
-    void swap(algorithm_provider &l, algorithm_provider &r) noexcept {
+    inline void swap(algorithm_provider &l, algorithm_provider &r) noexcept {
         l.swap(r);
     }
     

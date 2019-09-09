@@ -110,6 +110,14 @@ export ( TARGETS hcrypt FILE hcryptconfig.cmake )
 #
 add_executable ( hcrypt_test
                  test/hcrypt_test.cpp
+                 test/hcrypt_test_helpers.cpp
+                 test/hcrypt_test_CTAD.cpp
+                 test/hcrypt_test_fips.cpp
+                 test/hcrypt_test_algorithms.cpp
+                 test/hcrypt_test_registered_providers.cpp
+                 test/hcrypt_test_enum_algorithms.cpp
+                 test/hcrypt_test_enum_contexts.cpp
+                 test/hcrypt_test_resolve_providers.cpp
                )
 
 #
