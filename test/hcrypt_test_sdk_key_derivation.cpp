@@ -163,9 +163,10 @@ void test_sdk_sample_key_derivation(int offset,
 
         print_object_properties(offset + 2, provider, true);
 
-        printf("%*cGenerating symmetric key for a secret\n",
+        printf("%*cGenerating symmetric key for the secret %S\n",
                offset,
-               ' ');
+               ' ',
+               hcrypt::to_hex(std::begin(derivation_algorithms_secret), std::end(derivation_algorithms_secret)).c_str());
 
         bcrypt::key key{provider.generate_symmetric_key(derivation_algorithms_secret, 
                                                         sizeof(derivation_algorithms_secret))};
@@ -179,12 +180,12 @@ void test_sdk_sample_key_derivation(int offset,
         hcrypt::buffer derived_key{ key.key_derivation(60, description) };
 
         printf("%*cKey length: %Iu\n",
-            offset,
+            offset + 2,
             ' ',
             derived_key.size());
 
         printf("%*cKey: %S\n",
-               offset,
+               offset + 2 ,
                ' ',
                 hcrypt::to_hex(derived_key).c_str());
 
