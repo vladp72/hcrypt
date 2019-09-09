@@ -1826,33 +1826,49 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_derivation(BCryptBufferDesc *parameter_list,
-                                hcrypt::buffer *b) noexcept {
+        NTSTATUS try_key_derivation(char *key_buffer,
+                                    size_t key_buffer_length,
+                                    size_t *generated_key_length,
+                                    BCryptBufferDesc *parameter_list,
+                                    unsigned long flags = 0) noexcept {
+
+            ULONG generated_key_length_tmp{ 0 };
+
+            NTSTATUS status{ BCryptKeyDerivation(h_,
+                                                 parameter_list,
+                                                 reinterpret_cast<unsigned char*>(key_buffer),
+                                                 static_cast<unsigned long>(key_buffer_length),
+                                                 &generated_key_length_tmp,
+                                                 flags) };
+
+            if (NT_SUCCESS(status)) {
+                *generated_key_length = generated_key_length_tmp;
+            }
+
+            return status;
+        }
+
+        [[nodiscard]]
+        NTSTATUS try_key_derivation(size_t desired_key_size,
+                                    BCryptBufferDesc *parameter_list,
+                                    unsigned long flags,
+                                    hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
             try {
-                for (;;) {
-                    unsigned long buffer_size{ 0 };
+                size_t generated_key_size{ 0 };
+                b->resize(desired_key_size);
+                status = try_key_derivation(b->empty() ? nullptr : b->data(),
+                                            b->empty() ? 0 : b->size(),
+                                            &generated_key_size,
+                                            parameter_list,
+                                            flags);
 
-                    status = BCryptKeyDerivation(h_,
-                                                 parameter_list,
-                                                 b->empty() ? nullptr : reinterpret_cast<unsigned char*>(b->data()),
-                                                 b->empty() ? 0 : static_cast<unsigned long>(b->size()),
-                                                 &buffer_size,
-                                                 0);
-
-                    if (NT_SUCCESS(status)) {
-                        if (buffer_size <= b->size()) {
-                            b->resize(buffer_size);
-                            break;
-                        } else {
-                            b->resize(buffer_size);
-                        }
-                    } else if (STATUS_BUFFER_TOO_SMALL == status) {
-                        b->resize(buffer_size);
-                    } else {
-                        break;
-                    }
+                if (NT_SUCCESS(status)) {
+                    b->resize(generated_key_size);
+                    return status;
+                } else {
+                    return status;
                 }
 
             } catch (std::bad_alloc const&) {
@@ -1863,30 +1879,43 @@ namespace bcrypt {
             return status;
         }
 
-        hcrypt::buffer derivation(BCryptBufferDesc *parameter_list = nullptr) {
+        size_t key_derivation(char *key_buffer,
+                              size_t key_buffer_length,
+                              BCryptBufferDesc *parameter_list,
+                              unsigned long flags = 0) {
+
+            size_t generated_key_size{ 0 };
+
+            NTSTATUS status{ try_key_derivation(key_buffer,
+                                                key_buffer_length,
+                                                &generated_key_size,
+                                                parameter_list,
+                                                flags) };
+
+            if (!NT_SUCCESS(status)) {
+                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptKeyDerivation failed");
+            }
+
+            return generated_key_size;
+        }
+
+        hcrypt::buffer key_derivation(size_t desired_key_size,
+                                      BCryptBufferDesc *parameter_list = nullptr,
+                                      unsigned long flags = 0) {
             hcrypt::buffer b;
-            for (;;) {
-                unsigned long buffer_size{ 0 };
+            b.resize(desired_key_size);
+            size_t generated_key_size{ 0 };
 
-                NTSTATUS status{ BCryptKeyDerivation(h_,
-                                                     parameter_list,
-                                                     b.empty() ? nullptr : reinterpret_cast<unsigned char*>(b.data()),
-                                                     b.empty() ? 0 : static_cast<unsigned long>(b.size()),
-                                                     &buffer_size,
-                                                     0) };
+            NTSTATUS status{ try_key_derivation(b.empty() ? nullptr : b.data(),
+                                                b.empty() ? 0 : b.size(),
+                                                &generated_key_size,
+                                                parameter_list,
+                                                flags) };
 
-                if (NT_SUCCESS(status)) {
-                    if (buffer_size <= b.size()) {
-                        b.resize(buffer_size);
-                        break;
-                    } else {
-                        b.resize(buffer_size);
-                    }
-                } else if (STATUS_BUFFER_TOO_SMALL == status) {
-                    b.resize(buffer_size);
-                } else {
-                    throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptKeyDerivation failed");
-                }
+            if (NT_SUCCESS(status)) {
+                b.resize(generated_key_size);
+            } else {
+                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptKeyDerivation failed");
             }
 
             return b;

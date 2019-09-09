@@ -2,7 +2,6 @@
 #include "hcrypt_test_helpers.h"
 #include <algorithm>
 
-static
 BYTE label[] = {
     0x41,0x4C,0x49,0x43,0x45,0x31,0x32,0x33,0x00
 };
@@ -130,13 +129,14 @@ BCryptBufferDesc derivation_algorithms_parameters[] = {
     },
 };
 
-
 LPCWSTR derivation_algorithms_to_test[] = {
     BCRYPT_SP800108_CTR_HMAC_ALGORITHM,
     BCRYPT_SP80056A_CONCAT_ALGORITHM,
     BCRYPT_PBKDF2_ALGORITHM,
     BCRYPT_CAPI_KDF_ALGORITHM,
 };
+
+static_assert(_countof(derivation_algorithms_to_test) == _countof(derivation_algorithms_parameters));
 
 char const derivation_algorithms_secret[20] = {
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
@@ -170,14 +170,23 @@ void test_sdk_sample_key_derivation(int offset,
         bcrypt::key key{provider.generate_symmetric_key(derivation_algorithms_secret, 
                                                         sizeof(derivation_algorithms_secret))};
 
+        print_object_properties(offset + 2, key, true);
 
-        printf("%*cDeriving key\n",
+        printf("%*cDeriving key length 60 bytes\n",
                offset,
                ' ');
 
-        key.derivation(description);
+        hcrypt::buffer derived_key{ key.key_derivation(60, description) };
 
-        print_object_properties(offset + 2, key, true);
+        printf("%*cKey length: %Iu\n",
+            offset,
+            ' ',
+            derived_key.size());
+
+        printf("%*cKey: %S\n",
+               offset,
+               ' ',
+                hcrypt::to_hex(derived_key).c_str());
 
     } catch (std::system_error const& ex) {
         printf("%*ctest_sdk_sample_key_derivation, error code = 0x%x, %s\n",
