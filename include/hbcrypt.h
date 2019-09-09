@@ -1,184 +1,11 @@
 #pragma once
 
-#include <utility>
-#include <type_traits>
-#include <system_error>
-#include <vector>
-#include <string>
-#include <string_view>
-
-#include <windows.h>
+#include "hcrypt_common.h"
 #include <bcrypt.h>
-#include <intrin.h>
-
 
 #pragma comment (lib, "bcrypt.lib")
 
-#ifndef STATUS_SUCCESS
-#define STATUS_SUCCESS ((NTSTATUS)0x0L)
-#endif
-
-#ifndef STATUS_BUFFER_TOO_SMALL
-#define STATUS_BUFFER_TOO_SMALL  ((NTSTATUS)0xC0000023L)
-#endif
-
-#ifndef STATUS_INSUFFICIENT_RESOURCES
-#define STATUS_INSUFFICIENT_RESOURCES  ((NTSTATUS)0xC000009AL)
-#endif
-
-#ifndef STATUS_INVALID_SIGNATURE
-#define STATUS_INVALID_SIGNATURE  ((NTSTATUS)0xC000A000L)
-#endif
-
-#ifndef STATUS_AUTH_TAG_MISMATCH
-#define STATUS_AUTH_TAG_MISMATCH  ((NTSTATUS)0xC000A002L)
-#endif
-
-#ifndef NT_SUCCESS
-#define NT_SUCCESS(S) ((NTSTATUS)(S) >= STATUS_SUCCESS)
-#endif
-
-#ifndef BCRYPT_MAKE_SYSTEM_ERROR
-#define BCRYPT_MAKE_SYSTEM_ERROR(E, T) std::system_error{ static_cast<int>(E), std::system_category(), (T) }
-#endif 
-
-#define BCRYPT_PLATFORM_FAIL_FAST(EC) {__debugbreak();__fastfail(EC);}
-
-#ifndef BCRYPT_FAST_FAIL
-#define BCRYPT_FAST_FAIL(EC) {BCRYPT_PLATFORM_FAIL_FAST(EC);}
-#endif
-
-#ifndef BCRYPT_CRASH_APPLICATION
-#define BCRYPT_CRASH_APPLICATION() BCRYPT_FAST_FAIL(ENOTRECOVERABLE)
-#endif
-
-#ifndef BCRYPT_CODDING_ERROR_IF
-#define BCRYPT_CODDING_ERROR_IF(C) if (C) {BCRYPT_FAST_FAIL(ENOTRECOVERABLE);} else {;}
-#endif
-
-
-#ifndef BCRYPT_CODDING_ERROR_IF_NOT
-#define BCRYPT_CODDING_ERROR_IF_NOT(C) if (C) {;} else {BCRYPT_FAST_FAIL(ENOTRECOVERABLE);}
-#endif
-
-#define BCRUPT_PROPERTY_DECL(NAME, NAME_STR, TYPE, HELPER_TYPE, CAN_SET, CAN_QUERY) struct property_##NAME {\
-        using type_t = TYPE;\
-        using helper_type_t = HELPER_TYPE;\
-        constexpr inline static bool can_set {CAN_SET};\
-        constexpr inline static bool can_query{ CAN_QUERY };\
-        constexpr static wchar_t const* get_name() {\
-            return NAME_STR;\
-        }\
-    };
-
 namespace bcrypt {
-
-    using buffer = std::vector<char>;
-
-    template< typename I, typename T >
-    inline void to_hex( I cur,
-                        I const end ,
-                        size_t group_size,
-                        wchar_t group_separator,
-                        T *result ) {
-        if(cur != end) {
-            size_t cnt{ 0 };
-            while( cur != end ) {
-                unsigned char c{ static_cast<unsigned char>(*cur++) };
-                unsigned char l{ static_cast<unsigned char>(c & 0x0F) };
-                unsigned char h{ static_cast<unsigned char>(c >> 4) };
-                unsigned char r{ static_cast<unsigned char>(h < 10 ? '0' + h
-                                                                   : 'A' + (h - 10)) };
-                result->push_back( static_cast<wchar_t>( r ) );
-                r = l < 10 ? '0' + l
-                           : 'A' + ( l - 10 );
-                result->push_back( static_cast<wchar_t>( r ) );
-
-                //if we reached the group size then insert separtor
-                if(++cnt == group_size ) {
-                    result->push_back(group_separator);
-                    cnt = 0;
-                }
-            }
-        }
-    }
-
-    template< typename I >
-    inline std::wstring to_hex( I begin,
-                                I const end ,
-                                size_t group_size = 0,
-                                wchar_t group_separator = L' ') {
-        std::wstring result;
-        
-        to_hex(begin,
-               end,
-               group_size,
-               group_separator,
-               &result);
-
-        return result;
-     }
-
-    template< typename C >
-    inline std::wstring to_hex( C const &c,
-                                size_t group_size = 0,
-                                wchar_t group_separator = L' ') {
-        std::wstring result;
-        to_hex(std::begin(c),
-               std::end(c),
-               group_size,
-               group_separator,
-               &result);
-        return result;
-     }
-
-    template< typename T, typename I >
-    inline I from_hex( I & cur, I const& end, T *result ) {
-        
-        size_t count{ 0 };
-        I prev{ cur };
-
-        while( cur != end ) {
-            prev = cur;
-            auto c{ *cur++ };
-            count++;
-            unsigned char h{ 0 };
-            unsigned char l{ 0 };
-
-            if( c >= L'0' && c <= L'9' ) {
-                h = static_cast<unsigned char>( c - L'0' );
-            } else if( c >= L'A' && c <= L'F' ) {
-                h = static_cast<unsigned char>( ( c - L'A' ) + 10 );
-            } else if( ( c >= L'a' && c <= L'f' ) ) {
-                h = static_cast<unsigned char>( ( c - L'a' ) + 10 );
-            } else {
-                return false;
-            }
-
-            if( cur != end ) {
-                prev = cur;
-                c = *cur++;
-                count++;
-                if( c >= L'0' && c <= L'9' ) {
-                    l = static_cast<unsigned char>( c - L'0' );
-                } else if( c >= L'A' && c <= L'F' ) {
-                    l = static_cast<unsigned char>( ( c - L'A' ) + 10 );
-                } else if( ( c >= L'a' && c <= L'f' ) ) {
-                    l = static_cast<unsigned char>( ( c - L'a' ) + 10 );
-                } else {
-                    return false;
-                }
-            }
-            unsigned char r = ( h << 4 ) | l;
-            result->push_back( r );
-        }
-        //
-        // if we finish and have processed an odd number of characters, 
-        // then we canot form correct byte so we have to return iterator
-        // to previous processed character
-        //
-        return ((count % 2) == 0) ? cur : prev;
-    }
 
     template<typename T = void>
     class buffer_ptr {
@@ -866,7 +693,7 @@ namespace bcrypt {
 
         [[nodiscard]]
         NTSTATUS try_get_property(wchar_t const* property_name, 
-                                  buffer *buffer) const noexcept {
+                                  hcrypt::buffer *buffer) const noexcept {
             NTSTATUS status{ STATUS_SUCCESS };
             try {
                 for (;;) {
@@ -953,9 +780,9 @@ namespace bcrypt {
             return status;
         }
 
-        buffer get_property_as_buffer(wchar_t const* property_name, 
-                                      size_t default_buffer_size = 256) const {
-            buffer b(default_buffer_size);
+        hcrypt::buffer get_property_as_buffer(wchar_t const* property_name,
+                                              size_t default_buffer_size = 256) const {
+            hcrypt::buffer b(default_buffer_size);
             NTSTATUS status{try_get_property(property_name, 
                                              &b)};
             if (!NT_SUCCESS(status)) {
@@ -1013,7 +840,7 @@ namespace bcrypt {
 
         [[nodiscard]]
         NTSTATUS try_set_property(wchar_t const* property_name, 
-                                  buffer const &buffer) {
+                                  hcrypt::buffer const &buffer) {
             NTSTATUS status{ try_set_property(property_name,
                                               const_cast<unsigned char *>(buffer.data()),
                                               static_cast<unsigned long>(buffer.size())) };
@@ -1107,11 +934,11 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_block_size_list(buffer *b) const noexcept {
+        NTSTATUS try_get_block_size_list(hcrypt::buffer *b) const noexcept {
             return try_get_property(BCRYPT_BLOCK_SIZE_LIST, b);
         }
 
-        buffer get_block_size_list() const {
+        hcrypt::buffer get_block_size_list() const {
             return get_property_as_buffer(BCRYPT_BLOCK_SIZE_LIST);
         }
 
@@ -1179,20 +1006,20 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_oid_list(buffer* b) const noexcept {
+        NTSTATUS try_get_oid_list(hcrypt::buffer *b) const noexcept {
             return try_get_property(BCRYPT_HASH_OID_LIST, b);
         }
 
-        buffer get_oid_list() const {
+        hcrypt::buffer get_oid_list() const {
             return get_property_as_buffer(BCRYPT_HASH_OID_LIST);
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_initialization_vector(buffer* b) const noexcept {
+        NTSTATUS try_get_initialization_vector(hcrypt::buffer *b) const noexcept {
             return try_get_property(BCRYPT_INITIALIZATION_VECTOR, b);
         }
 
-        buffer get_initialization_vector() const {
+        hcrypt::buffer get_initialization_vector() const {
             return get_property_as_buffer(BCRYPT_INITIALIZATION_VECTOR);
         }
 
@@ -1251,11 +1078,11 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_multi_object_length(buffer* b) const noexcept {
+        NTSTATUS try_get_multi_object_length(hcrypt::buffer *b) const noexcept {
             return try_get_property(BCRYPT_MULTI_OBJECT_LENGTH, b);
         }
 
-        buffer get_multi_object_length() const {
+        hcrypt::buffer get_multi_object_length() const {
             return get_property_as_buffer(BCRYPT_MULTI_OBJECT_LENGTH);
         }
 
@@ -1287,26 +1114,26 @@ namespace bcrypt {
         }
     };
 
-    BCRUPT_PROPERTY_DECL(algorithm_name,        BCRYPT_ALGORITHM_NAME,        wchar_t*,                                  std::wstring, true,  true);
-    BCRUPT_PROPERTY_DECL(block_length,          BCRYPT_BLOCK_LENGTH,          unsigned long,                              buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(block_size_list,       BCRYPT_BLOCK_SIZE_LIST,       unsigned long*,                             buffer,       true,  true); //
-    BCRUPT_PROPERTY_DECL(chaining_mode,         BCRYPT_CHAINING_MODE,         wchar_t*,                                   std::wstring, true,  true);
-    BCRUPT_PROPERTY_DECL(dh_parameters,         BCRYPT_DH_PARAMETERS,         BCRYPT_DH_PARAMETER_HEADER,                 buffer,       true,  false);
-    BCRUPT_PROPERTY_DECL(dsa_parameters,        BCRYPT_DSA_PARAMETERS,        BCRYPT_DSA_PARAMETER_HEADER_V2,             buffer,       true,  false);
-    BCRUPT_PROPERTY_DECL(effective_key_length,  BCRYPT_EFFECTIVE_KEY_LENGTH,  unsigned long,                              buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(hash_block_length,     BCRYPT_HASH_BLOCK_LENGTH,     unsigned long,                              buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(hash_length,           BCRYPT_HASH_LENGTH,           unsigned long,                              buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(hash_oid_list,         BCRYPT_HASH_OID_LIST,         BCRYPT_OID_LIST*,                           buffer,       false, true);
-    BCRUPT_PROPERTY_DECL(initialization_vector, BCRYPT_INITIALIZATION_VECTOR, char*,                                      buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(key_length,            BCRYPT_KEY_LENGTH,            unsigned long,                              buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(key_lengths,           BCRYPT_KEY_LENGTHS,           BCRYPT_KEY_LENGTHS_STRUCT,                  buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(key_object_lengths,    BCRYPT_OBJECT_LENGTH ,        unsigned long,                              buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(key_strength,          BCRYPT_KEY_STRENGTH,          unsigned long,                              buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(message_block_length,  BCRYPT_MESSAGE_BLOCK_LENGTH,  unsigned long,                              buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(multi_object_length,   BCRYPT_MULTI_OBJECT_LENGTH,   BCRYPT_MULTI_OBJECT_LENGTH_STRUCT,          buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(object_length ,        BCRYPT_OBJECT_LENGTH ,        unsigned long,                              buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(padding_schemes,       BCRYPT_PADDING_SCHEMES ,      unsigned long,                              buffer,       true,  true);
-    BCRUPT_PROPERTY_DECL(signature_length,      BCRYPT_SIGNATURE_LENGTH ,     unsigned long,                              buffer,       false, true);
+    BCRUPT_PROPERTY_DECL(algorithm_name,        BCRYPT_ALGORITHM_NAME,        wchar_t*,                                  std::wstring,           true,  true);
+    BCRUPT_PROPERTY_DECL(block_length,          BCRYPT_BLOCK_LENGTH,          unsigned long,                              hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(block_size_list,       BCRYPT_BLOCK_SIZE_LIST,       unsigned long*,                             hcrypt::buffer ,       true,  true); //
+    BCRUPT_PROPERTY_DECL(chaining_mode,         BCRYPT_CHAINING_MODE,         wchar_t*,                                   std::wstring,          true,  true);
+    BCRUPT_PROPERTY_DECL(dh_parameters,         BCRYPT_DH_PARAMETERS,         BCRYPT_DH_PARAMETER_HEADER,                 hcrypt::buffer ,       true,  false);
+    BCRUPT_PROPERTY_DECL(dsa_parameters,        BCRYPT_DSA_PARAMETERS,        BCRYPT_DSA_PARAMETER_HEADER_V2,             hcrypt::buffer ,       true,  false);
+    BCRUPT_PROPERTY_DECL(effective_key_length,  BCRYPT_EFFECTIVE_KEY_LENGTH,  unsigned long,                              hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(hash_block_length,     BCRYPT_HASH_BLOCK_LENGTH,     unsigned long,                              hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(hash_length,           BCRYPT_HASH_LENGTH,           unsigned long,                              hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(hash_oid_list,         BCRYPT_HASH_OID_LIST,         BCRYPT_OID_LIST*,                           hcrypt::buffer ,       false, true);
+    BCRUPT_PROPERTY_DECL(initialization_vector, BCRYPT_INITIALIZATION_VECTOR, char*,                                      hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(key_length,            BCRYPT_KEY_LENGTH,            unsigned long,                              hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(key_lengths,           BCRYPT_KEY_LENGTHS,           BCRYPT_KEY_LENGTHS_STRUCT,                  hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(key_object_lengths,    BCRYPT_OBJECT_LENGTH ,        unsigned long,                              hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(key_strength,          BCRYPT_KEY_STRENGTH,          unsigned long,                              hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(message_block_length,  BCRYPT_MESSAGE_BLOCK_LENGTH,  unsigned long,                              hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(multi_object_length,   BCRYPT_MULTI_OBJECT_LENGTH,   BCRYPT_MULTI_OBJECT_LENGTH_STRUCT,          hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(object_length ,        BCRYPT_OBJECT_LENGTH ,        unsigned long,                              hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(padding_schemes,       BCRYPT_PADDING_SCHEMES ,      unsigned long,                              hcrypt::buffer ,       true,  true);
+    BCRUPT_PROPERTY_DECL(signature_length,      BCRYPT_SIGNATURE_LENGTH ,     unsigned long,                              hcrypt::buffer ,       false, true);
 
     constexpr inline size_t dh_algorithm_key_size_min{ 512 };
     constexpr inline size_t dh_algorithm_key_size_multiplier{ 64 };
@@ -1383,7 +1210,7 @@ namespace bcrypt {
 
         void swap(hash &other) noexcept {
             BCRYPT_HASH_HANDLE h{ h_ };
-            buffer b{ b_ };
+            hcrypt::buffer b{ b_ };
             h_ = other.h_;
             b_ = other.b_;
             other.h_ = h;
@@ -1411,7 +1238,7 @@ namespace bcrypt {
                         return status;
                     }
 
-                    buffer b;
+                    hcrypt::buffer b;
                     b.resize(hash_size);
 
                     BCRYPT_HASH_HANDLE h{ nullptr };
@@ -1444,7 +1271,7 @@ namespace bcrypt {
             
             hash hash_duplicate;
 
-            buffer b;
+            hcrypt::buffer b;
             b.resize(get_object_length());
 
             BCRYPT_HASH_HANDLE h{ nullptr };
@@ -1537,7 +1364,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_finish(buffer *b) {
+        NTSTATUS try_finish(hcrypt::buffer *b) {
             NTSTATUS status{ STATUS_SUCCESS };
             try {
 
@@ -1576,8 +1403,8 @@ namespace bcrypt {
             }
         }
 
-        buffer finish() {
-            buffer b;
+        hcrypt::buffer finish() {
+            hcrypt::buffer b;
             b.resize(get_hash_length());
 
             NTSTATUS status{ try_finish(b.data(),
@@ -1593,7 +1420,7 @@ namespace bcrypt {
     private:
 
         BCRYPT_HASH_HANDLE h_{ nullptr };
-        buffer b_;
+        hcrypt::buffer b_;
     };
 
     inline void swap(hash&l, hash&r) noexcept {
@@ -1670,7 +1497,7 @@ namespace bcrypt {
         [[nodiscard]]
         NTSTATUS try_derive_key(wchar_t const *key_derivation_function,
                                 BCryptBufferDesc *parameters_list,
-                                buffer *b) noexcept {
+                                hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
             try {
@@ -1711,12 +1538,12 @@ namespace bcrypt {
             return status;
         }
 
-        buffer derive_key(wchar_t const *key_derivation_function,
-                          BCryptBufferDesc *parameters_list = nullptr) {
+        hcrypt::buffer derive_key(wchar_t const *key_derivation_function,
+                                  BCryptBufferDesc *parameters_list = nullptr) {
 
             NTSTATUS status{ STATUS_SUCCESS };
             unsigned long key_size{ 0 };
-            buffer b;
+            hcrypt::buffer b;
                 
             status = BCryptDeriveKey(h_,
                                      key_derivation_function,
@@ -1804,7 +1631,7 @@ namespace bcrypt {
 
         void swap(key &other) noexcept {
             BCRYPT_KEY_HANDLE h{ h_ };
-            buffer b{ b_ };
+            hcrypt::buffer b{ b_ };
             h_ = other.h_;
             b_ = other.b_;
             other.h_ = h;
@@ -1832,7 +1659,7 @@ namespace bcrypt {
                         return status;
                     }
 
-                    buffer b;
+                    hcrypt::buffer b;
                     b.resize(key_size);
 
                     BCRYPT_KEY_HANDLE h{ nullptr };
@@ -1865,7 +1692,7 @@ namespace bcrypt {
             
             key key_duplicate;
 
-            buffer b;
+            hcrypt::buffer b;
             b.resize(get_key_object_length());
 
             BCRYPT_KEY_HANDLE h{ nullptr };
@@ -1911,7 +1738,7 @@ namespace bcrypt {
         [[nodiscard]]
         NTSTATUS try_export_key(BCRYPT_KEY_HANDLE export_key_protector,
                                 wchar_t const *blob_type,
-                                buffer *b) noexcept {
+                                hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
             try {
@@ -1951,17 +1778,17 @@ namespace bcrypt {
         [[nodiscard]]
         NTSTATUS try_export_key(key const & export_key_protector,
                                 wchar_t const *blob_type,
-                                buffer *b) noexcept {
+                                hcrypt::buffer *b) noexcept {
             return try_export_key(export_key_protector.get_handle(),
                                   blob_type,
                                   b);
         }
 
-        buffer export_key(BCRYPT_KEY_HANDLE export_key_protector,
-                          wchar_t const *blob_type) {
+        hcrypt::buffer export_key(BCRYPT_KEY_HANDLE export_key_protector,
+                                  wchar_t const *blob_type) {
 
             NTSTATUS status{ STATUS_SUCCESS };
-            buffer b;
+            hcrypt::buffer b;
 
             for (;;) {
                 unsigned long buffer_size{ 0 };
@@ -1991,8 +1818,8 @@ namespace bcrypt {
             return b;
         }
 
-        buffer export_key(key const & export_key_protector,
-                          wchar_t const *blob_type) {
+        hcrypt::buffer export_key(key const & export_key_protector,
+                                  wchar_t const *blob_type) {
 
             return export_key(export_key_protector.get_handle(),
                               blob_type);
@@ -2000,7 +1827,7 @@ namespace bcrypt {
 
         [[nodiscard]]
         NTSTATUS try_key_derivation(BCryptBufferDesc *parameter_list,
-                                    buffer *b) noexcept {
+                                    hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
             try {
@@ -2036,8 +1863,8 @@ namespace bcrypt {
             return status;
         }
 
-        buffer key_derivation(BCryptBufferDesc *parameter_list = nullptr) {
-            buffer b;
+        hcrypt::buffer key_derivation(BCryptBufferDesc *parameter_list = nullptr) {
+            hcrypt::buffer b;
             for (;;) {
                 unsigned long buffer_size{ 0 };
 
@@ -2070,7 +1897,7 @@ namespace bcrypt {
                                size_t hash_value_to_sign_size,
                                void *padding_info,
                                unsigned long flags,
-                               buffer *b) noexcept {
+                               hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
             try {
@@ -2108,12 +1935,12 @@ namespace bcrypt {
             return status;
         }
 
-        buffer sign_hash(unsigned char* hash_value_to_sign,
-                         size_t hash_value_to_sign_size,
-                         void* padding_info = nullptr,
-                         unsigned long flags = 0) {
+        hcrypt::buffer sign_hash(unsigned char* hash_value_to_sign,
+                                 size_t hash_value_to_sign_size,
+                                 void* padding_info = nullptr,
+                                 unsigned long flags = 0) {
 
-            buffer b;
+            hcrypt::buffer b;
             for (;;) {
                 unsigned long buffer_size{ 0 };
 
@@ -2300,7 +2127,7 @@ namespace bcrypt {
 
     private:
         BCRYPT_KEY_HANDLE h_{ nullptr };
-        buffer b_;
+        hcrypt::buffer b_;
     };
 
     inline void swap(key &l, key &r) noexcept {
@@ -2452,7 +2279,7 @@ namespace bcrypt {
                     return status;
                 }
 
-                buffer b;
+                hcrypt::buffer b;
                 b.resize(key_size);
 
                 BCRYPT_KEY_HANDLE key_handle{ nullptr };
@@ -2484,7 +2311,7 @@ namespace bcrypt {
 
         key generate_symmetric_key(char const *secret,
                                    size_t secret_length) {
-            buffer b;
+            hcrypt::buffer b;
             b.resize(get_key_object_length());
 
             BCRYPT_KEY_HANDLE key_handle{ nullptr };
@@ -2566,7 +2393,7 @@ namespace bcrypt {
                 }
 
                 BCRYPT_KEY_HANDLE new_key{ nullptr };
-                buffer b;
+                hcrypt::buffer b;
                 b.resize(key_size);
 
                 status = BCryptImportKey(h_,
@@ -2615,7 +2442,7 @@ namespace bcrypt {
                                 size_t key_object_size) {
 
             BCRYPT_KEY_HANDLE new_key{ nullptr };
-            buffer b;
+            hcrypt::buffer b;
             b.resize(get_key_object_length());
 
             NTSTATUS status{ BCryptImportKey(h_,
@@ -2746,7 +2573,7 @@ namespace bcrypt {
                                        char const *salt,
                                        size_t salt_length,
                                        unsigned long long iterations_count,
-                                       buffer *b) noexcept {
+                                       hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
 
@@ -2783,12 +2610,12 @@ namespace bcrypt {
             return status;
         }
 
-        buffer derive_key_PBKDF2(char const *password,
-                                 size_t password_length,
-                                 char const *salt,
-                                 size_t salt_length,
-                                 unsigned long long iterations_count = 1000) {
-            buffer b;
+        hcrypt::buffer derive_key_PBKDF2(char const *password,
+                                         size_t password_length,
+                                         char const *salt,
+                                         size_t salt_length,
+                                         unsigned long long iterations_count = 1000) {
+            hcrypt::buffer b;
             b.resize(get_key_object_length());
 
             NTSTATUS status =  BCryptDeriveKeyPBKDF2(h_,
@@ -2823,7 +2650,7 @@ namespace bcrypt {
                     return status;
                 }
 
-                buffer b;
+                hcrypt::buffer b;
                 b.resize(object_length);
 
                 BCRYPT_HASH_HANDLE h{ nullptr };
@@ -2857,7 +2684,7 @@ namespace bcrypt {
                          unsigned long flags = BCRYPT_HASH_REUSABLE_FLAG) {
             hash h;
 
-            buffer b;
+            hcrypt::buffer b;
             b.resize(get_object_length());
 
             BCRYPT_HASH_HANDLE new_h{ nullptr };
@@ -2889,7 +2716,7 @@ namespace bcrypt {
             NTSTATUS status{ STATUS_SUCCESS };
             try {
 
-                buffer multiobject_info;
+                hcrypt::buffer multiobject_info;
                 status = try_get_multi_object_length(&multiobject_info);
 
                 if (!NT_SUCCESS(status)) {
@@ -2901,7 +2728,7 @@ namespace bcrypt {
 
                 unsigned long multiobject_length{ multi_object_length->cbPerObject + (multi_object_length->cbPerElement * numer_of_hashes) };
 
-                buffer b;
+                hcrypt::buffer b;
                 b.resize(multiobject_length);
 
                 BCRYPT_HASH_HANDLE h{ nullptr };
@@ -2935,14 +2762,14 @@ namespace bcrypt {
                               char const *secret = nullptr,
                               size_t secret_length = 0,
                               unsigned long flags = BCRYPT_HASH_REUSABLE_FLAG) {
-            buffer multiobject_info{ get_multi_object_length() };
+            hcrypt::buffer multiobject_info{ get_multi_object_length() };
 
             BCRYPT_MULTI_OBJECT_LENGTH_STRUCT const* multi_object_length{
                 reinterpret_cast<BCRYPT_MULTI_OBJECT_LENGTH_STRUCT const*>(multiobject_info.data()) };
 
             unsigned long multiobject_length{ multi_object_length->cbPerObject + (multi_object_length->cbPerElement * numer_of_hashes) };
 
-            buffer b;
+            hcrypt::buffer b;
             b.resize(multiobject_length);
 
             BCRYPT_HASH_HANDLE new_h{ nullptr };
@@ -2988,7 +2815,7 @@ namespace bcrypt {
                                size_t secret_length,
                                char const *input,
                                size_t input_length,
-                               buffer *b) noexcept {
+                               hcrypt::buffer *b) noexcept {
             NTSTATUS status{ STATUS_SUCCESS };
             try {
 
@@ -3039,11 +2866,11 @@ namespace bcrypt {
             }
         }
 
-        buffer hash_data(char const *secret,
-                         size_t secret_length,
-                         char const *input,
-                         size_t input_length) {
-            buffer b;
+        hcrypt::buffer hash_data(char const *secret,
+                                 size_t secret_length,
+                                 char const *input,
+                                 size_t input_length) {
+            hcrypt::buffer b;
             b.resize(get_hash_length());
 
             NTSTATUS status{ status = try_hash_data(secret,

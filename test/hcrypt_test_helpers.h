@@ -25,7 +25,7 @@ inline void print_object_properties(int offset, T &obj) {
     
     std::wstring string_value;
     DWORD dword_value{ 0 };
-    bcrypt::buffer buffer_value;
+    hcrypt::buffer buffer_value;
     
     status = obj.try_get_name(&string_value);
     if (NT_SUCCESS(status)) {
@@ -174,7 +174,7 @@ inline void print_object_properties(int offset, T &obj) {
                                            offset,
                                            ' ',
                                            oid.cbOID,
-                                           bcrypt::to_hex(oid.pbOID, oid.pbOID + oid.cbOID).c_str());
+                                           hcrypt::to_hex(oid.pbOID, oid.pbOID + oid.cbOID).c_str());
 
                                     return true;
                                 });
@@ -197,7 +197,7 @@ inline void print_object_properties(int offset, T &obj) {
         printf("%*cinitialization vector: %ws\n",
                 offset,
                 ' ',
-                bcrypt::to_hex(buffer_value).c_str());
+                hcrypt::to_hex(buffer_value).c_str());
 
     } else {
         printf("%*cinitialization vector: error code = %x\n", 
@@ -285,7 +285,7 @@ inline void print_object_properties(int offset, T &obj) {
                 ' ',
                 multi_object_length->cbPerObject,
                 multi_object_length->cbPerElement,
-                bcrypt::to_hex(buffer_value).c_str());
+                hcrypt::to_hex(buffer_value).c_str());
 
     } else {
         printf("%*cmulti object length: error code = %x\n", 
