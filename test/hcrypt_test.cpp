@@ -6,23 +6,26 @@
 #include "hcrypt_test_enum_algorithms.h"
 #include "hcrypt_test_enum_contexts.h"
 #include "hcrypt_test_resolve_providers.h"
+#include "hcrypt_test_sdk_key_derivation.h"
 
 int main() {
 
     try {
-        test_CTAD();
+        //test_CTAD();
 
-        print_is_fips_complience_on();
+        //print_is_fips_complience_on();
 
-        print_registered_providers();
+        //print_registered_providers();
 
-        resolve_providers();
+        //resolve_providers();
 
-        print_algorithms();
+        //print_algorithms();
 
-        print_crypto_contexts();
+        //print_crypto_contexts();
 
-        test_algorithm();
+        //test_algorithm();
+
+        test_sdk_sample_key_derivation();
 
     } catch (std::system_error const& ex) {
         printf("Error code = %u, %s\n", ex.code().value(), ex.what());

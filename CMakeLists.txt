@@ -118,6 +118,7 @@ add_executable ( hcrypt_test
                  test/hcrypt_test_enum_algorithms.cpp
                  test/hcrypt_test_enum_contexts.cpp
                  test/hcrypt_test_resolve_providers.cpp
+                 test/hcrypt_test_sdk_key_derivation.cpp
                )
 
 #

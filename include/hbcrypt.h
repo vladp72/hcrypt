@@ -1826,8 +1826,8 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_key_derivation(BCryptBufferDesc *parameter_list,
-                                    hcrypt::buffer *b) noexcept {
+        NTSTATUS try_derivation(BCryptBufferDesc *parameter_list,
+                                hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
             try {
@@ -1863,7 +1863,7 @@ namespace bcrypt {
             return status;
         }
 
-        hcrypt::buffer key_derivation(BCryptBufferDesc *parameter_list = nullptr) {
+        hcrypt::buffer derivation(BCryptBufferDesc *parameter_list = nullptr) {
             hcrypt::buffer b;
             for (;;) {
                 unsigned long buffer_size{ 0 };

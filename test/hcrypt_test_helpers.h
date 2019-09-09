@@ -19,7 +19,7 @@ void print(int offset, BCRYPT_ALGORITHM_IDENTIFIER const* algorithm_info);
 void print(int offset, bcrypt::crypto_context_function_cptr const& crypto_context_functions);
 
 template<typename T>
-inline void print_object_properties(int offset, T &obj) {
+inline void print_object_properties(int offset, T &obj, bool hide_errors = false) {
 
     NTSTATUS status{ STATUS_SUCCESS };
     
@@ -33,7 +33,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                string_value.c_str());
-    } else {
+    } else if (!hide_errors) {
         printf("%*cname: error code = %x\n", 
                offset,
                ' ',
@@ -46,7 +46,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*cblock length: error code = %x\n", 
                offset,
                ' ',
@@ -59,7 +59,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                string_value.c_str());
-    } else {
+    } else if (!hide_errors) {
         printf("%*cchaining mode: error code = %x\n", 
                offset,
                ' ',
@@ -77,7 +77,7 @@ inline void print_object_properties(int offset, T &obj) {
                 idx,
                 *block_size_cur);
         };
-    } else {
+    } else if (!hide_errors) {
         printf("%*cchaining mode: error code = %x\n", 
                offset,
                ' ',
@@ -93,7 +93,7 @@ inline void print_object_properties(int offset, T &obj) {
                dh_parameter_header.cbLength,
                dh_parameter_header.dwMagic,
                dh_parameter_header.cbKeyLength);
-    } else {
+    } else if (!hide_errors) {
         printf("%*cDH parameter header: error code = %x\n", 
                offset,
                ' ',
@@ -117,7 +117,7 @@ inline void print_object_properties(int offset, T &obj) {
                static_cast<int>(dsa_parameter_header.Count[1]),
                static_cast<int>(dsa_parameter_header.Count[2]),
                static_cast<int>(dsa_parameter_header.Count[3]));
-    } else {
+    } else if (!hide_errors) {
         printf("%*cDSA parameter header: error code = %x\n", 
                offset,
                ' ',
@@ -130,7 +130,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*ceffective key length: error code = %x\n", 
                offset,
                ' ',
@@ -143,7 +143,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*chash block length: error code = %x\n", 
                offset,
                ' ',
@@ -156,7 +156,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*chash length: error code = %x\n", 
                offset,
                ' ',
@@ -178,13 +178,13 @@ inline void print_object_properties(int offset, T &obj) {
 
                                     return true;
                                 });
-        } else {
+        } else if (!hide_errors) {
             printf("%*coid list size is too small: %Iu\n", 
                    offset,
                    ' ',
                    buffer_value.size());;
         }
-    } else {
+    } else if (!hide_errors) {
         printf("%*coid list: error code = %x\n", 
                offset,
                ' ',
@@ -199,7 +199,7 @@ inline void print_object_properties(int offset, T &obj) {
                 ' ',
                 hcrypt::to_hex(buffer_value).c_str());
 
-    } else {
+    } else if (!hide_errors) {
         printf("%*cinitialization vector: error code = %x\n", 
                offset,
                ' ',
@@ -212,7 +212,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*ckey length: error code = %x\n", 
                offset,
                ' ',
@@ -228,7 +228,7 @@ inline void print_object_properties(int offset, T &obj) {
                keys_length.dwMinLength,
                keys_length.dwMaxLength,
                keys_length.dwIncrement);
-    } else {
+    } else if (!hide_errors) {
         printf("%*ckeys length: error code = %x\n", 
                offset,
                ' ',
@@ -241,7 +241,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*ckey object length: error code = %x\n", 
                offset,
                ' ',
@@ -254,7 +254,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*ckey strength: error code = %x\n", 
                offset,
                ' ',
@@ -267,7 +267,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*cmessage block length: error code = %x\n", 
                offset,
                ' ',
@@ -287,7 +287,7 @@ inline void print_object_properties(int offset, T &obj) {
                 multi_object_length->cbPerElement,
                 hcrypt::to_hex(buffer_value).c_str());
 
-    } else {
+    } else if (!hide_errors) {
         printf("%*cmulti object length: error code = %x\n", 
                offset,
                ' ',
@@ -300,7 +300,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*cobject length: error code = %x\n", 
                offset,
                ' ',
@@ -313,7 +313,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*cpadding schemes: error code = %x\n", 
                offset,
                ' ',
@@ -326,7 +326,7 @@ inline void print_object_properties(int offset, T &obj) {
                offset,
                ' ',
                dword_value);
-    } else {
+    } else if (!hide_errors) {
         printf("%*csignature length: error code = %x\n", 
                offset,
                ' ',
