@@ -7,7 +7,7 @@
 #include "hcrypt_test_enum_contexts.h"
 #include "hcrypt_test_resolve_providers.h"
 #include "hcrypt_test_sdk_key_derivation.h"
-#include "hcrypt_test_sdk_hash_sha1.h"
+#include "hcrypt_test_sdk_hash.h"
 
 int main() {
 

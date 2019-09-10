@@ -1,4 +1,4 @@
-#include "hcrypt_test_sdk_hash_sha1.h"
+#include "hcrypt_test_sdk_hash.h"
 #include <algorithm>
 
 wchar_t const* hash_algorithms[]{
