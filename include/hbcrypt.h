@@ -632,11 +632,11 @@ namespace bcrypt {
     };
 
     [[nodiscard]]
-    inline NTSTATUS try_generate_random(unsigned char* buffer,
+    inline NTSTATUS try_generate_random(char* buffer,
                                         size_t buffer_size,
                                         use_entropy_in_buffer use_buffer = use_entropy_in_buffer::no) noexcept {
         NTSTATUS status{ BCryptGenRandom(nullptr,
-                                         buffer,
+                                         reinterpret_cast<unsigned char *>(buffer),
                                          static_cast<unsigned long>(buffer_size),
                                          BCRYPT_USE_SYSTEM_PREFERRED_RNG | 
                                          (use_buffer == use_entropy_in_buffer::yes ? BCRYPT_RNG_USE_ENTROPY_IN_BUFFER : 0)) };
@@ -652,7 +652,7 @@ namespace bcrypt {
                                     use_buffer);
     }
 
-    inline void generate_random(unsigned char* buffer,
+    inline void generate_random(char* buffer,
                                 size_t buffer_size,
                                 use_entropy_in_buffer use_buffer = use_entropy_in_buffer::no) {
         NTSTATUS status{ try_generate_random( buffer,

@@ -7,6 +7,7 @@
 #include "hcrypt_test_enum_contexts.h"
 #include "hcrypt_test_resolve_providers.h"
 #include "hcrypt_test_sdk_key_derivation.h"
+#include "hcrypt_test_sdk_hash_sha1.h"
 
 int main() {
 
@@ -26,6 +27,8 @@ int main() {
         test_algorithm();
 
         test_sdk_sample_key_derivation();
+
+        test_sdk_sample_hash_sha1();
 
     } catch (std::system_error const& ex) {
         printf("Error code = %u, %s\n", ex.code().value(), ex.what());
