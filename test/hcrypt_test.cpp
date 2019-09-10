@@ -28,7 +28,7 @@ int main() {
 
         test_sdk_sample_key_derivation();
 
-        test_sdk_sample_hash_sha1();
+        test_sdk_sample_hash();
 
     } catch (std::system_error const& ex) {
         printf("Error code = %u, %s\n", ex.code().value(), ex.what());
