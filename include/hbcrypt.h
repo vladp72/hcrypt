@@ -695,31 +695,25 @@ namespace bcrypt {
         NTSTATUS try_get_property(wchar_t const* property_name, 
                                   hcrypt::buffer *buffer) const noexcept {
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
-                for (;;) {
-                    size_t rezult_size{ 0 };
-                    bool empty_buffer{ buffer->empty() };
-                    status = try_get_property(property_name,
-                                              empty_buffer ? nullptr : buffer->data(),
-                                              empty_buffer ? 0 : buffer->size(),
-                                              &rezult_size);
-                    if (NT_SUCCESS(status)) {
-                        if (rezult_size <= buffer->size()) {
-                            buffer->resize(rezult_size);
-                            break;
-                        } else {
-                            buffer->resize(rezult_size);
-                        }
-                    } else if (STATUS_BUFFER_TOO_SMALL == status) {
-                        buffer->resize(rezult_size);
-                    } else {
+            for (;;) {
+                size_t rezult_size{ 0 };
+                bool empty_buffer{ buffer->empty() };
+                status = try_get_property(property_name,
+                                            empty_buffer ? nullptr : buffer->data(),
+                                            empty_buffer ? 0 : buffer->size(),
+                                            &rezult_size);
+                if (NT_SUCCESS(status)) {
+                    if (rezult_size <= buffer->size()) {
+                        status = hcrypt::try_resize(buffer, rezult_size);
                         break;
+                    } else {
+                        status = hcrypt::try_resize(buffer, rezult_size);
                     }
+                } else if (STATUS_BUFFER_TOO_SMALL == status) {
+                    status = hcrypt::try_resize(buffer, rezult_size);
+                } else {
+                    break;
                 }
-            } catch (std::bad_alloc const &) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch (...) {
-                BCRYPT_CRASH_APPLICATION();
             }
             return status;
         }
@@ -730,34 +724,28 @@ namespace bcrypt {
             
             NTSTATUS status{ STATUS_SUCCESS };
             
-            try {
-                for (;;) {
-                    size_t rezult_size{ 0 };
-                    bool empty_buffer{ buffer->empty() };
-                    status = try_get_property(property_name,
-                                              empty_buffer ? nullptr : reinterpret_cast<char *>(buffer->data()),
-                                              empty_buffer ? 0 : buffer->size() * sizeof(wchar_t),
-                                              &rezult_size);
-                    if (NT_SUCCESS(status)) {
-                        if (rezult_size <= (buffer->size() * sizeof(wchar_t))) {
-                            //
-                            // Remove extra terminating 0
-                            //
-                            buffer->resize((rezult_size / sizeof(wchar_t)) - 1);
-                            break;
-                        } else {
-                            buffer->resize((rezult_size / sizeof(wchar_t)));
-                        }
-                    } else if (STATUS_BUFFER_TOO_SMALL == status) {
-                        buffer->resize(rezult_size / sizeof(wchar_t));
-                    } else {
+            for (;;) {
+                size_t rezult_size{ 0 };
+                bool empty_buffer{ buffer->empty() };
+                status = try_get_property(property_name,
+                                            empty_buffer ? nullptr : reinterpret_cast<char *>(buffer->data()),
+                                            empty_buffer ? 0 : buffer->size() * sizeof(wchar_t),
+                                            &rezult_size);
+                if (NT_SUCCESS(status)) {
+                    if (rezult_size <= (buffer->size() * sizeof(wchar_t))) {
+                        //
+                        // Remove extra terminating 0
+                        //
+                        status = hcrypt::try_resize(buffer, (rezult_size / sizeof(wchar_t)) - 1);
                         break;
+                    } else {
+                        status = hcrypt::try_resize(buffer, (rezult_size / sizeof(wchar_t)));
                     }
+                } else if (STATUS_BUFFER_TOO_SMALL == status) {
+                    status = hcrypt::try_resize(buffer, rezult_size / sizeof(wchar_t));
+                } else {
+                    break;
                 }
-            } catch (std::bad_alloc const &) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch (...) {
-                BCRYPT_CRASH_APPLICATION();
             }
             return status;
         }
@@ -1228,42 +1216,38 @@ namespace bcrypt {
         [[nodiscard]]
         NTSTATUS try_duplicate_to(hash *hash) const noexcept {
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
-                if (hash != this) {
+            if (hash != this) {
                 
-                    unsigned long hash_size{ 0 };
-                    status = try_get_object_length(&hash_size);
+                unsigned long hash_size{ 0 };
+                status = try_get_object_length(&hash_size);
 
-                    if (!NT_SUCCESS(status)) {
-                        return status;
-                    }
-
-                    hcrypt::buffer b;
-                    b.resize(hash_size);
-
-                    BCRYPT_HASH_HANDLE h{ nullptr };
-                
-                    status = BCryptDuplicateHash(h_,
-                                                 &h,
-                                                 reinterpret_cast<unsigned char *>(b.data()),
-                                                 static_cast<unsigned long>(b.size()),
-                                                 0);
-
-                    if (!NT_SUCCESS(status)) {
-                        return status;
-                    }
-
-                    hash->close();
-                    hash->h_ = h;
-                    hash->b_ = std::move(b);
+                if (!NT_SUCCESS(status)) {
+                    return status;
                 }
 
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch (...) {
-                BCRYPT_CRASH_APPLICATION();
-            }
+                hcrypt::buffer b;
+                status = hcrypt::try_resize(b, hash_size);
 
+                if (!NT_SUCCESS(status)) {
+                    return status;
+                }
+
+                BCRYPT_HASH_HANDLE h{ nullptr };
+                
+                status = BCryptDuplicateHash(h_,
+                                                &h,
+                                                reinterpret_cast<unsigned char *>(b.data()),
+                                                static_cast<unsigned long>(b.size()),
+                                                0);
+
+                if (!NT_SUCCESS(status)) {
+                    return status;
+                }
+
+                hash->close();
+                hash->h_ = h;
+                hash->b_ = std::move(b);
+            }
             return status;
         }
 
@@ -1366,29 +1350,26 @@ namespace bcrypt {
         [[nodiscard]]
         NTSTATUS try_finish(hcrypt::buffer *b) {
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
 
-                unsigned long hash_length{ 0 };
-                status = try_get_hash_length(&hash_length);
+            unsigned long hash_length{ 0 };
+            status = try_get_hash_length(&hash_length);
 
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-                b->resize(hash_length);
-
-                status = try_finish(b->data(),
-                                    b->size());
-
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+
+            status = hcrypt::try_resize(b, hash_length);
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            status = try_finish(b->data(),
+                                b->size());
+
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
             return status;
         }
 
@@ -1500,41 +1481,39 @@ namespace bcrypt {
                                 hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
-                unsigned long key_size{ 0 };
+
+            unsigned long key_size{ 0 };
                 
-                status = BCryptDeriveKey(h_,
-                                         key_derivation_function,
-                                         parameters_list,
-                                         nullptr,
-                                         0,
-                                         &key_size,
-                                         0);
+            status = BCryptDeriveKey(h_,
+                                        key_derivation_function,
+                                        parameters_list,
+                                        nullptr,
+                                        0,
+                                        &key_size,
+                                        0);
 
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-                BCRYPT_KEY_HANDLE new_key{ nullptr };
-                b->resize(key_size);
-
-                status = BCryptDeriveKey(h_,
-                                         key_derivation_function,
-                                         parameters_list,
-                                         reinterpret_cast<unsigned char *>(b->data()),
-                                         static_cast<unsigned long>(b->size()),
-                                         &key_size,
-                                         0);
-
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+
+            BCRYPT_KEY_HANDLE new_key{ nullptr };
+            status = hcrypt::try_resize(b, key_size);
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            status = BCryptDeriveKey(h_,
+                                        key_derivation_function,
+                                        parameters_list,
+                                        reinterpret_cast<unsigned char *>(b->data()),
+                                        static_cast<unsigned long>(b->size()),
+                                        &key_size,
+                                        0);
+
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
             return status;
         }
 
@@ -1649,40 +1628,37 @@ namespace bcrypt {
         [[nodiscard]]
         NTSTATUS try_duplicate_to(key *key) const noexcept {
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
-                if (key != this) {
+
+            if (key != this) {
                 
-                    unsigned long key_size{ 0 };
-                    status = try_get_key_object_length(&key_size);
+                unsigned long key_size{ 0 };
+                status = try_get_key_object_length(&key_size);
 
-                    if (!NT_SUCCESS(status)) {
-                        return status;
-                    }
-
-                    hcrypt::buffer b;
-                    b.resize(key_size);
-
-                    BCRYPT_KEY_HANDLE h{ nullptr };
-                
-                    status = BCryptDuplicateKey(h_,
-                                                &h,
-                                                reinterpret_cast<unsigned char *>(b.data()),
-                                                static_cast<unsigned long>(b.size()),
-                                                0);
-
-                    if (!NT_SUCCESS(status)) {
-                        return status;
-                    }
-
-                    key->close();
-                    key->h_ = h;
-                    key->b_ = std::move(b);
+                if (!NT_SUCCESS(status)) {
+                    return status;
                 }
 
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch (...) {
-                BCRYPT_CRASH_APPLICATION();
+                hcrypt::buffer b;
+                status = hcrypt::try_resize(b, key_size);
+                if (!NT_SUCCESS(status)) {
+                    return status;
+                }
+
+                BCRYPT_KEY_HANDLE h{ nullptr };
+                
+                status = BCryptDuplicateKey(h_,
+                                            &h,
+                                            reinterpret_cast<unsigned char *>(b.data()),
+                                            static_cast<unsigned long>(b.size()),
+                                            0);
+
+                if (!NT_SUCCESS(status)) {
+                    return status;
+                }
+
+                key->close();
+                key->h_ = h;
+                key->b_ = std::move(b);
             }
 
             return status;
@@ -1741,37 +1717,31 @@ namespace bcrypt {
                                 hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
-                for (;;) {
-                    unsigned long buffer_size{ 0 };
+            for (;;) {
+                unsigned long buffer_size{ 0 };
 
-                    status = BCryptExportKey(h_,
-                                             export_key_protector,
-                                             blob_type,
-                                             b->empty() ? nullptr : reinterpret_cast<unsigned char*>(b->data()),
-                                             b->empty() ? 0 : static_cast<unsigned long>(b->size()),
-                                             &buffer_size,
-                                             0);
+                status = BCryptExportKey(h_,
+                                         export_key_protector,
+                                         blob_type,
+                                         b->empty() ? nullptr : reinterpret_cast<unsigned char*>(b->data()),
+                                         b->empty() ? 0 : static_cast<unsigned long>(b->size()),
+                                         &buffer_size,
+                                         0);
 
-                    if (NT_SUCCESS(status)) {
-                        if (buffer_size <= b->size()) {
-                            b->resize(buffer_size);
-                            break;
-                        } else {
-                            b->resize(buffer_size);
-                        }
-                    } else if (STATUS_BUFFER_TOO_SMALL == status) {
-                        b->resize(buffer_size);
-                    } else {
+                if (NT_SUCCESS(status)) {
+                    if (buffer_size <= b->size()) {
+                        status = hcrypt::try_resize(b, buffer_size);
                         break;
+                    } else {
+                        status = hcrypt::try_resize(b, buffer_size);
                     }
+                } else if (STATUS_BUFFER_TOO_SMALL == status) {
+                    status = hcrypt::try_resize(b, buffer_size);
+                } else {
+                    break;
                 }
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
             }
+
             return status;
         }
 
@@ -1855,27 +1825,26 @@ namespace bcrypt {
                                     hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
-                size_t generated_key_size{ 0 };
-                b->resize(desired_key_size);
-                status = try_key_derivation(b->empty() ? nullptr : b->data(),
-                                            b->empty() ? 0 : b->size(),
-                                            &generated_key_size,
-                                            parameter_list,
-                                            flags);
 
-                if (NT_SUCCESS(status)) {
-                    b->resize(generated_key_size);
-                    return status;
-                } else {
-                    return status;
-                }
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            size_t generated_key_size{ 0 };
+            status = hcrypt::try_resize(b, desired_key_size);
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+
+            status = try_key_derivation(b->empty() ? nullptr : b->data(),
+                                        b->empty() ? 0 : b->size(),
+                                        &generated_key_size,
+                                        parameter_list,
+                                        flags);
+
+            if (NT_SUCCESS(status)) {
+                status = hcrypt::try_resize(b, generated_key_size);
+                return status;
+            } else {
+                return status;
+            }
+
             return status;
         }
 
@@ -1956,40 +1925,38 @@ namespace bcrypt {
                                hcrypt::buffer *b) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
-                size_t buffer_size{ 0 };
 
-                status = try_sign_hash( hash_value_to_sign,
-                                        hash_value_to_sign_size,
-                                        padding_info,
-                                        flags,
-                                        nullptr,
-                                        0,
-                                        &buffer_size);
+            size_t buffer_size{ 0 };
 
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
+            status = try_sign_hash( hash_value_to_sign,
+                                    hash_value_to_sign_size,
+                                    padding_info,
+                                    flags,
+                                    nullptr,
+                                    0,
+                                    &buffer_size);
 
-                b->resize(buffer_size);
-
-                status = try_sign_hash( hash_value_to_sign,
-                                        hash_value_to_sign_size,
-                                        padding_info,
-                                        flags,
-                                        b->empty() ? nullptr : b->data(),
-                                        b->empty() ? 0 : b->size(),
-                                        &buffer_size);
-
-                if (NT_SUCCESS(status)) {
-                    b->resize(buffer_size);
-                }
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+
+            status = hcrypt::try_resize(b, buffer_size);
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            status = try_sign_hash( hash_value_to_sign,
+                                    hash_value_to_sign_size,
+                                    padding_info,
+                                    flags,
+                                    b->empty() ? nullptr : b->data(),
+                                    b->empty() ? 0 : b->size(),
+                                    &buffer_size);
+
+            if (NT_SUCCESS(status)) {
+                status = hcrypt::try_resize(b, buffer_size);
+            }
+
             return status;
         }
 
@@ -2341,41 +2308,38 @@ namespace bcrypt {
                                             size_t secret_length,
                                             key *k) noexcept {
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
-                unsigned long key_size{ 0 };
-                status = try_get_key_object_length(&key_size);
 
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
+            unsigned long key_size{ 0 };
+            status = try_get_key_object_length(&key_size);
 
-                hcrypt::buffer b;
-                b.resize(key_size);
-
-                BCRYPT_KEY_HANDLE key_handle{ nullptr };
-
-                status = BCryptGenerateSymmetricKey(h_,
-                                                    &key_handle,
-                                                    reinterpret_cast<unsigned char *>(b.data()),
-                                                    static_cast<unsigned long>(b.size()),
-                                                    reinterpret_cast<unsigned char *>(const_cast<char *>(secret)),
-                                                    static_cast<unsigned long>(secret_length),
-                                                    0);
-
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-                k->close();
-                k->h_ = key_handle;
-                k->b_ = std::move(b);
-
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+
+            hcrypt::buffer b;
+            status = hcrypt::try_resize(b, key_size);
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            BCRYPT_KEY_HANDLE key_handle{ nullptr };
+
+            status = BCryptGenerateSymmetricKey(h_,
+                                                &key_handle,
+                                                reinterpret_cast<unsigned char *>(b.data()),
+                                                static_cast<unsigned long>(b.size()),
+                                                reinterpret_cast<unsigned char *>(const_cast<char *>(secret)),
+                                                static_cast<unsigned long>(secret_length),
+                                                0);
+
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            k->close();
+            k->h_ = key_handle;
+            k->b_ = std::move(b);
+
             return status;
         }
 
@@ -2454,41 +2418,40 @@ namespace bcrypt {
                                          key *k) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
-                unsigned long key_size{ 0 };
-                status = try_get_key_object_length(&key_size);
 
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
+            unsigned long key_size{ 0 };
+            status = try_get_key_object_length(&key_size);
 
-                BCRYPT_KEY_HANDLE new_key{ nullptr };
-                hcrypt::buffer b;
-                b.resize(key_size);
-
-                status = BCryptImportKey(h_,
-                                         import_key,
-                                         blob_type,
-                                         &new_key,
-                                         reinterpret_cast<unsigned char *>(const_cast<char *>(key_object)),
-                                         static_cast<unsigned long>(key_object_size),
-                                         reinterpret_cast<unsigned char *>(b.data()),
-                                         static_cast<unsigned long>(b.size()),
-                                         0);
-
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-                k->close();
-                k->h_ = new_key;
-                k->b_ = std::move(b);
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+
+            BCRYPT_KEY_HANDLE new_key{ nullptr };
+            hcrypt::buffer b;
+            status = hcrypt::try_resize(b, key_size);
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            status = BCryptImportKey(h_,
+                                     import_key,
+                                     blob_type,
+                                     &new_key,
+                                     reinterpret_cast<unsigned char *>(const_cast<char *>(key_object)),
+                                     static_cast<unsigned long>(key_object_size),
+                                     reinterpret_cast<unsigned char *>(b.data()),
+                                     static_cast<unsigned long>(b.size()),
+                                     0);
+
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            k->close();
+            k->h_ = new_key;
+            k->b_ = std::move(b);
+
+
             return status;
         }
 
@@ -2521,7 +2484,7 @@ namespace bcrypt {
                                              &new_key,
                                              reinterpret_cast<unsigned char*>(const_cast<char*>(key_object)),
                                              static_cast<unsigned long>(key_object_size),
-                                             reinterpret_cast<unsigned char *>(b.data()),
+                                             reinterpret_cast<unsigned char*>(b.data()),
                                              static_cast<unsigned long>(b.size()),
                                              0) };
 
@@ -2556,29 +2519,24 @@ namespace bcrypt {
                                      key *k) noexcept {
 
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
-                BCRYPT_KEY_HANDLE new_key{ nullptr };
 
-                status = BCryptImportKeyPair(h_,
-                                             import_key,
-                                             blob_type,
-                                             &new_key,
-                                             reinterpret_cast<unsigned char *>(const_cast<char *>(key_object)),
-                                             static_cast<unsigned long>(key_object_size),
-                                             flags);
+            BCRYPT_KEY_HANDLE new_key{ nullptr };
 
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
+            status = BCryptImportKeyPair(h_,
+                                         import_key,
+                                         blob_type,
+                                         &new_key,
+                                         reinterpret_cast<unsigned char *>(const_cast<char *>(key_object)),
+                                         static_cast<unsigned long>(key_object_size),
+                                         flags);
 
-                k->close();
-                k->h_ = new_key;
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+
+            k->close();
+            k->h_ = new_key;
+
             return status;
         }
 
@@ -2647,36 +2605,32 @@ namespace bcrypt {
 
             NTSTATUS status{ STATUS_SUCCESS };
 
-            try {
+            unsigned long key_size{ 0 };
+            status = try_get_key_object_length(&key_size);
 
-                unsigned long key_size{ 0 };
-                status = try_get_key_object_length(&key_size);
-
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-                
-                b->resize(key_size);
-
-                status =  BCryptDeriveKeyPBKDF2(h_,
-                                                reinterpret_cast<unsigned char*>(const_cast<char*>(password)),
-                                                static_cast<unsigned long>(password_length),
-                                                reinterpret_cast<unsigned char*>(const_cast<char*>(salt)),
-                                                static_cast<unsigned long>(salt_length),
-                                                iterations_count,
-                                                b->empty() ? nullptr : reinterpret_cast<unsigned char*>(b->data()),
-                                                static_cast<unsigned long>(b->size()),
-                                                0);
-
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+                
+            status = hcrypt::try_resize(b, key_size);
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            status =  BCryptDeriveKeyPBKDF2(h_,
+                                            reinterpret_cast<unsigned char*>(const_cast<char*>(password)),
+                                            static_cast<unsigned long>(password_length),
+                                            reinterpret_cast<unsigned char*>(const_cast<char*>(salt)),
+                                            static_cast<unsigned long>(salt_length),
+                                            iterations_count,
+                                            b->empty() ? nullptr : reinterpret_cast<unsigned char*>(b->data()),
+                                            static_cast<unsigned long>(b->size()),
+                                            0);
+
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
             return status;
         }
 
@@ -2711,41 +2665,38 @@ namespace bcrypt {
                                  unsigned long flags,
                                  hash *hash) {
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
 
-                unsigned long object_length{ 0 };
-                status = try_get_object_length(&object_length);
+            unsigned long object_length{ 0 };
+            status = try_get_object_length(&object_length);
 
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-                hcrypt::buffer b;
-                b.resize(object_length);
-
-                BCRYPT_HASH_HANDLE h{ nullptr };
-
-                status = BCryptCreateHash(h_,
-                    &h,
-                    reinterpret_cast<unsigned char*>(b.data()),
-                    static_cast<unsigned long>(b.size()),
-                    reinterpret_cast<unsigned char*>(const_cast<char*>(secret)),
-                    static_cast<unsigned long>(secret_length),
-                    flags);
-
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-                hash->close();
-                hash->h_ = h;
-                hash->b_ = std::move(b);
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+
+            hcrypt::buffer b;
+            status = hcrypt::try_resize(b, object_length);
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            BCRYPT_HASH_HANDLE h{ nullptr };
+
+            status = BCryptCreateHash(h_,
+                &h,
+                reinterpret_cast<unsigned char*>(b.data()),
+                static_cast<unsigned long>(b.size()),
+                reinterpret_cast<unsigned char*>(const_cast<char*>(secret)),
+                static_cast<unsigned long>(secret_length),
+                flags);
+
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            hash->close();
+            hash->h_ = h;
+            hash->b_ = std::move(b);
+
             return status;
         }
 
@@ -2784,47 +2735,44 @@ namespace bcrypt {
                                       unsigned long flags,
                                       hash *hash) {
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
 
-                hcrypt::buffer multiobject_info;
-                status = try_get_multi_object_length(&multiobject_info);
+            hcrypt::buffer multiobject_info;
+            status = try_get_multi_object_length(&multiobject_info);
 
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-                BCRYPT_MULTI_OBJECT_LENGTH_STRUCT const* multi_object_length{
-                    reinterpret_cast<BCRYPT_MULTI_OBJECT_LENGTH_STRUCT const*>(multiobject_info.data()) };
-
-                unsigned long multiobject_length{ multi_object_length->cbPerObject + (multi_object_length->cbPerElement * numer_of_hashes) };
-
-                hcrypt::buffer b;
-                b.resize(multiobject_length);
-
-                BCRYPT_HASH_HANDLE h{ nullptr };
-
-                status = BCryptCreateMultiHash(h_,
-                                               &h,
-                                               numer_of_hashes,
-                                               reinterpret_cast<unsigned char*>(b.data()),
-                                               static_cast<unsigned long>(b.size()),
-                                               reinterpret_cast<unsigned char*>(const_cast<char*>(secret)),
-                                               static_cast<unsigned long>(secret_length),
-                                               flags);
-
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-                hash->close();
-                hash->h_ = h;
-                hash->b_ = std::move(b);
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+
+            BCRYPT_MULTI_OBJECT_LENGTH_STRUCT const* multi_object_length{
+                reinterpret_cast<BCRYPT_MULTI_OBJECT_LENGTH_STRUCT const*>(multiobject_info.data()) };
+
+            unsigned long multiobject_length{ multi_object_length->cbPerObject + (multi_object_length->cbPerElement * numer_of_hashes) };
+
+            hcrypt::buffer b;
+            status = hcrypt::try_resize(b, multiobject_length);
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            BCRYPT_HASH_HANDLE h{ nullptr };
+
+            status = BCryptCreateMultiHash(h_,
+                                           &h,
+                                           numer_of_hashes,
+                                           reinterpret_cast<unsigned char*>(b.data()),
+                                           static_cast<unsigned long>(b.size()),
+                                           reinterpret_cast<unsigned char*>(const_cast<char*>(secret)),
+                                           static_cast<unsigned long>(secret_length),
+                                           flags);
+
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            hash->close();
+            hash->h_ = h;
+            hash->b_ = std::move(b);
+
             return status;
         }
 
@@ -2887,33 +2835,30 @@ namespace bcrypt {
                                size_t input_length,
                                hcrypt::buffer *b) noexcept {
             NTSTATUS status{ STATUS_SUCCESS };
-            try {
 
-                unsigned long hash_length{ 0 };
-                status = try_get_hash_length(&hash_length);
+            unsigned long hash_length{ 0 };
+            status = try_get_hash_length(&hash_length);
 
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-                b->resize(hash_length);
-
-                status = try_hash_data(secret,
-                                       secret_length,
-                                       input,
-                                       input_length,
-                                       b->data(),
-                                       b->size());
-
-                if (!NT_SUCCESS(status)) {
-                    return status;
-                }
-
-            } catch (std::bad_alloc const&) {
-                status = STATUS_INSUFFICIENT_RESOURCES;
-            } catch(...) {
-                BCRYPT_CRASH_APPLICATION();
+            if (!NT_SUCCESS(status)) {
+                return status;
             }
+
+            status = hcrypt::try_resize(b, hash_length);
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            status = try_hash_data(secret,
+                                   secret_length,
+                                   input,
+                                   input_length,
+                                   b->data(),
+                                   b->size());
+
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
             return status;
         }
 

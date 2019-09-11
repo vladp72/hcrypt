@@ -45,7 +45,7 @@ namespace {
                    ' ', 
                    hash_value.size());
 
-            printf("%*chas: %ws\n", 
+            printf("%*chash: %ws\n", 
                    offset + 2, 
                    ' ', 
                    hcrypt::to_hex(hash_value).c_str());
