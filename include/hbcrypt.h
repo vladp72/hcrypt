@@ -1114,7 +1114,7 @@ namespace bcrypt {
         }
     };
 
-    BCRUPT_PROPERTY_DECL(algorithm_name,        BCRYPT_ALGORITHM_NAME,        wchar_t*,                                  std::wstring,           true,  true);
+    BCRUPT_PROPERTY_DECL(algorithm_name,        BCRYPT_ALGORITHM_NAME,        wchar_t*,                                   std::wstring,           true,  true);
     BCRUPT_PROPERTY_DECL(block_length,          BCRYPT_BLOCK_LENGTH,          unsigned long,                              hcrypt::buffer ,       true,  true);
     BCRUPT_PROPERTY_DECL(block_size_list,       BCRYPT_BLOCK_SIZE_LIST,       unsigned long*,                             hcrypt::buffer ,       true,  true); //
     BCRUPT_PROPERTY_DECL(chaining_mode,         BCRYPT_CHAINING_MODE,         wchar_t*,                                   std::wstring,          true,  true);
@@ -1922,7 +1922,34 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_sign_hash(unsigned char * hash_value_to_sign,
+        NTSTATUS try_sign_hash(char const *hash_value_to_sign,
+                               size_t hash_value_to_sign_size,
+                               void *padding_info,
+                               unsigned long flags,
+                               char *signature_buffer,
+                               size_t signature_buffer_length,
+                               size_t *required_size) noexcept {
+;
+            unsigned long buffer_size{ 0 };
+
+            NTSTATUS status{ BCryptSignHash(h_,
+                                            padding_info,
+                                            reinterpret_cast<unsigned char*>(const_cast<char*>(hash_value_to_sign)),
+                                            static_cast<unsigned long>(hash_value_to_sign_size),
+                                            reinterpret_cast<unsigned char*>(signature_buffer),
+                                            static_cast<unsigned long>(signature_buffer_length),
+                                            &buffer_size,
+                                            flags) };
+
+            if (NT_SUCCESS(status)) {
+                *required_size = buffer_size;
+            }
+
+            return status;
+        }
+
+        [[nodiscard]]
+        NTSTATUS try_sign_hash(char const *hash_value_to_sign,
                                size_t hash_value_to_sign_size,
                                void *padding_info,
                                unsigned long flags,
@@ -1930,30 +1957,32 @@ namespace bcrypt {
 
             NTSTATUS status{ STATUS_SUCCESS };
             try {
-                for (;;) {
-                    unsigned long buffer_size{ 0 };
+                size_t buffer_size{ 0 };
 
-                    status = BCryptSignHash(h_,
-                                            padding_info,
-                                            hash_value_to_sign,
-                                            static_cast<unsigned long>(hash_value_to_sign_size),
-                                            b->empty() ? nullptr : reinterpret_cast<unsigned char*>(b->data()),
-                                            b->empty() ? 0 : static_cast<unsigned long>(b->size()),
-                                            &buffer_size,
-                                            flags);
+                status = try_sign_hash( hash_value_to_sign,
+                                        hash_value_to_sign_size,
+                                        padding_info,
+                                        flags,
+                                        nullptr,
+                                        0,
+                                        &buffer_size);
 
-                    if (NT_SUCCESS(status)) {
-                        if (buffer_size <= b->size()) {
-                            b->resize(buffer_size);
-                            break;
-                        } else {
-                            b->resize(buffer_size);
-                        }
-                    } else if (STATUS_BUFFER_TOO_SMALL == status) {
-                        b->resize(buffer_size);
-                    } else {
-                        break;
-                    }
+                if (!NT_SUCCESS(status)) {
+                    return status;
+                }
+
+                b->resize(buffer_size);
+
+                status = try_sign_hash( hash_value_to_sign,
+                                        hash_value_to_sign_size,
+                                        padding_info,
+                                        flags,
+                                        b->empty() ? nullptr : b->data(),
+                                        b->empty() ? 0 : b->size(),
+                                        &buffer_size);
+
+                if (NT_SUCCESS(status)) {
+                    b->resize(buffer_size);
                 }
 
             } catch (std::bad_alloc const&) {
@@ -1964,36 +1993,40 @@ namespace bcrypt {
             return status;
         }
 
-        hcrypt::buffer sign_hash(unsigned char* hash_value_to_sign,
+        hcrypt::buffer sign_hash(char const *hash_value_to_sign,
                                  size_t hash_value_to_sign_size,
                                  void* padding_info = nullptr,
                                  unsigned long flags = 0) {
 
             hcrypt::buffer b;
-            for (;;) {
-                unsigned long buffer_size{ 0 };
+            size_t buffer_size{ 0 };
 
-                NTSTATUS status{ BCryptSignHash(h_,
-                                                padding_info,
-                                                hash_value_to_sign,
-                                                static_cast<unsigned long>(hash_value_to_sign_size),
-                                                b.empty() ? nullptr : reinterpret_cast<unsigned char*>(b.data()),
-                                                b.empty() ? 0 : static_cast<unsigned long>(b.size()),
-                                                &buffer_size,
-                                                flags) };
+            NTSTATUS status{ try_sign_hash(hash_value_to_sign,
+                                           hash_value_to_sign_size,
+                                           padding_info,
+                                           flags,
+                                           nullptr,
+                                           0,
+                                           &buffer_size) };
 
-                if (NT_SUCCESS(status)) {
-                    if (buffer_size <= b.size()) {
-                        b.resize(buffer_size);
-                        break;
-                    } else {
-                        b.resize(buffer_size);
-                    }
-                } else if (STATUS_BUFFER_TOO_SMALL == status) {
-                    b.resize(buffer_size);
-                } else {
-                    throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptSignHash failed");
-                }
+            if (!NT_SUCCESS(status)) {
+                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptSignHash failed");
+            }
+
+            b.resize(buffer_size);
+
+            status = try_sign_hash( hash_value_to_sign,
+                                    hash_value_to_sign_size,
+                                    padding_info,
+                                    flags,
+                                    b.empty() ? nullptr : b.data(),
+                                    b.empty() ? 0 : b.size(),
+                                    &buffer_size);
+
+            if (NT_SUCCESS(status)) {
+                b.resize(buffer_size);
+            } else {
+                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptSignHash failed");
             }
             return b;
         }
@@ -2212,6 +2245,14 @@ namespace bcrypt {
         using handle_t = BCRYPT_ALG_HANDLE;
 
         algorithm_provider() noexcept = default;
+
+        algorithm_provider(wchar_t const* algorithm,
+                           wchar_t const* provider = nullptr,
+                           unsigned long flags = 0) {
+            open( algorithm,
+                  provider,
+                  flags);
+        }       
 
         explicit algorithm_provider(BCRYPT_ALG_HANDLE h) noexcept 
             : h_(h) {

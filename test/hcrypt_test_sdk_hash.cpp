@@ -1,60 +1,62 @@
 #include "hcrypt_test_sdk_hash.h"
 #include <algorithm>
 
-wchar_t const* hash_algorithms[]{
-    BCRYPT_MD2_ALGORITHM,
-    BCRYPT_MD4_ALGORITHM,
-    BCRYPT_MD5_ALGORITHM,
-    BCRYPT_SHA1_ALGORITHM,
-    BCRYPT_SHA256_ALGORITHM,
-    BCRYPT_SHA384_ALGORITHM,
-    BCRYPT_SHA512_ALGORITHM
-};
+namespace {
 
-void test_sdk_sample_hash(int offset, 
-                          wchar_t const* algorithm_name,
-                          hcrypt::buffer const &data_to_hash) {
-    try {
-        printf("\n%*cOpening algorithm %S.\n", 
-               offset + 2, 
-               ' ',
-               algorithm_name);
+    wchar_t const* hash_algorithms[]{
+        BCRYPT_MD2_ALGORITHM,
+        BCRYPT_MD4_ALGORITHM,
+        BCRYPT_MD5_ALGORITHM,
+        BCRYPT_SHA1_ALGORITHM,
+        BCRYPT_SHA256_ALGORITHM,
+        BCRYPT_SHA384_ALGORITHM,
+        BCRYPT_SHA512_ALGORITHM
+    };
 
-        bcrypt::algorithm_provider provider;
-        provider.open(algorithm_name);
-        print_object_properties(offset + 4, provider, true);
+    void test_sdk_sample_hash(int offset, 
+                              wchar_t const* algorithm_name,
+                              hcrypt::buffer const &data_to_hash) {
+        try {
+            printf("\n%*cOpening algorithm %S.\n", 
+                   offset + 2, 
+                   ' ',
+                   algorithm_name);
 
-        printf("%*cCreating hash object.\n", 
-               offset + 2, 
-               ' ');
+            bcrypt::algorithm_provider provider{ algorithm_name };
+            print_object_properties(offset + 4, provider, true);
 
-        bcrypt::hash h{ provider.create_hash() };
-        print_object_properties(offset + 4, h, true);
+            printf("%*cCreating hash object.\n", 
+                   offset + 2, 
+                   ' ');
 
-        printf("%*cHashing data.\n",
-            offset + 2,
-            ' ');
+            bcrypt::hash h{ provider.create_hash() };
+            print_object_properties(offset + 4, h, true);
 
-        h.hash_data(data_to_hash.data(),
-                    data_to_hash.size());
-        hcrypt::buffer hash_value{ h.finish() };
+            printf("%*cHashing data.\n",
+                offset + 2,
+                ' ');
 
-        printf("%*cHash length: %Iu\n", 
-               offset + 2, 
-               ' ', 
-               hash_value.size());
+            h.hash_data(data_to_hash.data(),
+                        data_to_hash.size());
+            hcrypt::buffer hash_value{ h.finish() };
 
-        printf("%*chas: %ws\n", 
-               offset + 2, 
-               ' ', 
-               hcrypt::to_hex(hash_value).c_str());
+            printf("%*cHash length: %Iu\n", 
+                   offset + 2, 
+                   ' ', 
+                   hash_value.size());
 
-    } catch (std::system_error const& ex) {
-        printf("test_sdk_sample_hash, error code = 0x%x, %s\n",
-            ex.code().value(),
-            ex.what());
+            printf("%*chas: %ws\n", 
+                   offset + 2, 
+                   ' ', 
+                   hcrypt::to_hex(hash_value).c_str());
+
+        } catch (std::system_error const& ex) {
+            printf("test_sdk_sample_hash, error code = 0x%x, %s\n",
+                ex.code().value(),
+                ex.what());
+        }
     }
-}
+} // namespace
 
 void test_sdk_sample_hash() {
     try {
