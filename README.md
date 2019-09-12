@@ -1,4 +1,4 @@
-# C++ Helper Classes For Windows BCRYPT and NCRYPT APIs.
+# C++ Helper Classes for Windows BCRYPT and NCRYPT APIs.
 
 [MSDN Documentation for BCRYPT](https://docs.microsoft.com/en-us/windows/win32/api/bcrypt/)
 
