@@ -6,30 +6,30 @@
 #include "hcrypt_test_enum_algorithms.h"
 #include "hcrypt_test_enum_contexts.h"
 #include "hcrypt_test_resolve_providers.h"
-#include "hcrypt_test_sdk_key_derivation.h"
-#include "hcrypt_test_sdk_hash.h"
+#include "hcrypt_test_key_derivation.h"
+#include "hcrypt_test_hash.h"
 #include "hcrypt_test_message_signing.h"
 
 int main() {
 
     try {
-        //test_CTAD();
+        test_CTAD();
 
-        //print_is_fips_complience_on();
+        print_is_fips_complience_on();
 
-        //print_registered_providers();
+        print_registered_providers();
 
-        //resolve_providers();
+        resolve_providers();
 
-        //print_algorithms();
+        print_algorithms();
 
-        //print_crypto_contexts();
+        print_crypto_contexts();
 
-        //test_algorithm();
+        test_algorithm();
 
-        //test_sdk_sample_key_derivation();
+        test_sdk_sample_key_derivation();
 
-        //test_sdk_sample_hash();
+        test_sdk_sample_hash();
 
         test_message_signing();
 

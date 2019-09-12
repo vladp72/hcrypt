@@ -1,4 +1,4 @@
-#include "hcrypt_test_sdk_key_derivation.h"
+#include "hcrypt_test_key_derivation.h"
 #include "hcrypt_test_helpers.h"
 #include <algorithm>
 

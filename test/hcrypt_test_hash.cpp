@@ -1,4 +1,4 @@
-#include "hcrypt_test_sdk_hash.h"
+#include "hcrypt_test_hash.h"
 #include <algorithm>
 
 namespace {
