@@ -2,4 +2,4 @@
 
 #include "hcrypt_test_helpers.h"
 
-void test_sdk_sample_hash();
+void test_sample_hash();

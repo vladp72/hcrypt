@@ -201,7 +201,7 @@ namespace {
     }
 } //namespace
 
-void test_sdk_sample_key_derivation() {
+void test_sample_key_derivation() {
     try {
         int offset{ 0 };
 

@@ -58,7 +58,7 @@ namespace {
     }
 } // namespace
 
-void test_sdk_sample_hash() {
+void test_sample_hash() {
     try {
         int offset{ 0 };
 

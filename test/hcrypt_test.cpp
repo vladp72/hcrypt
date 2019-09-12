@@ -9,6 +9,7 @@
 #include "hcrypt_test_key_derivation.h"
 #include "hcrypt_test_hash.h"
 #include "hcrypt_test_message_signing.h"
+#include "hcrypt_test_rand.h"
 
 int main() {
 
@@ -27,11 +28,14 @@ int main() {
 
         test_algorithm();
 
-        test_sdk_sample_key_derivation();
+        test_rand();
 
-        test_sdk_sample_hash();
+        test_sample_key_derivation();
+
+        test_sample_hash();
 
         test_message_signing();
+
 
     } catch (std::system_error const& ex) {
         printf("Error code = %u, %s\n", ex.code().value(), ex.what());

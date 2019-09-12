@@ -121,6 +121,7 @@ add_executable ( hcrypt_test
                  test/hcrypt_test_key_derivation.cpp
                  test/hcrypt_test_hash.cpp
                  test/hcrypt_test_message_signing.cpp
+                 test/hcrypt_test_rand.cpp
                )
 
 #
