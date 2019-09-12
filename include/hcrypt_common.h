@@ -71,6 +71,7 @@ namespace hcrypt {
 
     using buffer = std::vector<char>;
 
+    [[nodiscard]]
     inline NTSTATUS try_resize(buffer &b, size_t new_size) noexcept {
         NTSTATUS status{ STATUS_SUCCESS };
         try{
@@ -83,27 +84,29 @@ namespace hcrypt {
         return status;
     }
 
+    [[nodiscard]]
     inline NTSTATUS try_resize(buffer *b, size_t new_size) noexcept {
         return try_resize(*b, new_size);
     }
 
+    [[nodiscard]]
     inline NTSTATUS try_resize(std::wstring& b, size_t new_size) noexcept {
         NTSTATUS status{ STATUS_SUCCESS };
         try {
             b.resize(new_size);
-        }
-        catch (std::bad_alloc const&) {
+        } catch (std::bad_alloc const&) {
             status = STATUS_INSUFFICIENT_RESOURCES;
-        }
-        catch (...) {
+        } catch (...) {
             BCRYPT_CRASH_APPLICATION();
         }
         return status;
     }
 
+    [[nodiscard]]
     inline NTSTATUS try_resize(std::wstring* b, size_t new_size) noexcept {
         return try_resize(*b, new_size);
     }
+
     template< typename I, typename T >
     inline void to_hex( I cur,
                         I const end ,

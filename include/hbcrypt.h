@@ -1712,87 +1712,93 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_export_key(BCRYPT_KEY_HANDLE export_key_protector,
-                                wchar_t const *blob_type,
+        NTSTATUS try_export_key(wchar_t const *blob_type,
+                                BCRYPT_KEY_HANDLE export_key_protector,
                                 hcrypt::buffer *b) noexcept {
 
-            NTSTATUS status{ STATUS_SUCCESS };
-            for (;;) {
-                unsigned long buffer_size{ 0 };
+            unsigned long buffer_size{ 0 };
 
-                status = BCryptExportKey(h_,
-                                         export_key_protector,
-                                         blob_type,
-                                         b->empty() ? nullptr : reinterpret_cast<unsigned char*>(b->data()),
-                                         b->empty() ? 0 : static_cast<unsigned long>(b->size()),
-                                         &buffer_size,
-                                         0);
+            NTSTATUS status{ BCryptExportKey(h_,
+                                             export_key_protector,
+                                             blob_type,
+                                             nullptr,
+                                             0,
+                                             &buffer_size,
+                                             0) };
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
 
-                if (NT_SUCCESS(status)) {
-                    if (buffer_size <= b->size()) {
-                        status = hcrypt::try_resize(b, buffer_size);
-                        break;
-                    } else {
-                        status = hcrypt::try_resize(b, buffer_size);
-                    }
-                } else if (STATUS_BUFFER_TOO_SMALL == status) {
-                    status = hcrypt::try_resize(b, buffer_size);
-                } else {
-                    break;
-                }
+            status = hcrypt::try_resize(b, buffer_size);
+            if (!NT_SUCCESS(status)) {
+                return status;
+            }
+
+            status = BCryptExportKey(h_,
+                                        export_key_protector,
+                                        blob_type,
+                                        b->empty() ? nullptr : reinterpret_cast<unsigned char*>(b->data()),
+                                        b->empty() ? 0 : static_cast<unsigned long>(b->size()),
+                                        &buffer_size,
+                                        0);
+
+            if (NT_SUCCESS(status)) {
+                status = hcrypt::try_resize(b, buffer_size);
             }
 
             return status;
         }
 
         [[nodiscard]]
-        NTSTATUS try_export_key(key const & export_key_protector,
-                                wchar_t const *blob_type,
+        NTSTATUS try_export_key(wchar_t const *blob_type,
+                                key const & export_key_protector,
                                 hcrypt::buffer *b) noexcept {
-            return try_export_key(export_key_protector.get_handle(),
-                                  blob_type,
+            return try_export_key(blob_type,
+                                  export_key_protector.get_handle(),
                                   b);
         }
 
-        hcrypt::buffer export_key(BCRYPT_KEY_HANDLE export_key_protector,
-                                  wchar_t const *blob_type) {
+        hcrypt::buffer export_key(wchar_t const *blob_type,
+                                 BCRYPT_KEY_HANDLE export_key_protector = nullptr) {
 
-            NTSTATUS status{ STATUS_SUCCESS };
             hcrypt::buffer b;
+            unsigned long buffer_size{ 0 };
 
-            for (;;) {
-                unsigned long buffer_size{ 0 };
-
-                status = BCryptExportKey(h_,
-                                         export_key_protector,
-                                         blob_type,
-                                         b.empty() ? nullptr : reinterpret_cast<unsigned char*>(b.data()),
-                                         b.empty() ? 0 : static_cast<unsigned long>(b.size()),
-                                         &buffer_size,
-                                         0);
-
-                if (NT_SUCCESS(status)) {
-                    if (buffer_size <= b.size()) {
-                        b.resize(buffer_size);
-                        break;
-                    } else {
-                        b.resize(buffer_size);
-                    }
-                } else if (STATUS_BUFFER_TOO_SMALL == status) {
-                    b.resize(buffer_size);
-                } else {
-                    throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptExportKey failed");
-                }
+            NTSTATUS status{ BCryptExportKey(h_,
+                                                export_key_protector,
+                                                blob_type,
+                                                nullptr,
+                                                0,
+                                                &buffer_size,
+                                                0) };
+            if (!NT_SUCCESS(status)) {
+                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptExportKey failed");
             }
+
+            b.resize(buffer_size);
+
+            status = BCryptExportKey(h_,
+                                        export_key_protector,
+                                        blob_type,
+                                        b.empty() ? nullptr : reinterpret_cast<unsigned char*>(b.data()),
+                                        b.empty() ? 0 : static_cast<unsigned long>(b.size()),
+                                        &buffer_size,
+                                        0);
+
+            if (!NT_SUCCESS(status)) {
+                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptExportKey failed");
+            }
+
+            b.resize(buffer_size);
 
             return b;
         }
 
-        hcrypt::buffer export_key(key const & export_key_protector,
-                                  wchar_t const *blob_type) {
+        hcrypt::buffer export_key(wchar_t const* blob_type,
+                                  key const & export_key_protector) {
 
-            return export_key(export_key_protector.get_handle(),
-                              blob_type);
+            return export_key(blob_type,
+                              export_key_protector.get_handle());
         }
 
         [[nodiscard]]
@@ -2511,10 +2517,10 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_import_key_pair(BCRYPT_KEY_HANDLE import_key,
-                                     wchar_t const *blob_type,
+        NTSTATUS try_import_key_pair(wchar_t const *blob_type,
                                      char const *key_object,
                                      size_t key_object_size,
+                                     BCRYPT_KEY_HANDLE import_key,
                                      unsigned long flags,
                                      key *k) noexcept {
 
@@ -2541,25 +2547,25 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_import_key_pair(key const &import_key,
-                                      wchar_t const *blob_type,
-                                      char const *key_object,
-                                      size_t key_object_size,
-                                      unsigned long flags,
-                                      key *k) noexcept {
+        NTSTATUS try_import_key_pair(wchar_t const *blob_type,
+                                     char const *key_object,
+                                     size_t key_object_size,
+                                     key const &import_key,
+                                     unsigned long flags,
+                                     key *k) noexcept {
 
-            return try_import_key_pair(import_key.get_handle(),
-                                       blob_type,
+            return try_import_key_pair(blob_type,
                                        key_object,
                                        key_object_size,
+                                       import_key.get_handle(),
                                        flags,
                                        k);
         }
 
-        key import_key_pair(BCRYPT_KEY_HANDLE import_key,
-                            wchar_t const *blob_type,
+        key import_key_pair(wchar_t const *blob_type,
                             char const *key_object,
                             size_t key_object_size,
+                            BCRYPT_KEY_HANDLE import_key = nullptr,
                             unsigned long flags = 0) {
 
             BCRYPT_KEY_HANDLE new_key{ nullptr };
@@ -2582,16 +2588,16 @@ namespace bcrypt {
             return k;
         }
 
-        key import_key_pair(key const & import_key,
-                                wchar_t const *blob_type,
-                                char const *key_object,
-                                size_t key_object_size,
-                                unsigned long flags = 0) {
+        key import_key_pair(wchar_t const *blob_type,
+                            char const *key_object,
+                            size_t key_object_size,
+                            key const & import_key,
+                            unsigned long flags = 0) {
 
-            return import_key_pair(import_key.get_handle(),
-                                   blob_type,
+            return import_key_pair(blob_type,
                                    key_object,
                                    key_object_size,
+                                   import_key.get_handle(),
                                    flags);
         }
 

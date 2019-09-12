@@ -13,23 +13,23 @@
 int main() {
 
     try {
-        test_CTAD();
+        //test_CTAD();
 
-        print_is_fips_complience_on();
+        //print_is_fips_complience_on();
 
-        print_registered_providers();
+        //print_registered_providers();
 
-        resolve_providers();
+        //resolve_providers();
 
-        print_algorithms();
+        //print_algorithms();
 
-        print_crypto_contexts();
+        //print_crypto_contexts();
 
-        test_algorithm();
+        //test_algorithm();
 
-        test_sdk_sample_key_derivation();
+        //test_sdk_sample_key_derivation();
 
-        test_sdk_sample_hash();
+        //test_sdk_sample_hash();
 
         test_message_signing();
 

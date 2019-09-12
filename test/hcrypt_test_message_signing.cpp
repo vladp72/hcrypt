@@ -90,7 +90,7 @@ namespace {
 
             print_object_properties(offset + 2, k, true);
 
-            printf("%*c\nHashing data.\n",
+            printf("\n%*cHashing data.\n",
                 offset,
                 ' ');
 
@@ -109,7 +109,7 @@ namespace {
                 hcrypt::to_hex(hash_value).c_str());
 
 
-            printf("%*c\nSigning\n", 
+            printf("\n%*cSigning\n", 
                    offset, 
                    ' ');
 
@@ -125,6 +125,49 @@ namespace {
                    offset, 
                    ' ', 
                    hcrypt::to_hex(signature).c_str());
+
+            printf("\n%*cExporting public key\n", 
+                   offset, 
+                   ' ');
+
+            hcrypt::buffer public_key_blob{ k.export_key(BCRYPT_DSA_PUBLIC_BLOB) };
+
+            printf("%*cPublik key length: %Iu\n", 
+                   offset, 
+                   ' ', 
+                   public_key_blob.size());
+
+            printf("%*cPublic key: %S\n", 
+                   offset, 
+                   ' ', 
+                   hcrypt::to_hex(public_key_blob).c_str());
+
+            printf("\n%*cImporting public key\n", 
+                   offset, 
+                   ' ');
+
+            bcrypt::key public_encryption_key{ encryption_provider.import_key_pair(BCRYPT_DSA_PUBLIC_BLOB,
+                                                                                   public_key_blob.data(),
+                                                                                   public_key_blob.size()) };
+            print_object_properties(offset + 2, k, true);
+
+            printf("\n%*cVerifying signatire using imported key\n", 
+                   offset, 
+                   ' ');
+
+            if (public_encryption_key.verify_signature(nullptr,
+                                                       hash_value.data(),
+                                                       hash_value.size(),
+                                                       signature.data(),
+                                                       signature.size())) {
+                printf("\n%*cSignature matches\n", 
+                       offset, 
+                       ' ');
+            } else {
+                printf("\n%*c!!! Signature does not matches !!!\n", 
+                       offset, 
+                       ' ');
+            }
 
         } catch (std::system_error const& ex) {
             printf("%*ctest_message_signing, error code = 0x%x, %s\n",
