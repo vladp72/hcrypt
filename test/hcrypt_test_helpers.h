@@ -84,15 +84,25 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
                status);
     }
 
-    BCRYPT_DH_PARAMETER_HEADER dh_parameter_header{};
-    status = obj.try_get_dh_parameters(&dh_parameter_header);
+    status = obj.try_get_dh_parameters(&buffer_value);
     if (NT_SUCCESS(status)) {
-        printf("%*cDH parameter header: length %u, magic %u, key length %u\n", 
+        BCRYPT_DH_PARAMETER_HEADER* dh_parameter_header{ reinterpret_cast<BCRYPT_DH_PARAMETER_HEADER*>(buffer_value.data()) };
+
+        printf("%*cDH parameter header: length %u, magic 0x%x, key length %u\n", 
                offset,
                ' ',
-               dh_parameter_header.cbLength,
-               dh_parameter_header.dwMagic,
-               dh_parameter_header.cbKeyLength);
+               dh_parameter_header->cbLength,
+               dh_parameter_header->dwMagic,
+               dh_parameter_header->cbKeyLength);
+
+        if (buffer_value.size() > sizeof(BCRYPT_DH_PARAMETER_HEADER)) {
+            printf("%*cDH data: %S\n",
+                   offset,
+                   ' ',
+                   hcrypt::to_hex(buffer_value.begin() + sizeof(BCRYPT_DH_PARAMETER_HEADER), 
+                                  buffer_value.end()).c_str());
+        }
+
     } else if (!hide_errors) {
         printf("%*cDH parameter header: error code = %x\n", 
                offset,

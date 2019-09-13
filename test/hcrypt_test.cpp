@@ -10,6 +10,10 @@
 #include "hcrypt_test_hash.h"
 #include "hcrypt_test_message_signing.h"
 #include "hcrypt_test_rand.h"
+#include "hcrypt_test_dh_oakley.h"
+//
+// https://github.com/microsoft/Windows-classic-samples/tree/master/Samples/Security
+//
 
 int main() {
 
@@ -36,6 +40,7 @@ int main() {
 
         test_message_signing();
 
+        tesh_dh_oakley();
 
     } catch (std::system_error const& ex) {
         printf("Error code = %u, %s\n", ex.code().value(), ex.what());

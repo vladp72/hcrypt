@@ -820,7 +820,7 @@ namespace bcrypt {
                                   size_t buffer_size) {
             NTSTATUS status{ BCryptSetProperty(get_object_handle(),
                                                property_name,
-                                               const_cast<unsigned char *>(buffer),
+                                               reinterpret_cast<unsigned char *>(const_cast<char *>(buffer)),
                                                static_cast<unsigned long>(buffer_size),
                                                0) };
             return status;
@@ -931,21 +931,25 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_dh_parameters(BCRYPT_DH_PARAMETER_HEADER* b) const noexcept {
+        NTSTATUS try_get_dh_parameters(hcrypt::buffer* b) const noexcept {
             return try_get_property(BCRYPT_DH_PARAMETERS, b);
         }
 
         [[nodiscard]]
-        NTSTATUS try_set_dh_parameters(BCRYPT_DH_PARAMETER_HEADER const &b) const noexcept {
-            return try_set_property(BCRYPT_DH_PARAMETERS, b);
+        NTSTATUS try_set_dh_parameters(BCRYPT_DH_PARAMETER_HEADER const *b, size_t length_in_bytes) noexcept {
+            return try_set_property(BCRYPT_DH_PARAMETERS, 
+                                    reinterpret_cast<char const *>(b),
+                                    length_in_bytes);
         }
 
-        BCRYPT_DH_PARAMETER_HEADER get_dh_parameters() const {
-            return get_property_as<BCRYPT_DH_PARAMETER_HEADER>(BCRYPT_DH_PARAMETERS);
+        hcrypt::buffer get_dh_parameters() const {
+            return get_property_as_buffer(BCRYPT_DH_PARAMETERS);
         }
 
-        void set_dh_parameters(BCRYPT_DH_PARAMETER_HEADER const &b) const noexcept {
-            set_property(BCRYPT_DH_PARAMETERS, b);
+        void set_dh_parameters(BCRYPT_DH_PARAMETER_HEADER const* b, size_t length_in_bytes) noexcept {
+            set_property(BCRYPT_DH_PARAMETERS,
+                         reinterpret_cast<char const*>(b),
+                         length_in_bytes);
         }
 
         [[nodiscard]]
@@ -954,7 +958,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_set_dsa_parameters(BCRYPT_DSA_PARAMETER_HEADER_V2 const &b) const noexcept {
+        NTSTATUS try_set_dsa_parameters(BCRYPT_DSA_PARAMETER_HEADER_V2 const &b) noexcept {
             return try_set_property(BCRYPT_DSA_PARAMETERS, b);
         }
 
@@ -962,7 +966,7 @@ namespace bcrypt {
             return get_property_as<BCRYPT_DSA_PARAMETER_HEADER_V2>(BCRYPT_DSA_PARAMETERS);
         }
 
-        void set_dsa_parameters(BCRYPT_DSA_PARAMETER_HEADER_V2 const& b) const {
+        void set_dsa_parameters(BCRYPT_DSA_PARAMETER_HEADER_V2 const& b) {
             set_property(BCRYPT_DSA_PARAMETERS, b);
         }
 
@@ -1053,7 +1057,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_set_message_block_length(unsigned long value) const noexcept {
+        NTSTATUS try_set_message_block_length(unsigned long value) noexcept {
             return try_set_property(BCRYPT_MESSAGE_BLOCK_LENGTH, value);
         }
 
@@ -1061,7 +1065,7 @@ namespace bcrypt {
             return get_property_as<unsigned long>(BCRYPT_MESSAGE_BLOCK_LENGTH);
         }
 
-        void set_message_block_length(unsigned long value) const {
+        void set_message_block_length(unsigned long value) {
             set_property(BCRYPT_MESSAGE_BLOCK_LENGTH, value);
         }
 
