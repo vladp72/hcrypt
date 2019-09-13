@@ -1106,11 +1106,11 @@ namespace bcrypt {
         }
     };
 
-    BCRUPT_PROPERTY_DECL(algorithm_name,        BCRYPT_ALGORITHM_NAME,        wchar_t*,                                   std::wstring,           true,  true);
+    BCRUPT_PROPERTY_DECL(algorithm_name,        BCRYPT_ALGORITHM_NAME,        wchar_t*,                                   std::wstring,          true,  true);
     BCRUPT_PROPERTY_DECL(block_length,          BCRYPT_BLOCK_LENGTH,          unsigned long,                              hcrypt::buffer ,       true,  true);
     BCRUPT_PROPERTY_DECL(block_size_list,       BCRYPT_BLOCK_SIZE_LIST,       unsigned long*,                             hcrypt::buffer ,       true,  true); //
     BCRUPT_PROPERTY_DECL(chaining_mode,         BCRYPT_CHAINING_MODE,         wchar_t*,                                   std::wstring,          true,  true);
-    BCRUPT_PROPERTY_DECL(dh_parameters,         BCRYPT_DH_PARAMETERS,         BCRYPT_DH_PARAMETER_HEADER,                 hcrypt::buffer ,       true,  false);
+    BCRUPT_PROPERTY_DECL(dh_parameters,         BCRYPT_DH_PARAMETERS,         hcrypt::buffer,                             hcrypt::buffer ,       true,  false);
     BCRUPT_PROPERTY_DECL(dsa_parameters,        BCRYPT_DSA_PARAMETERS,        BCRYPT_DSA_PARAMETER_HEADER_V2,             hcrypt::buffer ,       true,  false);
     BCRUPT_PROPERTY_DECL(effective_key_length,  BCRYPT_EFFECTIVE_KEY_LENGTH,  unsigned long,                              hcrypt::buffer ,       true,  true);
     BCRUPT_PROPERTY_DECL(hash_block_length,     BCRYPT_HASH_BLOCK_LENGTH,     unsigned long,                              hcrypt::buffer ,       true,  true);
