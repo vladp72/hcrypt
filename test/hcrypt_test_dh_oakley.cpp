@@ -223,7 +223,6 @@ void tesh_dh_oakley() {
                ' ',
                 hcrypt::to_hex(agreed_key_b_buffer).c_str());
 
-
         printf("\n%*cComparing keys\n",
                 offset,
                 ' ');
