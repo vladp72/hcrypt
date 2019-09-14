@@ -52,7 +52,7 @@ void tesh_dh_oakley() {
 
         offset += 2;
 
-        printf("%*cPreparing DH algorithm parameters, OakleyGroup1P size %zu, OakleyGroup1G size %zu\n",
+        printf("\n%*cPreparing DH algorithm parameters, OakleyGroup1P size %zu, OakleyGroup1G size %zu\n",
                offset,
                ' ',
                 sizeof(OakleyGroup1P),
@@ -86,7 +86,7 @@ void tesh_dh_oakley() {
                OakleyGroup1G,
                sizeof(OakleyGroup1G));
 
-        printf("%*cCreating algorithm providers: %S\n",
+        printf("\n%*cCreating algorithm providers: %S\n",
             offset,
             ' ',
             BCRYPT_DH_ALGORITHM);
@@ -96,7 +96,7 @@ void tesh_dh_oakley() {
 
         bcrypt::algorithm_provider alg_b{ BCRYPT_DH_ALGORITHM };
 
-        printf("%*cCreating KeyA\n",
+        printf("\n%*cCreating KeyA\n",
                offset,
                ' ');
 
@@ -117,8 +117,121 @@ void tesh_dh_oakley() {
                 ' ',
                 hcrypt::to_hex(key_a_buffer).c_str());
 
+
+        printf("\n%*cCreating KeyB\n",
+               offset,
+               ' ');
+
+        bcrypt::key key_b{alg_b.generate_empty_key_pair(key_length)};
+        key_b.set_dh_parameters(dh_param, dh_param_buffer.size());
+        key_b.finalize_key_pair();
+
+        print_object_properties(offset + 2, key_b, true);
+
+        printf("%*cExporting public KeyB\n",
+               offset,
+               ' ');
+
+        hcrypt::buffer key_b_buffer{ key_b.export_key(BCRYPT_DH_PUBLIC_BLOB) };
+
+        printf("%*cPublic KeyB: %S\n",
+                offset,
+                ' ',
+                hcrypt::to_hex(key_b_buffer).c_str());
+
+        printf("\n%*cProvider A importing public KeyB\n",
+                offset,
+                ' ');
+
+        bcrypt::key public_key_b{ alg_a.import_key_pair(BCRYPT_DH_PUBLIC_BLOB,
+                                                        key_b_buffer.data(),
+                                                        key_b_buffer.size()) };
+
+        print_object_properties(offset + 2, public_key_b, true);
+
+        printf("\n%*cProvider B importing public KeyA\n",
+                offset,
+                ' ');
+
+        bcrypt::key public_key_a{ alg_a.import_key_pair(BCRYPT_DH_PUBLIC_BLOB,
+                                                        key_a_buffer.data(),
+                                                        key_a_buffer.size()) };
+
+        print_object_properties(offset + 2, public_key_a, true);
+
+        //specify hash algorithm, SHA1 if null
+
+        DWORD const BufferLength{ 2 };
+        BCryptBuffer BufferArray[BufferLength] = { 0 };
+
+        //specify secret to append
+        BufferArray[0].BufferType = KDF_TLS_PRF_SEED;
+        BufferArray[0].cbBuffer = sizeof(rgbrgbTlsSeed);
+        BufferArray[0].pvBuffer = (PVOID)rgbrgbTlsSeed;
+
+        //specify secret to prepend
+        BufferArray[1].BufferType = KDF_TLS_PRF_LABEL;
+        BufferArray[1].cbBuffer = (DWORD)((wcslen(Label) + 1) * sizeof(WCHAR));
+        BufferArray[1].pvBuffer = (PVOID)Label;
+
+        BCryptBufferDesc ParameterList{ };
+        ParameterList.cBuffers = 2;
+        ParameterList.pBuffers = BufferArray;
+        ParameterList.ulVersion = BCRYPTBUFFER_VERSION;
+
+        printf("\n%*cCreaating secret agreement using privake KeyA and public KeyB\n",
+                offset,
+                ' ');
+    
+        bcrypt::secret secret_a{ bcrypt::create_secret(key_a, public_key_b)};
+
+        print_object_properties(offset + 2, secret_a, true);
+
+        printf("%*cCreating key using %S from shared secret\n",
+                offset,
+                ' ',
+                BCRYPT_KDF_TLS_PRF);
+
+        hcrypt::buffer agreed_key_a_buffer{ secret_a.derive_key(BCRYPT_KDF_TLS_PRF,
+                                                                &ParameterList) };
+
+        printf("%*cKey: %S\n",
+               offset + 2,
+               ' ',
+                hcrypt::to_hex(agreed_key_a_buffer).c_str());
+
+
+
+        printf("\n%*cCreaating secret agreement using privake KeyB and public KeyA\n",
+                offset,
+                ' ');
+    
+        bcrypt::secret secret_b{ bcrypt::create_secret(key_b, public_key_a)};
+
+        print_object_properties(offset + 2, secret_b, true);
+
+        printf("%*cCreating key using %S from shared secret\n",
+                offset,
+                ' ',
+                BCRYPT_KDF_TLS_PRF);
+
+        hcrypt::buffer agreed_key_b_buffer{ secret_b.derive_key(BCRYPT_KDF_TLS_PRF,
+                                                                &ParameterList) };
+
+        printf("%*cKey: %S\n",
+               offset + 2,
+               ' ',
+                hcrypt::to_hex(agreed_key_b_buffer).c_str());
+
+
+        printf("\n%*cComparing keys\n",
+                offset,
+                ' ');
+
+        BCRYPT_CODDING_ERROR_IF_NOT(agreed_key_a_buffer == agreed_key_b_buffer);
+
     } catch (std::system_error const& ex) {
-        printf("test_dh_oakley, error code = %u, %s\n",
+        printf("test_dh_oakley, error code = 0x%x, %s\n",
             ex.code().value(),
             ex.what());
     }
