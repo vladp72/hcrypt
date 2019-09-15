@@ -16,8 +16,9 @@ void test_algorithm() {
 
 
     } catch (std::system_error const& ex) {
-        printf("test_algorithm, error code = %u, %s\n",
+        printf("test_algorithm, error code = ox%x, %S, %s\n",
             ex.code().value(),
+            hcrypt::status_to_string(ex.code().value()),
             ex.what());
     }
     printf("----------------\n");

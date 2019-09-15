@@ -30,7 +30,12 @@ void print_provider_interface_info(int offset,
             }
         }
     } catch (std::system_error const& ex) {
-        printf("%*cError code = %#x, %s\n", offset + 2, ' ', ex.code().value(), ex.what());
+        printf("%*cError code = %#x, %S, %s\n", 
+               offset + 2, 
+               ' ', 
+               ex.code().value(), 
+               hcrypt::status_to_string(ex.code().value()),
+               ex.what());
     }
 }
 
@@ -68,8 +73,9 @@ void print_registered_providers() {
                 return true;
             });
     } catch (std::system_error const& ex) {
-        printf("print_registered_providers, error code = %u, %s\n", 
+        printf("print_registered_providers, error code = 0x%x, %S, %s\n", 
                ex.code().value(), 
+               hcrypt::status_to_string(ex.code().value()),
                ex.what());
     }
     printf("----------------\n");

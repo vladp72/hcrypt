@@ -170,10 +170,11 @@ namespace {
             }
 
         } catch (std::system_error const& ex) {
-            printf("%*ctest_message_signing, error code = 0x%x, %s\n",
+            printf("%*ctest_message_signing, error code = 0x%x, %S, %s\n",
                    offset,
                    ' ',
                    ex.code().value(),
+                   hcrypt::status_to_string(ex.code().value()),
                    ex.what());
         }
     }
@@ -212,8 +213,9 @@ void test_message_signing() {
         });
 
     } catch (std::system_error const& ex) {
-        printf("test_message_signing, error code = 0x%x, %s\n",
+        printf("test_message_signing, error code = 0x%x, %S, %s\n",
                ex.code().value(),
+               hcrypt::status_to_string(ex.code().value()),
                ex.what());
     }
     printf("\n----------------\n");

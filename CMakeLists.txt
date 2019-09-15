@@ -124,6 +124,8 @@ add_executable ( hcrypt_test
                  test/hcrypt_test_rand.cpp
                  test/hcrypt_test_dh_oakley.cpp
                  test/hcrypt_test_sha1_hmac.cpp
+                 test/hcrypt_test_aes_cmac.cpp
+                 test/hcrypt_test_aes_cbc.cpp
                )
 
 #

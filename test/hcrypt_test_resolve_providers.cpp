@@ -28,10 +28,11 @@ void resolve_providers() {
                         });
 
                 } catch (std::system_error const& ex) {
-                    printf("%*cError code = %#x, %s\n", 
+                    printf("%*cError code = %#x, %S, %s\n", 
                            offset + 2, 
                            ' ', 
                            ex.code().value(), 
+                           hcrypt::status_to_string(ex.code().value()),
                            ex.what());
                 }
 
@@ -39,8 +40,9 @@ void resolve_providers() {
             });
 
     } catch (std::system_error const& ex) {
-        printf("resolve_providers, error code = %u, %s\n", 
+        printf("resolve_providers, error code = 0x%x, %S, %s\n", 
                ex.code().value(), 
+               hcrypt::status_to_string(ex.code().value()),
                ex.what());
     }
     printf("----------------\n");

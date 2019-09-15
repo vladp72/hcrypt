@@ -230,8 +230,9 @@ void tesh_dh_oakley() {
         BCRYPT_CODDING_ERROR_IF_NOT(agreed_key_a_buffer == agreed_key_b_buffer);
 
     } catch (std::system_error const& ex) {
-        printf("test_dh_oakley, error code = 0x%x, %s\n",
+        printf("test_dh_oakley, error code = 0x%x, %S, %s\n",
             ex.code().value(),
+            hcrypt::status_to_string(ex.code().value()),
             ex.what());
     }
     printf("\n----------------\n");

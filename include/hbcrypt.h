@@ -8,7 +8,7 @@
 namespace bcrypt {
 
     template<typename T = void>
-    class buffer_ptr {
+    class buffer_ptr final {
     public:
 
         using value_type = T;
@@ -518,32 +518,22 @@ namespace bcrypt {
 
     inline std::wstring interface_flags_to_string(unsigned long flags) {
         std::wstring str;
-        if ((flags & CRYPT_DOMAIN) == CRYPT_DOMAIN) {
-            str += L"CRYPT_DOMAIN";
-            //flags &= ~CRYPT_DOMAIN;
+        if (hcrypt::consume_flag(&flags, static_cast<unsigned long>(CRYPT_DOMAIN))) {
+            hcrypt::append_with_separator(&str, L" | ", L"CRYPT_DOMAIN");
         }
-        if ((flags & CRYPT_LOCAL) == CRYPT_LOCAL) {
-            if (!str.empty()) {
-                str += L" | ";
-            }
-            str += L"CRYPT_LOCAL";
-            //flags &= ~CRYPT_LOCAL;
+        if (hcrypt::consume_flag(&flags, static_cast<unsigned long>(CRYPT_LOCAL))) {
+            hcrypt::append_with_separator(&str, L" | ", L"CRYPT_LOCAL");
         }
         return str;
     }
 
     inline std::wstring image_flags_to_string(unsigned long flags) {
         std::wstring str;
-        if ((flags & static_cast<unsigned long>(CRYPT_MIN_DEPENDENCIES)) == static_cast<unsigned long>(CRYPT_MIN_DEPENDENCIES)) {
-            str += L"CRYPT_MIN_DEPENDENCIES";
-            //flags &= ~CRYPT_DOMAIN;
+        if (hcrypt::consume_flag(&flags, static_cast<unsigned long>(CRYPT_MIN_DEPENDENCIES))) {
+            hcrypt::append_with_separator(&str, L" | ", L"CRYPT_MIN_DEPENDENCIES");
         }
-        if ((flags & static_cast<unsigned long>(CRYPT_PROCESS_ISOLATE)) == static_cast<unsigned long>(CRYPT_PROCESS_ISOLATE)) {
-            if (!str.empty()) {
-                str += L" | ";
-            }
-            str += L"CRYPT_PROCESS_ISOLATE";
-            //flags &= ~CRYPT_LOCAL;
+        if (hcrypt::consume_flag(&flags, static_cast<unsigned long>(CRYPT_PROCESS_ISOLATE))) {
+            hcrypt::append_with_separator(&str, L" | ", L"CRYPT_PROCESS_ISOLATE");
         }
         return str;
     }
@@ -573,44 +563,23 @@ namespace bcrypt {
 
     inline std::wstring algorithm_operations_to_string(unsigned long operations) {
         std::wstring str;
-        if ((operations & (unsigned long)BCRYPT_CIPHER_OPERATION) == (unsigned long)BCRYPT_CIPHER_OPERATION) {
-            str += L"BCRYPT_CIPHER_OPERATION";
-            //flags &= ~BCRYPT_CIPHER_OPERATION;
+        if (hcrypt::consume_flag(&operations, static_cast<unsigned long>(BCRYPT_CIPHER_OPERATION))) {
+            hcrypt::append_with_separator(&str, L" | ", L"BCRYPT_CIPHER_OPERATION");
         }
-        if ((operations & (unsigned long)BCRYPT_HASH_OPERATION) == (unsigned long)BCRYPT_HASH_OPERATION) {
-            if (!str.empty()) {
-                str += L" | ";
-            }
-            str += L"BCRYPT_HASH_OPERATION";
-            //flags &= ~BCRYPT_HASH_OPERATION;
+        if (hcrypt::consume_flag(&operations, static_cast<unsigned long>(BCRYPT_HASH_OPERATION))) {
+            hcrypt::append_with_separator(&str, L" | ", L"BCRYPT_HASH_OPERATION");
         }
-        if ((operations & (unsigned long)BCRYPT_ASYMMETRIC_ENCRYPTION_OPERATION) == (unsigned long)BCRYPT_ASYMMETRIC_ENCRYPTION_OPERATION) {
-            if (!str.empty()) {
-                str += L" | ";
-            }
-            str += L"BCRYPT_ASYMMETRIC_ENCRYPTION_OPERATION";
-            //flags &= ~BCRYPT_ASYMMETRIC_ENCRYPTION_OPERATION;
+        if (hcrypt::consume_flag(&operations, static_cast<unsigned long>(BCRYPT_ASYMMETRIC_ENCRYPTION_OPERATION))) {
+            hcrypt::append_with_separator(&str, L" | ", L"BCRYPT_ASYMMETRIC_ENCRYPTION_OPERATION");
         }
-        if ((operations & (unsigned long)BCRYPT_SECRET_AGREEMENT_OPERATION) == (unsigned long)BCRYPT_SECRET_AGREEMENT_OPERATION) {
-            if (!str.empty()) {
-                str += L" | ";
-            }
-            str += L"BCRYPT_SECRET_AGREEMENT_OPERATION";
-            //flags &= ~BCRYPT_SECRET_AGREEMENT_OPERATION;
+        if (hcrypt::consume_flag(&operations, static_cast<unsigned long>(BCRYPT_SECRET_AGREEMENT_OPERATION))) {
+            hcrypt::append_with_separator(&str, L" | ", L"BCRYPT_SECRET_AGREEMENT_OPERATION");
         }
-        if ((operations & (unsigned long)BCRYPT_SIGNATURE_OPERATION) == (unsigned long)BCRYPT_SIGNATURE_OPERATION) {
-            if (!str.empty()) {
-                str += L" | ";
-            }
-            str += L"BCRYPT_SIGNATURE_OPERATION";
-            //flags &= ~BCRYPT_SIGNATURE_OPERATION;
+        if (hcrypt::consume_flag(&operations, static_cast<unsigned long>(BCRYPT_SIGNATURE_OPERATION))) {
+            hcrypt::append_with_separator(&str, L" | ", L"BCRYPT_SIGNATURE_OPERATION");
         }
-        if ((operations & (unsigned long)BCRYPT_RNG_OPERATION) == (unsigned long)BCRYPT_RNG_OPERATION) {
-            if (!str.empty()) {
-                str += L" | ";
-            }
-            str += L"BCRYPT_RNG_OPERATION";
-            //flags &= ~BCRYPT_RNG_OPERATION;
+        if (hcrypt::consume_flag(&operations, static_cast<unsigned long>(BCRYPT_RNG_OPERATION))) {
+            hcrypt::append_with_separator(&str, L" | ", L"BCRYPT_RNG_OPERATION");
         }
         return str;
     }
@@ -1153,7 +1122,7 @@ namespace bcrypt {
     class secret;
     class algorithm_provider;
 
-    class hash : public property_impl<hash> {
+    class hash final : public property_impl<hash> {
 
     public:
 
@@ -1412,7 +1381,7 @@ namespace bcrypt {
         l.swap(r);
     }
     
-    class secret : public property_impl<secret> {
+    class secret final : public property_impl<secret> {
 
     public:
 
@@ -1565,7 +1534,7 @@ namespace bcrypt {
         l.swap(r);
     }
 
-    class key : public property_impl<key> {
+    class key final : public property_impl<key> {
 
     public:
 
@@ -2061,7 +2030,7 @@ namespace bcrypt {
                              char *output,
                              size_t output_length,
                              size_t *output_expected_length,
-                             unsigned long flags) {
+                             unsigned long flags = 0) {
             unsigned long output_expected_length_tmp{ 0 };
             NTSTATUS status{ BCryptEncrypt(h_,
                                            reinterpret_cast<unsigned char*>(const_cast<char*>(input_buffer)),
@@ -2087,7 +2056,7 @@ namespace bcrypt {
                      char *output,
                      size_t output_length,
                      size_t *output_expected_length,
-                     unsigned long flags) {
+                     unsigned long flags = 0) {
 
             NTSTATUS status{ try_encrypt(input_buffer, 
                                          encrypt_buffer_length,
@@ -2113,7 +2082,7 @@ namespace bcrypt {
                              char *output,
                              size_t output_length,
                              size_t *output_expected_length,
-                             unsigned long flags) {
+                             unsigned long flags = 0) {
             unsigned long output_expected_length_tmp{ 0 };
             NTSTATUS status{ BCryptDecrypt(h_,
                                            reinterpret_cast<unsigned char*>(const_cast<char*>(input_buffer)),
@@ -2140,7 +2109,7 @@ namespace bcrypt {
                      char *output,
                      size_t output_length,
                      size_t *output_expected_length,
-                     unsigned long flags) {
+                     unsigned long flags = 0) {
 
             NTSTATUS status{ try_decrypt(input_buffer, 
                                          encrypt_buffer_length,
@@ -2215,7 +2184,7 @@ namespace bcrypt {
                              public_key.get_handle());
     }
     
-    class algorithm_provider : public property_impl<algorithm_provider> {
+    class algorithm_provider final : public property_impl<algorithm_provider> {
 
     public:
 
@@ -2430,7 +2399,7 @@ namespace bcrypt {
             NTSTATUS status{ STATUS_SUCCESS };
 
             unsigned long key_size{ 0 };
-            status = try_get_key_object_length(&key_size);
+            status = try_get_object_length(&key_size);
 
             if (!NT_SUCCESS(status)) {
                 return status;
@@ -2486,16 +2455,16 @@ namespace bcrypt {
 
             BCRYPT_KEY_HANDLE new_key{ nullptr };
             hcrypt::buffer b;
-            b.resize(get_key_object_length());
+            b.resize(get_object_length());
 
             NTSTATUS status{ BCryptImportKey(h_,
                                              import_key,
                                              blob_type,
                                              &new_key,
-                                             reinterpret_cast<unsigned char*>(const_cast<char*>(key_object)),
-                                             static_cast<unsigned long>(key_object_size),
                                              reinterpret_cast<unsigned char*>(b.data()),
                                              static_cast<unsigned long>(b.size()),
+                                             reinterpret_cast<unsigned char*>(const_cast<char*>(key_object)),
+                                             static_cast<unsigned long>(key_object_size),
                                              0) };
 
             if (!NT_SUCCESS(status)) {

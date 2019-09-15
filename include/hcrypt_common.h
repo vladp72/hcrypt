@@ -30,6 +30,34 @@
 #define STATUS_AUTH_TAG_MISMATCH  ((NTSTATUS)0xC000A002L)
 #endif
 
+#ifndef STATUS_UNSUCCESSFUL
+#define STATUS_UNSUCCESSFUL  ((NTSTATUS)0xC0000001L)
+#endif
+
+#ifndef STATUS_NOT_FOUND
+#define STATUS_NOT_FOUND  ((NTSTATUS)0xC0000225L)
+#endif
+
+#ifndef STATUS_INVALID_PARAMETER
+#define STATUS_INVALID_PARAMETER  ((NTSTATUS)0xC000000DL)
+#endif
+
+#ifndef STATUS_NO_MEMORY
+#define STATUS_NO_MEMORY  ((NTSTATUS)0xC0000017L)
+#endif
+
+#ifndef STATUS_INVALID_BUFFER_SIZE
+#define STATUS_INVALID_BUFFER_SIZE  ((NTSTATUS)0xC0000206L)
+#endif
+
+#ifndef STATUS_INVALID_HANDLE
+#define STATUS_INVALID_HANDLE  ((NTSTATUS)0xC0000008L)
+#endif
+
+#ifndef STATUS_NOT_SUPPORTED
+#define STATUS_NOT_SUPPORTED  ((NTSTATUS)0xC00000BBL)
+#endif
+
 #ifndef NT_SUCCESS
 #define NT_SUCCESS(S) ((NTSTATUS)(S) >= STATUS_SUCCESS)
 #endif
@@ -72,12 +100,13 @@ namespace hcrypt {
     using buffer = std::vector<char>;
 
     [[nodiscard]]
-    inline NTSTATUS try_resize(buffer &b, size_t new_size) noexcept {
+    inline NTSTATUS try_resize(buffer &b, 
+                               size_t new_size) noexcept {
         NTSTATUS status{ STATUS_SUCCESS };
         try{
             b.resize(new_size);
         } catch (std::bad_alloc const&) {
-            status = STATUS_INSUFFICIENT_RESOURCES;
+            status = STATUS_NO_MEMORY;
         } catch(...) {
             BCRYPT_CRASH_APPLICATION();
         }
@@ -85,17 +114,19 @@ namespace hcrypt {
     }
 
     [[nodiscard]]
-    inline NTSTATUS try_resize(buffer *b, size_t new_size) noexcept {
+    inline NTSTATUS try_resize(buffer *b, 
+                               size_t new_size) noexcept {
         return try_resize(*b, new_size);
     }
 
     [[nodiscard]]
-    inline NTSTATUS try_resize(std::wstring& b, size_t new_size) noexcept {
+    inline NTSTATUS try_resize(std::wstring& b, 
+                               size_t new_size) noexcept {
         NTSTATUS status{ STATUS_SUCCESS };
         try {
             b.resize(new_size);
         } catch (std::bad_alloc const&) {
-            status = STATUS_INSUFFICIENT_RESOURCES;
+            status = STATUS_NO_MEMORY;
         } catch (...) {
             BCRYPT_CRASH_APPLICATION();
         }
@@ -105,6 +136,48 @@ namespace hcrypt {
     [[nodiscard]]
     inline NTSTATUS try_resize(std::wstring* b, size_t new_size) noexcept {
         return try_resize(*b, new_size);
+    }
+
+    inline void append_with_separator(std::wstring *str,
+                                      std::wstring_view const &separator, 
+                                      std::wstring_view const &tail) {
+        if (str->empty()) {
+            *str += separator;
+        }
+        *str += tail;
+    }
+
+    template<typename T>
+    [[nodiscard]]
+    constexpr inline T set_flag(T value, T flag) {
+        return value | flag;
+    }
+
+    template<typename T>
+    [[nodiscard]]
+    constexpr inline bool is_flag_on(T value, T flag) {
+        return (value & flag) == flag;
+    }
+
+    template<typename T>
+    [[nodiscard]]
+    constexpr inline T clear_flag(T value, T flag) {
+        return value & ~flag;
+    }
+
+    template<typename T>
+    [[nodiscard]]
+    constexpr inline bool consume_flag(T *value, T flag) {
+        bool is_on{ is_flag_on(*value, flag) };
+        if (is_on) {
+            *value = clear_flag(*value, flag);
+        }
+        return is_on;
+    }
+
+    [[nodiscard]]
+    constexpr inline size_t round_to_block(size_t size, size_t block_size) {
+        return ((size + block_size - 1) / block_size) * block_size;
     }
 
     template< typename I, typename T >
@@ -210,5 +283,48 @@ namespace hcrypt {
         // to previous processed character
         //
         return ((count % 2) == 0) ? cur : prev;
+    }
+
+    constexpr inline wchar_t const* status_to_string(NTSTATUS const status) {
+        wchar_t const* str{ L"Unknown status" };
+        switch (status) {
+        case STATUS_SUCCESS :
+            str = L"STATUS_SUCCESS";
+            break;
+        case STATUS_BUFFER_TOO_SMALL:
+            str = L"STATUS_BUFFER_TOO_SMALL";
+            break;
+        case STATUS_INSUFFICIENT_RESOURCES:
+            str = L"STATUS_INSUFFICIENT_RESOURCES";
+            break;
+        case STATUS_INVALID_SIGNATURE:
+            str = L"STATUS_INVALID_SIGNATURE";
+            break;
+        case STATUS_AUTH_TAG_MISMATCH:
+            str = L"STATUS_AUTH_TAG_MISMATCH";
+            break;
+        case STATUS_UNSUCCESSFUL:
+            str = L"STATUS_UNSUCCESSFUL";
+            break;
+        case STATUS_NOT_FOUND:
+            str = L"STATUS_NOT_FOUND";
+            break;
+        case STATUS_INVALID_PARAMETER:
+            str = L"STATUS_INVALID_PARAMETER";
+            break;
+        case STATUS_NO_MEMORY:
+            str = L"STATUS_NO_MEMORY";
+            break;
+        case STATUS_INVALID_BUFFER_SIZE:
+            str = L"STATUS_INVALID_BUFFER_SIZE";
+            break;
+        case STATUS_INVALID_HANDLE:
+            str = L"STATUS_INVALID_HANDLE";
+            break;
+        case STATUS_NOT_SUPPORTED:
+            str = L"STATUS_NOT_SUPPORTED";
+            break;
+        }
+        return str;
     }
 }

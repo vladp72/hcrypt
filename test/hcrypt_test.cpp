@@ -12,6 +12,8 @@
 #include "hcrypt_test_rand.h"
 #include "hcrypt_test_dh_oakley.h"
 #include "hcrypt_test_sha1_hmac.h"
+#include "hcrypt_test_aes_cmac.h"
+#include "hcrypt_test_aes_cbc.h"
 //
 // https://github.com/microsoft/Windows-classic-samples/tree/master/Samples/Security
 //
@@ -45,8 +47,15 @@ int main() {
 
         test_sha1_hmac();
 
+        test_aes_cmac();
+
+        test_aes_cbc();
+
     } catch (std::system_error const& ex) {
-        printf("Error code = %u, %s\n", ex.code().value(), ex.what());
+        printf("Error code = 0x%x, %S, %s\n", 
+               ex.code().value(), 
+               hcrypt::status_to_string(ex.code().value()),
+               ex.what());
     }
 }
 

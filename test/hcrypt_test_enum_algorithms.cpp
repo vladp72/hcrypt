@@ -16,8 +16,9 @@ namespace {
                             });
 
         } catch (std::system_error const& ex) {
-            printf("print_algorithms, error code = %u, %s\n",
+            printf("print_algorithms, error code = 0x%x, %S, %s\n",
                 ex.code().value(),
+                hcrypt::status_to_string(ex.code().value()),
                 ex.what());
         }
     }
@@ -38,8 +39,9 @@ void print_algorithms() {
 
         print_algorithms(offset + 2, ciypher_operations);
     } catch (std::system_error const& ex) {
-        printf("resolve_providers, error code = %u, %s\n",
+        printf("resolve_providers, error code = 0x%x, %S, %s\n",
             ex.code().value(),
+            hcrypt::status_to_string(ex.code().value()),
             ex.what());
     }
     printf("----------------\n");
