@@ -149,25 +149,25 @@ namespace hcrypt {
 
     template<typename T>
     [[nodiscard]]
-    constexpr inline T set_flag(T value, T flag) {
+    constexpr inline T set_flag(T value, T flag) noexcept {
         return value | flag;
     }
 
     template<typename T>
     [[nodiscard]]
-    constexpr inline bool is_flag_on(T value, T flag) {
+    constexpr inline bool is_flag_on(T value, T flag) noexcept {
         return (value & flag) == flag;
     }
 
     template<typename T>
     [[nodiscard]]
-    constexpr inline T clear_flag(T value, T flag) {
+    constexpr inline T clear_flag(T value, T flag) noexcept {
         return value & ~flag;
     }
 
     template<typename T>
     [[nodiscard]]
-    constexpr inline bool consume_flag(T *value, T flag) {
+    constexpr inline bool consume_flag(T *value, T flag) noexcept {
         bool is_on{ is_flag_on(*value, flag) };
         if (is_on) {
             *value = clear_flag(*value, flag);
@@ -176,7 +176,7 @@ namespace hcrypt {
     }
 
     [[nodiscard]]
-    constexpr inline size_t round_to_block(size_t size, size_t block_size) {
+    constexpr inline size_t round_to_block(size_t size, size_t block_size) noexcept {
         return ((size + block_size - 1) / block_size) * block_size;
     }
 
