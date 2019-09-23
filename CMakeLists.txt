@@ -111,21 +111,22 @@ export ( TARGETS hcrypt FILE hcryptconfig.cmake )
 add_executable ( hcrypt_test
                  test/hcrypt_test.cpp
                  test/hcrypt_test_helpers.cpp
-                 test/hcrypt_test_CTAD.cpp
-                 test/hcrypt_test_fips.cpp
-                 test/hcrypt_test_algorithms.cpp
-                 test/hcrypt_test_registered_providers.cpp
-                 test/hcrypt_test_enum_algorithms.cpp
-                 test/hcrypt_test_enum_contexts.cpp
-                 test/hcrypt_test_resolve_providers.cpp
-                 test/hcrypt_test_key_derivation.cpp
-                 test/hcrypt_test_hash.cpp
-                 test/hcrypt_test_message_signing.cpp
-                 test/hcrypt_test_rand.cpp
-                 test/hcrypt_test_dh_oakley.cpp
-                 test/hcrypt_test_sha1_hmac.cpp
-                 test/hcrypt_test_aes_cmac.cpp
-                 test/hcrypt_test_aes_cbc.cpp
+                 test/hbcrypt_test_CTAD.cpp
+                 test/hbcrypt_test_fips.cpp
+                 test/hbcrypt_test_algorithms.cpp
+                 test/hbcrypt_test_registered_providers.cpp
+                 test/hbcrypt_test_enum_algorithms.cpp
+                 test/hbcrypt_test_enum_contexts.cpp
+                 test/hbcrypt_test_resolve_providers.cpp
+                 test/hbcrypt_test_key_derivation.cpp
+                 test/hbcrypt_test_hash.cpp
+                 test/hbcrypt_test_message_signing.cpp
+                 test/hbcrypt_test_rand.cpp
+                 test/hbcrypt_test_dh_oakley.cpp
+                 test/hbcrypt_test_sha1_hmac.cpp
+                 test/hbcrypt_test_aes_cmac.cpp
+                 test/hbcrypt_test_aes_cbc.cpp
+                 test/hncrypt_test_providers.cpp
                )
 
 #

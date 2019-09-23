@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hbcrypt.h>
+#include <hncrypt.h>
 
 void print(int offset, CRYPT_INTERFACE_REG const* interface_registartion);
 

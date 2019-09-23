@@ -8,7 +8,10 @@
 #include <string_view>
 
 #include <windows.h>
+#include <winternl.h>
 #include <intrin.h>
+
+#pragma comment (lib, "ntdll.lib")
 
 #ifndef STATUS_SUCCESS
 #define STATUS_SUCCESS ((NTSTATUS)0x0L)
@@ -63,7 +66,7 @@
 #endif
 
 #ifndef BCRYPT_MAKE_SYSTEM_ERROR
-#define BCRYPT_MAKE_SYSTEM_ERROR(E, T) std::system_error{ static_cast<int>(E), std::system_category(), (T) }
+#define BCRYPT_MAKE_SYSTEM_ERROR(E, T) std::system_error{ static_cast<int>(E), hcrypt::get_error_category(), (T) }
 #endif 
 
 #define BCRYPT_PLATFORM_FAIL_FAST(EC) {__debugbreak();__fastfail(EC);}
@@ -85,17 +88,470 @@
 #define BCRYPT_CODDING_ERROR_IF_NOT(C) if (C) {;} else {BCRYPT_FAST_FAIL(ENOTRECOVERABLE);}
 #endif
 
-#define BCRUPT_PROPERTY_DECL(NAME, NAME_STR, TYPE, HELPER_TYPE, CAN_SET, CAN_QUERY) struct property_##NAME {\
-        using type_t = TYPE;\
-        using helper_type_t = HELPER_TYPE;\
-        constexpr inline static bool can_set {CAN_SET};\
-        constexpr inline static bool can_query{ CAN_QUERY };\
-        constexpr static wchar_t const* get_name() {\
-            return NAME_STR;\
-        }\
-    };
+#ifndef BCRYPT_DBG_CODDING_ERROR_IF_NOT
+#define BCRYPT_DBG_CODDING_ERROR_IF_NOT(C) BCRYPT_CODDING_ERROR_IF_NOT(C)
+#endif
+
+#ifndef BCRYPT_DBG_CODDING_ERROR_IF
+#define BCRYPT_DBG_CODDING_ERROR_IF(C) BCRYPT_CODDING_ERROR_IF(C)
+#endif
 
 namespace hcrypt {
+
+    inline void erase_tail_zeroes(std::string& str) {
+        if (str.empty()) {
+            return;
+        }
+
+        size_t idx{str.size() - 1};
+        size_t count{ 0 };
+
+        while (0 != idx && '\0' == str[idx]) {
+            --idx;
+            ++count;
+        }
+
+        if (count) {
+            str.erase(idx, count);
+        }
+    }
+
+    inline void erase_tail_zeroes(std::wstring& str) {
+        if (str.empty()) {
+            return;
+        }
+
+        size_t idx{ str.size() - 1 };
+        size_t count{ 0 };
+
+        while (0 != idx && L'\0' == str[idx]) {
+            --idx;
+            ++count;
+        }
+
+        if (count) {
+            str.erase(idx, count);
+        }
+    }
+
+    inline std::string v_make_string(char const* format, 
+                                     va_list argptr) {
+        size_t buffer_size = _vscprintf(format, argptr);
+
+        int err{ 0 };
+
+        if (-1 == buffer_size) {
+            err = errno; 
+            std::system_error{ err, 
+                               std::generic_category(), 
+                               "_vscprintf failed, invalid formatting string passed to v_make_string" };
+        }
+
+        std::string str;
+
+        if (0 == buffer_size) {
+            return str;
+        }
+
+        str.resize(buffer_size + 1);
+
+        _vsnprintf_s(&str[0],
+                     str.size(),
+                     _TRUNCATE,
+                     format,
+                     argptr);
+
+        if (-1 == buffer_size) {
+            err = errno;
+            std::system_error{ err, 
+                               std::generic_category(), 
+                               "_vsnprintf_s failed, invalid formatting string passed to v_make_string" };
+        }
+
+        erase_tail_zeroes(str);
+
+        return str;
+    }
+
+    inline std::string make_string(char const* format, 
+                                   ...) {
+        va_list argptr;
+        va_start(argptr, format);
+        return v_make_string(format, argptr);
+    }
+
+    inline std::wstring v_make_wstring(wchar_t const* format, 
+                                       va_list argptr) {
+        size_t buffer_size = _vscwprintf(format, argptr);
+
+        int err{ 0 };
+
+        if (-1 == buffer_size) {
+            err = errno;
+            std::system_error{ err, 
+                               std::generic_category(), 
+                               "_vscwprintf failed, invalid formatting string passed to v_make_wstring" };
+        }
+
+        std::wstring str;
+
+        if (0 == buffer_size) {
+            return str;
+        }
+        
+        str.resize(buffer_size + 1, 0);
+
+        _vsnwprintf_s(&str[0],
+                      str.size(),
+                      _TRUNCATE,
+                      format,
+                      argptr);
+
+        if (-1 == buffer_size) {
+            err = errno;
+            std::system_error{ err, 
+                               std::generic_category(), 
+                               "_vsnwprintf_s failed, invalid formatting string passed to v_make_wstring" };
+        }
+
+        erase_tail_zeroes(str);
+
+        return str;
+    }
+
+    inline std::wstring make_wstring(wchar_t const* format, 
+                                     ...) {
+        va_list argptr;
+        va_start(argptr, format);
+        return v_make_wstring(format, argptr);
+    }
+
+    inline std::wstring a_to_u(char const *in_str,
+                               UINT codepage = CP_ACP,
+                               DWORD flags = 0) {
+
+        DWORD err{ ERROR_SUCCESS };
+        std::wstring out_str;
+
+        int size{ ::MultiByteToWideChar(codepage,
+                                        flags,
+                                        in_str,
+                                        -1,
+                                        nullptr,
+                                        0) };
+
+        if (0 == size) {
+            err = GetLastError();
+            if (ERROR_SUCCESS != err) {
+                std::system_error{ static_cast<int>(err), 
+                                   std::system_category(), 
+                                   "MultiByteToWideChar failed while estimating size" };
+            } 
+            return out_str;
+        }
+
+        out_str.resize(size);
+
+        size = ::MultiByteToWideChar(codepage,
+                                     flags,
+                                     in_str,
+                                     -1,
+                                     &out_str[0],
+                                     size);
+
+        if (0 == size) {
+            err = GetLastError();
+            if (ERROR_SUCCESS != err) {
+                std::system_error{ static_cast<int>(err),
+                                   std::system_category(), 
+                                   "MultiByteToWideChar failed while estimating size" };
+            }
+        }
+
+        erase_tail_zeroes(out_str);
+
+        return out_str;
+    }
+
+    inline std::wstring a_to_u(std::string const &in_str,
+                               UINT codepage = CP_ACP,
+                               DWORD flags = 0) {
+        return a_to_u(in_str.c_str(),
+                      codepage,
+                      flags);
+    }
+
+    inline std::string u_to_a(wchar_t const *in_str,
+                              UINT codepage = CP_ACP,
+                              DWORD flags = 0,
+                              char const *default_char = nullptr,
+                              bool *is_default_used = nullptr) {
+        DWORD err{ ERROR_SUCCESS };
+        std::string out_str;
+        BOOL is_default_used_tmp = FALSE;
+
+        int size{ ::WideCharToMultiByte(codepage,
+                                        flags,
+                                        in_str,
+                                        -1,
+                                        NULL,
+                                        0,
+                                        nullptr,
+                                        nullptr) };
+
+        if (0 == size) {
+            err = GetLastError();
+            if (ERROR_SUCCESS != err) {
+                std::system_error{ static_cast<int>(err),
+                                   std::system_category(), 
+                                   "WideCharToMultiByte failed while estimating size" };
+            } 
+            return out_str;
+        }
+
+        out_str.resize(size);
+
+        size = ::WideCharToMultiByte(codepage,
+                                     flags,
+                                     in_str,
+                                     -1,
+                                     &out_str[0],
+                                     size,
+                                     default_char,
+                                     &is_default_used_tmp);
+
+        if (0 == size) {
+            err = GetLastError();
+            if (ERROR_SUCCESS != err) {
+                std::system_error{ static_cast<int>(err),
+                                   std::system_category(), 
+                                   "WideCharToMultiByte failed while estimating size" };
+            }
+        }
+
+        erase_tail_zeroes(out_str);
+
+        if (is_default_used) {
+            *is_default_used = is_default_used_tmp ? true : false;
+        }
+
+        return out_str;
+    }
+
+    inline std::string u_to_a(std::wstring const &in_str,
+                              UINT codepage = CP_ACP,
+                              DWORD flags = 0,
+                              char const *default_char = nullptr,
+                              bool *is_default_used = nullptr) {
+        return u_to_a(in_str.c_str(),
+                      codepage,
+                      flags,
+                      default_char,
+                      is_default_used);
+    }
+
+    enum class status : long {
+        success                 = 0L,
+        unsuccessful            = static_cast<long>(0xC0000001L),
+        invalid_handle          = static_cast<long>(0xC0000008L),
+        no_memory               = static_cast<long>(0xC0000017L),
+        buffer_too_small        = static_cast<long>(0xC0000023L),
+        insufficient_resources  = static_cast<long>(0xC000009AL),
+        invalid_parameter       = static_cast<long>(0xC000000DL),
+        invalid_buffer_size     = static_cast<long>(0xC0000206L),
+        not_found               = static_cast<long>(0xC0000225L),
+        not_supported           = static_cast<long>(0xC00000BBL),
+        invalid_signature       = static_cast<long>(0xC000A000L),
+        auth_tag_mismatch       = static_cast<long>(0xC000A002L),
+    };
+
+    constexpr inline bool is_success(status const s) {
+        return s >= status::success;
+    }
+
+    constexpr inline bool is_failure(status const s) {
+        return !is_success(s);
+    }
+
+    constexpr inline bool is_success(long const s) {
+        return is_success(static_cast<status const>(s));
+    }
+
+    constexpr inline bool is_failure(long const s) {
+        return is_failure(static_cast<status const>(s));
+    }
+
+    constexpr inline bool is_success(int const s) {
+        return is_success(static_cast<status const>(s));
+    }
+
+    constexpr inline bool is_failure(int const s) {
+        return is_failure(static_cast<status const>(s));
+    }
+
+    constexpr inline char const* try_status_to_string(status const status) {
+        char const* str{ nullptr };
+        switch (status) {
+        case status::success:
+            str = "success";
+            break;
+        case status::buffer_too_small:
+            str = "buffer_too_small";
+            break;
+        case status::insufficient_resources:
+            str = "insufficient_resources";
+            break;
+        case status::invalid_signature:
+            str = "invalid_signature";
+            break;
+        case status::auth_tag_mismatch:
+            str = "auth_tag_mismatch";
+            break;
+        case status::unsuccessful:
+            str = "unsuccessful";
+            break;
+        case status::not_found:
+            str = "not_found";
+            break;
+        case status::invalid_parameter:
+            str = "invalid_parameter";
+            break;
+        case status::no_memory:
+            str = "no_memory";
+            break;
+        case status::invalid_buffer_size:
+            str = "invalid_buffer_size";
+            break;
+        case status::invalid_handle:
+            str = "invalid_handle";
+            break;
+        case status::not_supported:
+            str = "not_supported";
+            break;
+        }
+        return str;
+    }
+
+    constexpr inline char const* status_to_string(status const status) {
+        char const* str{ try_status_to_string(status) };
+        if (nullptr == str) {
+            str = "unknown status";
+        }
+        return str;
+    }
+
+    constexpr inline char const* status_to_string(int const s) {
+        return status_to_string(static_cast<status>(s));
+    }
+
+    constexpr inline DWORD status_to_win32_error(status const status) {
+        DWORD win32_error{static_cast<DWORD>(status)};
+        switch (status) {
+        case status::success:
+            win32_error = ERROR_SUCCESS;
+            break;
+        case status::buffer_too_small:
+            win32_error = ERROR_INSUFFICIENT_BUFFER;
+            break;
+        case status::insufficient_resources:
+            win32_error = ERROR_NO_SYSTEM_RESOURCES;
+            break;
+        case status::invalid_signature:
+            win32_error = NTE_BAD_SIGNATURE;
+            break;
+        case status::auth_tag_mismatch:
+            win32_error = ERROR_CRC;
+            break;
+        case status::unsuccessful:
+            win32_error = ERROR_GEN_FAILURE;
+            break;
+        case status::not_found:
+            win32_error = ERROR_NOT_FOUND;
+            break;
+        case status::invalid_parameter:
+            win32_error = ERROR_INVALID_PARAMETER;
+            break;
+        case status::no_memory:
+            win32_error = ERROR_NOT_ENOUGH_MEMORY;
+            break;
+        case status::invalid_buffer_size:
+            win32_error = ERROR_INVALID_USER_BUFFER;
+            break;
+        case status::invalid_handle:
+            win32_error = ERROR_INVALID_HANDLE;
+            break;
+        case status::not_supported:
+            win32_error = ERROR_NOT_SUPPORTED;
+            break;
+        }
+        return win32_error;
+    }
+
+    inline DWORD nt_status_to_win32_error_ex(long const status) {
+        return RtlNtStatusToDosError(status);
+    }
+}
+
+namespace std {
+    //
+    // declare that enumiration is an error code, NOT an
+    // error condition
+    //
+    template <>
+    struct is_error_code_enum<hcrypt::status> : public true_type {};
+ }
+
+namespace hcrypt {
+
+    //
+    // Define error category for Esent errors
+    //
+    class error_category_t
+        : public std::error_category {
+    public:
+
+        virtual char const* name() const noexcept override {
+            return "hcrypt_error";
+        }
+
+        virtual std::string message(int e) const override {
+            //return status_to_string(static_cast<status>(e));
+            return std::system_category().message(nt_status_to_win32_error_ex(static_cast<long>(e)));
+        }
+
+        virtual std::error_condition default_error_condition(int e) const noexcept override {
+            return std::error_condition(status_to_win32_error(static_cast<hcrypt::status>(e)),
+                                        std::system_category());
+        }
+
+        virtual bool equivalent(int e, const std::error_condition& cond) const noexcept {
+            return false;
+        }
+    };
+
+    inline error_category_t const error_category_singleton;
+
+    inline std::error_category const& get_error_category() noexcept {
+        return error_category_singleton;
+    }
+
+    inline std::error_code make_error_code(status const s) noexcept {
+        return { static_cast<int>(s), get_error_category() };
+    }
+
+    inline std::error_code make_error_code(long const s) noexcept {
+        return make_error_code(static_cast<status>(s));
+    }
+
+    inline bool is_success(std::error_code const& err) {
+        BCRYPT_DBG_CODDING_ERROR_IF_NOT(get_error_category() == err.category());
+        return is_success(err.value());
+    }
+
+    inline bool is_failure(std::error_code const& err) {
+        BCRYPT_DBG_CODDING_ERROR_IF_NOT(get_error_category() == err.category());
+        return is_failure(err.value());
+    }
 
     using buffer = std::vector<char>;
 
@@ -283,48 +739,5 @@ namespace hcrypt {
         // to previous processed character
         //
         return ((count % 2) == 0) ? cur : prev;
-    }
-
-    constexpr inline wchar_t const* status_to_string(NTSTATUS const status) {
-        wchar_t const* str{ L"Unknown status" };
-        switch (status) {
-        case STATUS_SUCCESS :
-            str = L"STATUS_SUCCESS";
-            break;
-        case STATUS_BUFFER_TOO_SMALL:
-            str = L"STATUS_BUFFER_TOO_SMALL";
-            break;
-        case STATUS_INSUFFICIENT_RESOURCES:
-            str = L"STATUS_INSUFFICIENT_RESOURCES";
-            break;
-        case STATUS_INVALID_SIGNATURE:
-            str = L"STATUS_INVALID_SIGNATURE";
-            break;
-        case STATUS_AUTH_TAG_MISMATCH:
-            str = L"STATUS_AUTH_TAG_MISMATCH";
-            break;
-        case STATUS_UNSUCCESSFUL:
-            str = L"STATUS_UNSUCCESSFUL";
-            break;
-        case STATUS_NOT_FOUND:
-            str = L"STATUS_NOT_FOUND";
-            break;
-        case STATUS_INVALID_PARAMETER:
-            str = L"STATUS_INVALID_PARAMETER";
-            break;
-        case STATUS_NO_MEMORY:
-            str = L"STATUS_NO_MEMORY";
-            break;
-        case STATUS_INVALID_BUFFER_SIZE:
-            str = L"STATUS_INVALID_BUFFER_SIZE";
-            break;
-        case STATUS_INVALID_HANDLE:
-            str = L"STATUS_INVALID_HANDLE";
-            break;
-        case STATUS_NOT_SUPPORTED:
-            str = L"STATUS_NOT_SUPPORTED";
-            break;
-        }
-        return str;
     }
 }

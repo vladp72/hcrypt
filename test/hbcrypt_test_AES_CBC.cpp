@@ -1,4 +1,4 @@
-#include "hcrypt_test_aes_cbc.h"
+#include "hbcrypt_test_aes_cbc.h"
 #include <algorithm>
 
 namespace {
@@ -189,7 +189,7 @@ namespace {
             }
 
         } catch (std::system_error const& ex) {
-            printf("test_aes_cbc, error code = 0x%x, %S, %s\n",
+            printf("test_aes_cbc, error code = 0x%x, %s, %s\n",
                 ex.code().value(),
                 hcrypt::status_to_string(ex.code().value()),
                 ex.what());
@@ -216,7 +216,7 @@ void test_aes_cbc() {
                       });
 
     } catch (std::system_error const& ex) {
-        printf("test_aes_cmac, error code = 0x%x, %S, %s\n",
+        printf("test_aes_cmac, error code = 0x%x, %s, %s\n",
             ex.code().value(),
             hcrypt::status_to_string(ex.code().value()),
             ex.what());

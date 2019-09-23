@@ -1,4 +1,4 @@
-#include "hcrypt_test_sha1_hmac.h"
+#include "hbcrypt_test_sha1_hmac.h"
 #include <algorithm>
 
 namespace {
@@ -63,7 +63,7 @@ namespace {
             }
 
         } catch (std::system_error const& ex) {
-            printf("test_sha1_hmac, error code = 0x%x, %S, %s\n",
+            printf("test_sha1_hmac, error code = 0x%x, %s, %s\n",
                 ex.code().value(),
                 hcrypt::status_to_string(ex.code().value()),
                 ex.what());
@@ -86,7 +86,7 @@ void test_sha1_hmac() {
                       });
 
     } catch (std::system_error const& ex) {
-        printf("test_sha1_hmac, error code = 0x%x, %S, %s\n",
+        printf("test_sha1_hmac, error code = 0x%x, %s, %s\n",
             ex.code().value(),
             hcrypt::status_to_string(ex.code().value()),
             ex.what());

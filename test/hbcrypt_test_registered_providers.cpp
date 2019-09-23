@@ -1,4 +1,4 @@
-#include "hcrypt_test_registered_providers.h"
+#include "hbcrypt_test_registered_providers.h"
 
 void print_provider_interface_info(int offset,
                                    wchar_t const *provider_name,
@@ -30,7 +30,7 @@ void print_provider_interface_info(int offset,
             }
         }
     } catch (std::system_error const& ex) {
-        printf("%*cError code = %#x, %S, %s\n", 
+        printf("%*cError code = %#x, %s, %s\n", 
                offset + 2, 
                ' ', 
                ex.code().value(), 
@@ -73,7 +73,7 @@ void print_registered_providers() {
                 return true;
             });
     } catch (std::system_error const& ex) {
-        printf("print_registered_providers, error code = 0x%x, %S, %s\n", 
+        printf("print_registered_providers, error code = 0x%x, %s, %s\n", 
                ex.code().value(), 
                hcrypt::status_to_string(ex.code().value()),
                ex.what());

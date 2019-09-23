@@ -1,4 +1,4 @@
-#include "hcrypt_test_hash.h"
+#include "hbcrypt_test_hash.h"
 #include <algorithm>
 
 namespace {
@@ -51,7 +51,7 @@ namespace {
                    hcrypt::to_hex(hash_value).c_str());
 
         } catch (std::system_error const& ex) {
-            printf("test_sdk_sample_hash, error code = 0x%x, %S, %s\n",
+            printf("test_sdk_sample_hash, error code = 0x%x, %s, %s\n",
                 ex.code().value(),
                 hcrypt::status_to_string(ex.code().value()),
                 ex.what());
@@ -88,7 +88,7 @@ void test_sample_hash() {
                       });
 
     } catch (std::system_error const& ex) {
-        printf("test_sdk_sample_hash, error code = 0x%x, %S, %s\n",
+        printf("test_sdk_sample_hash, error code = 0x%x, %s, %s\n",
             ex.code().value(),
             hcrypt::status_to_string(ex.code().value()),
             ex.what());

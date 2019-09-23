@@ -1,4 +1,4 @@
-#include "hcrypt_test_resolve_providers.h"
+#include "hbcrypt_test_resolve_providers.h"
 
 void resolve_providers() {
     try {
@@ -13,7 +13,7 @@ void resolve_providers() {
                            offset,
                            ' ',
                            itf_id,
-                          bcrypt::interface_id_to_string(itf_id));
+                           bcrypt::interface_id_to_string(itf_id));
 
                     bcrypt::provider_registration_refs_cptr matching_providers{ bcrypt::resolve_providers(nullptr,
                                                                                                          itf_id,
@@ -28,7 +28,7 @@ void resolve_providers() {
                         });
 
                 } catch (std::system_error const& ex) {
-                    printf("%*cError code = %#x, %S, %s\n", 
+                    printf("%*cError code = %#x, %s, %s\n", 
                            offset + 2, 
                            ' ', 
                            ex.code().value(), 
@@ -40,7 +40,7 @@ void resolve_providers() {
             });
 
     } catch (std::system_error const& ex) {
-        printf("resolve_providers, error code = 0x%x, %S, %s\n", 
+        printf("resolve_providers, error code = 0x%x, %s, %s\n", 
                ex.code().value(), 
                hcrypt::status_to_string(ex.code().value()),
                ex.what());

@@ -1,4 +1,4 @@
-#include "hcrypt_test_key_derivation.h"
+#include "hbcrypt_test_key_derivation.h"
 #include "hcrypt_test_helpers.h"
 #include <algorithm>
 
@@ -192,7 +192,7 @@ namespace {
                     hcrypt::to_hex(derived_key).c_str());
 
         } catch (std::system_error const& ex) {
-            printf("%*ctest_sdk_sample_key_derivation, error code = 0x%x, %S, %s\n",
+            printf("%*ctest_sdk_sample_key_derivation, error code = 0x%x, %s, %s\n",
                 offset,
                 ' ',
                 ex.code().value(),
@@ -215,7 +215,7 @@ void test_sample_key_derivation() {
         }
 
     } catch (std::system_error const& ex) {
-        printf("test_sdk_sample_key_derivation, error code = 0x%x, %S, %s\n",
+        printf("test_sdk_sample_key_derivation, error code = 0x%x, %s, %s\n",
             ex.code().value(),
             hcrypt::status_to_string(ex.code().value()),
             ex.what());

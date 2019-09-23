@@ -1,19 +1,20 @@
 #include "hcrypt_test_helpers.h"
-#include "hcrypt_test_CTAD.h"
-#include "hcrypt_test_fips.h"
-#include "hcrypt_test_algorithms.h"
-#include "hcrypt_test_registered_providers.h"
-#include "hcrypt_test_enum_algorithms.h"
-#include "hcrypt_test_enum_contexts.h"
-#include "hcrypt_test_resolve_providers.h"
-#include "hcrypt_test_key_derivation.h"
-#include "hcrypt_test_hash.h"
-#include "hcrypt_test_message_signing.h"
-#include "hcrypt_test_rand.h"
-#include "hcrypt_test_dh_oakley.h"
-#include "hcrypt_test_sha1_hmac.h"
-#include "hcrypt_test_aes_cmac.h"
-#include "hcrypt_test_aes_cbc.h"
+#include "hbcrypt_test_CTAD.h"
+#include "hbcrypt_test_fips.h"
+#include "hbcrypt_test_algorithms.h"
+#include "hbcrypt_test_registered_providers.h"
+#include "hbcrypt_test_enum_algorithms.h"
+#include "hbcrypt_test_enum_contexts.h"
+#include "hbcrypt_test_resolve_providers.h"
+#include "hbcrypt_test_key_derivation.h"
+#include "hbcrypt_test_hash.h"
+#include "hbcrypt_test_message_signing.h"
+#include "hbcrypt_test_rand.h"
+#include "hbcrypt_test_dh_oakley.h"
+#include "hbcrypt_test_sha1_hmac.h"
+#include "hbcrypt_test_aes_cmac.h"
+#include "hbcrypt_test_aes_cbc.h"
+#include "hncrypt_test_providers.h"
 //
 // https://github.com/microsoft/Windows-classic-samples/tree/master/Samples/Security
 //
@@ -51,8 +52,10 @@ int main() {
 
         test_aes_cbc();
 
+        test_ncrypt_providers();
+
     } catch (std::system_error const& ex) {
-        printf("Error code = 0x%x, %S, %s\n", 
+        printf("Error code = 0x%x, %s, %s\n", 
                ex.code().value(), 
                hcrypt::status_to_string(ex.code().value()),
                ex.what());

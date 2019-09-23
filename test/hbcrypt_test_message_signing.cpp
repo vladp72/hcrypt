@@ -1,4 +1,4 @@
-#include "hcrypt_test_message_signing.h"
+#include "hbcrypt_test_message_signing.h"
 #include <algorithm>
 
 namespace {
@@ -170,7 +170,7 @@ namespace {
             }
 
         } catch (std::system_error const& ex) {
-            printf("%*ctest_message_signing, error code = 0x%x, %S, %s\n",
+            printf("%*ctest_message_signing, error code = 0x%x, %s, %s\n",
                    offset,
                    ' ',
                    ex.code().value(),
@@ -213,7 +213,7 @@ void test_message_signing() {
         });
 
     } catch (std::system_error const& ex) {
-        printf("test_message_signing, error code = 0x%x, %S, %s\n",
+        printf("test_message_signing, error code = 0x%x, %s, %s\n",
                ex.code().value(),
                hcrypt::status_to_string(ex.code().value()),
                ex.what());

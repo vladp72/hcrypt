@@ -71,6 +71,7 @@ namespace bcrypt {
             }
         }
 
+        [[nodiscard]]
         pointer_type detach() noexcept {
             pointer_type p{ p_ };
             p_ = nullptr;
@@ -81,7 +82,6 @@ namespace bcrypt {
             free();
             p_ = p;
         }
-
 
         explicit operator bool() const noexcept {
             return p_ != nullptr;
@@ -260,8 +260,8 @@ namespace bcrypt {
     }
 
     template<typename FN>
-    inline void find_first(algorithm_identifiers_t const& providers, FN const& fn) {
-        auto const& [buffer, element_count] = providers;
+    inline void find_first(algorithm_identifiers_t const& algorithms, FN const& fn) {
+        auto const& [buffer, element_count] = algorithms;
         for (unsigned long idx = 0; idx < element_count; ++idx) {
             if (!fn(buffer.get()[idx])) {
                 break;
@@ -1075,27 +1075,6 @@ namespace bcrypt {
         }
     };
 
-    BCRUPT_PROPERTY_DECL(algorithm_name,        BCRYPT_ALGORITHM_NAME,        wchar_t*,                                   std::wstring,          true,  true);
-    BCRUPT_PROPERTY_DECL(block_length,          BCRYPT_BLOCK_LENGTH,          unsigned long,                              hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(block_size_list,       BCRYPT_BLOCK_SIZE_LIST,       unsigned long*,                             hcrypt::buffer ,       true,  true); //
-    BCRUPT_PROPERTY_DECL(chaining_mode,         BCRYPT_CHAINING_MODE,         wchar_t*,                                   std::wstring,          true,  true);
-    BCRUPT_PROPERTY_DECL(dh_parameters,         BCRYPT_DH_PARAMETERS,         hcrypt::buffer,                             hcrypt::buffer ,       true,  false);
-    BCRUPT_PROPERTY_DECL(dsa_parameters,        BCRYPT_DSA_PARAMETERS,        BCRYPT_DSA_PARAMETER_HEADER_V2,             hcrypt::buffer ,       true,  false);
-    BCRUPT_PROPERTY_DECL(effective_key_length,  BCRYPT_EFFECTIVE_KEY_LENGTH,  unsigned long,                              hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(hash_block_length,     BCRYPT_HASH_BLOCK_LENGTH,     unsigned long,                              hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(hash_length,           BCRYPT_HASH_LENGTH,           unsigned long,                              hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(hash_oid_list,         BCRYPT_HASH_OID_LIST,         BCRYPT_OID_LIST*,                           hcrypt::buffer ,       false, true);
-    BCRUPT_PROPERTY_DECL(initialization_vector, BCRYPT_INITIALIZATION_VECTOR, char*,                                      hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(key_length,            BCRYPT_KEY_LENGTH,            unsigned long,                              hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(key_lengths,           BCRYPT_KEY_LENGTHS,           BCRYPT_KEY_LENGTHS_STRUCT,                  hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(key_object_lengths,    BCRYPT_OBJECT_LENGTH ,        unsigned long,                              hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(key_strength,          BCRYPT_KEY_STRENGTH,          unsigned long,                              hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(message_block_length,  BCRYPT_MESSAGE_BLOCK_LENGTH,  unsigned long,                              hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(multi_object_length,   BCRYPT_MULTI_OBJECT_LENGTH,   BCRYPT_MULTI_OBJECT_LENGTH_STRUCT,          hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(object_length ,        BCRYPT_OBJECT_LENGTH ,        unsigned long,                              hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(padding_schemes,       BCRYPT_PADDING_SCHEMES ,      unsigned long,                              hcrypt::buffer ,       true,  true);
-    BCRUPT_PROPERTY_DECL(signature_length,      BCRYPT_SIGNATURE_LENGTH ,     unsigned long,                              hcrypt::buffer ,       false, true);
-
     constexpr inline size_t dh_algorithm_key_size_min{ 512 };
     constexpr inline size_t dh_algorithm_key_size_multiplier{ 64 };
     constexpr inline size_t dh_algorithm_key_size_max{ 4096 };
@@ -1435,6 +1414,7 @@ namespace bcrypt {
             h_ = h;
         }
 
+        [[nodiscard]]
         BCRYPT_SECRET_HANDLE detach() noexcept {
             BCRYPT_SECRET_HANDLE h = h_;
             h_ = nullptr;
@@ -2227,6 +2207,7 @@ namespace bcrypt {
             return h_;
         }
 
+        [[nodiscard]]
         BCRYPT_ALG_HANDLE detach() noexcept {
             BCRYPT_ALG_HANDLE h{ h_ };
             h_ = nullptr;

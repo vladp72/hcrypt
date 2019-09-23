@@ -1,4 +1,4 @@
-#include "hcrypt_test_enum_contexts.h"
+#include "hbcrypt_test_enum_contexts.h"
 
 namespace {
 
@@ -50,7 +50,7 @@ namespace {
                                                         });
 
                                                 } catch (std::system_error const& ex) {
-                                                    printf("% *cenum_crypto_context_function, error code = 0x%x, %S, %s\n",
+                                                    printf("% *cenum_crypto_context_function, error code = 0x%x, %s, %s\n",
                                                            offset,
                                                            ' ',
                                                            ex.code().value(),
@@ -63,7 +63,7 @@ namespace {
                                             });
 
                     } catch (std::system_error const& ex) {
-                        printf("% *cenum_crypto_context_function, error code = 0x%x, %S, %s\n",
+                        printf("% *cenum_crypto_context_function, error code = 0x%x, %s, %s\n",
                                 offset,
                                 ' ',
                                 ex.code().value(),
@@ -87,7 +87,7 @@ void print_crypto_contexts() {
         print_crypto_context(offset + 2, CRYPT_DOMAIN);
 
     } catch (std::system_error const& ex) {
-        printf("print_crypto_contexts, error code = 0x%x, %S, %s\n",
+        printf("print_crypto_contexts, error code = 0x%x, %s, %s\n",
             ex.code().value(),
             hcrypt::status_to_string(ex.code().value()),
             ex.what());
