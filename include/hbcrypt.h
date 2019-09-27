@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "hcrypt_common.h"
@@ -99,11 +100,11 @@ namespace bcrypt {
     using providers_cptr = buffer_ptr<CRYPT_PROVIDERS const>;
 
     [[nodiscard]]
-    inline NTSTATUS try_enum_registered_providers(providers_cptr *providers) noexcept {
+    inline std::error_code try_enum_registered_providers(providers_cptr *providers) noexcept {
         CRYPT_PROVIDERS* buffer{ nullptr };
         unsigned long element_count{ 0 };
-        NTSTATUS status{ BCryptEnumRegisteredProviders(&element_count, &buffer) };
-        if (NT_SUCCESS(status)) {
+        std::error_code status{ static_cast<hcrypt::status>(BCryptEnumRegisteredProviders(&element_count, &buffer)) };
+        if (hcrypt::is_success(status)) {
             providers->attach(buffer);
         }
         return status;
@@ -111,9 +112,9 @@ namespace bcrypt {
 
     inline providers_cptr const enum_registered_providers() {
         providers_cptr providers;
-        NTSTATUS status{ try_enum_registered_providers(&providers) };
-        if (!NT_SUCCESS(status)) {
-            throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptEnumRegisteredProviders failed");
+        std::error_code status{ try_enum_registered_providers(&providers) };
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "BCryptEnumRegisteredProviders failed");
         }
         return providers;
     }
@@ -132,19 +133,19 @@ namespace bcrypt {
     using provider_registration_cptr = buffer_ptr<CRYPT_PROVIDER_REG const>;
 
     [[nodiscard]]
-    inline NTSTATUS try_query_provider_registartion(LPCWSTR provider,
+    inline std::error_code try_query_provider_registartion(LPCWSTR provider,
                                                     unsigned long mode,
                                                     unsigned long itf_id,
                                                     provider_registration_cptr *registartion) noexcept {
 
         CRYPT_PROVIDER_REG* registration_buffer{ nullptr };
         unsigned long buffer_size{ 0 };
-        NTSTATUS status{ BCryptQueryProviderRegistration(provider, 
+        std::error_code status{ static_cast<hcrypt::status>(BCryptQueryProviderRegistration(provider,
                                                          mode, 
                                                          itf_id,
                                                          &buffer_size,
-                                                         &registration_buffer) };
-        if (NT_SUCCESS(status)) {
+                                                         &registration_buffer)) };
+        if (hcrypt::is_success(status)) {
             if (buffer_size) {
                 registartion->attach(registration_buffer);
             } else {
@@ -158,12 +159,12 @@ namespace bcrypt {
                                                                         unsigned long mode,
                                                                         unsigned long itf_id) {
         provider_registration_cptr registartion;
-        NTSTATUS status{ try_query_provider_registartion(provider,
+        std::error_code status{ try_query_provider_registartion(provider,
                                                          mode,
                                                          itf_id,
                                                          &registartion) };
-        if (!NT_SUCCESS(status)) {
-            throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptQueryProviderRegistration failed");
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "BCryptQueryProviderRegistration failed");
         }
         return registartion;
     }
@@ -172,7 +173,7 @@ namespace bcrypt {
     using provider_registration_refs_cptr = buffer_ptr<CRYPT_PROVIDER_REFS const>;
 
     [[nodiscard]]
-    inline NTSTATUS try_resolve_providers(wchar_t const *context,
+    inline std::error_code try_resolve_providers(wchar_t const *context,
                                           unsigned long itf_id,
                                           wchar_t const *function,
                                           wchar_t const *provider,
@@ -181,15 +182,15 @@ namespace bcrypt {
                                           provider_registration_refs_cptr *registration) noexcept {
         CRYPT_PROVIDER_REFS* registration_buffer{ nullptr };
         unsigned long buffer_size{ 0 };
-        NTSTATUS status{ BCryptResolveProviders(context,
+        std::error_code status{ static_cast<hcrypt::status>(BCryptResolveProviders(context,
                                                 itf_id,
                                                 function,
                                                 provider,
                                                 mode,
                                                 flags,
                                                 &buffer_size,
-                                                &registration_buffer) };
-        if (NT_SUCCESS(status)) {
+                                                &registration_buffer)) };
+        if (hcrypt::is_success(status)) {
             if (buffer_size) {
                 registration->attach(registration_buffer);
             } else {
@@ -206,15 +207,15 @@ namespace bcrypt {
                                                                     unsigned long mode,
                                                                     unsigned long flags) {
         provider_registration_refs_cptr registartion;
-        NTSTATUS status{ try_resolve_providers(context,
+        std::error_code status{ try_resolve_providers(context,
                                                itf_id,
                                                function,
                                                provider,
                                                mode,
                                                flags,
                                                &registartion) };
-        if (!NT_SUCCESS(status)) {
-            throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptResolveProviders failed");
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "BCryptResolveProviders failed");
         }
         return registartion;
     }
@@ -234,15 +235,15 @@ namespace bcrypt {
     using algorithm_identifiers_t = std::pair<algorithm_identifiers_cptr, unsigned long>;
 
     [[nodiscard]]
-    inline NTSTATUS try_enum_algorithms(unsigned long operations,
+    inline std::error_code try_enum_algorithms(unsigned long operations,
                                         algorithm_identifiers_t *algorithms) noexcept {
         BCRYPT_ALGORITHM_IDENTIFIER* algorithms_buffer{ nullptr };
         unsigned long algorithms_element_count{ 0 };
-        NTSTATUS status{ BCryptEnumAlgorithms(operations,
+        std::error_code status{ static_cast<hcrypt::status>(BCryptEnumAlgorithms(operations,
                                                 &algorithms_element_count,
                                                 &algorithms_buffer,
-                                                0) };
-        if (NT_SUCCESS(status)) {
+                                                0)) };
+        if (hcrypt::is_success(status)) {
             algorithms->first.attach(algorithms_buffer);
             algorithms->second = algorithms_element_count;
         }
@@ -251,10 +252,10 @@ namespace bcrypt {
 
     inline algorithm_identifiers_t const enum_algorithms(unsigned long operations) {
         algorithm_identifiers_t algorithms;
-        NTSTATUS status{ try_enum_algorithms(operations,
+        std::error_code status{ try_enum_algorithms(operations,
                                              &algorithms) };
-        if (!NT_SUCCESS(status)) {
-            throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptEnumAlgorithms failed");
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "BCryptEnumAlgorithms failed");
         }
         return algorithms;
     }
@@ -272,12 +273,12 @@ namespace bcrypt {
     using crypto_context_cptr = buffer_ptr<CRYPT_CONTEXTS const>;
 
     [[nodiscard]]
-    inline NTSTATUS try_enum_crypto_context(unsigned long table,
+    inline std::error_code try_enum_crypto_context(unsigned long table,
                                             crypto_context_cptr *crypto_contexts) noexcept {
         CRYPT_CONTEXTS* buffer{ nullptr };
         unsigned long buffer_size{ 0 };
-        NTSTATUS status{ BCryptEnumContexts(table , &buffer_size, &buffer) };
-        if (NT_SUCCESS(status)) {
+        std::error_code status{ static_cast<hcrypt::status>(BCryptEnumContexts(table , &buffer_size, &buffer)) };
+        if (hcrypt::is_success(status)) {
             crypto_contexts->attach(buffer);
         }
         return status;
@@ -285,10 +286,10 @@ namespace bcrypt {
 
     inline crypto_context_cptr const enum_crypto_context(unsigned long table) {
         crypto_context_cptr crypto_contexts;
-        NTSTATUS status{ try_enum_crypto_context(table,
+        std::error_code status{ try_enum_crypto_context(table,
                                                  &crypto_contexts) };
-        if (!NT_SUCCESS(status)) {
-            throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptEnumContexts failed");
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "BCryptEnumContexts failed");
         }
         return crypto_contexts;
     }
@@ -307,17 +308,17 @@ namespace bcrypt {
     using crypto_context_function_cptr = buffer_ptr<CRYPT_CONTEXT_FUNCTIONS const>;
 
     [[nodiscard]]
-    inline NTSTATUS try_enum_crypto_context_function(unsigned long table,
+    inline std::error_code try_enum_crypto_context_function(unsigned long table,
                                                      wchar_t const *crypto_context,
                                                      unsigned long itf_id,
                                                      crypto_context_function_cptr * crypto_context_functions) noexcept {
         CRYPT_CONTEXT_FUNCTIONS* buffer{ nullptr };
         unsigned long buffer_size{ 0 };
-        NTSTATUS status{ BCryptEnumContextFunctions(table , 
+        std::error_code status{ static_cast<hcrypt::status>(BCryptEnumContextFunctions(table ,
                                                     crypto_context , 
                                                     itf_id, 
-                                            &buffer_size, &buffer) };
-        if (NT_SUCCESS(status)) {
+                                            &buffer_size, &buffer)) };
+        if (hcrypt::is_success(status)) {
             crypto_context_functions->attach(buffer);
         }
         return status;
@@ -327,12 +328,12 @@ namespace bcrypt {
                                                                            wchar_t const* crypto_context,
         unsigned long itf_id) {
         crypto_context_function_cptr crypto_context_functions;
-        NTSTATUS status{ try_enum_crypto_context_function(table,
+        std::error_code status{ try_enum_crypto_context_function(table,
                                                           crypto_context,
                                                           itf_id,
                                                           &crypto_context_functions) };
-        if (!NT_SUCCESS(status)) {
-            throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptEnumContextFunctions failed");
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "BCryptEnumContextFunctions failed");
         }
         return crypto_context_functions;
     }
@@ -351,20 +352,20 @@ namespace bcrypt {
     using crypto_context_function_providers_cptr = buffer_ptr<CRYPT_CONTEXT_FUNCTION_PROVIDERS  const>;
 
     [[nodiscard]]
-    inline NTSTATUS try_enum_crypto_context_function_providers(unsigned long table,
+    inline std::error_code try_enum_crypto_context_function_providers(unsigned long table,
                                                                wchar_t const *crypto_context,
                                                                unsigned long itf_id,
                                                                wchar_t const *function,
                                                                crypto_context_function_providers_cptr * crypto_context_function_providers) noexcept {
         CRYPT_CONTEXT_FUNCTION_PROVIDERS* buffer{ nullptr };
         unsigned long buffer_size{ 0 };
-        NTSTATUS status{ BCryptEnumContextFunctionProviders(table ,
+        std::error_code status{ static_cast<hcrypt::status>(BCryptEnumContextFunctionProviders(table ,
                                                             crypto_context, 
                                                             itf_id, 
                                                             function,
                                                             &buffer_size, 
-                                                            &buffer) };
-        if (NT_SUCCESS(status)) {
+                                                            &buffer)) };
+        if (hcrypt::is_success(status)) {
             crypto_context_function_providers->attach(buffer);
         }
         return status;
@@ -375,13 +376,13 @@ namespace bcrypt {
                                                                                                unsigned long itf_id,
                                                                                                wchar_t const* function) {
         crypto_context_function_providers_cptr crypto_context_function_providers;
-        NTSTATUS status{ try_enum_crypto_context_function_providers(table,
+        std::error_code status{ try_enum_crypto_context_function_providers(table,
                                                                     crypto_context,
                                                                     itf_id,
                                                                     function,
                                                                     &crypto_context_function_providers) };
-        if (!NT_SUCCESS(status)) {
-            throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptEnumContextFunctionProviders failed");
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "BCryptEnumContextFunctionProviders failed");
         }
         return crypto_context_function_providers;
     }
@@ -398,9 +399,9 @@ namespace bcrypt {
     }
 
     [[nodiscard]]
-    inline NTSTATUS try_is_fips_complience_on(bool* complience_on) noexcept {
+    inline std::error_code try_is_fips_complience_on(bool* complience_on) noexcept {
         BOOLEAN flag{ false };
-        NTSTATUS status = BCryptGetFipsAlgorithmMode(&flag);
+        std::error_code status{ static_cast<hcrypt::status>(BCryptGetFipsAlgorithmMode(&flag)) };
         *complience_on = flag ? true : false;
         return status;
     }
@@ -408,9 +409,9 @@ namespace bcrypt {
     [[nodiscard]]
     inline bool is_fips_complience_on() {
         bool complience_on{ false };
-        NTSTATUS status = try_is_fips_complience_on(&complience_on);
-        if (!NT_SUCCESS(status)) {
-            throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptGetFipsAlgorithmMode failed");
+        std::error_code status = try_is_fips_complience_on(&complience_on);
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "BCryptGetFipsAlgorithmMode failed");
         }
         return complience_on;
     }
@@ -601,20 +602,20 @@ namespace bcrypt {
     };
 
     [[nodiscard]]
-    inline NTSTATUS try_generate_random(char* buffer,
+    inline std::error_code try_generate_random(char* buffer,
                                         size_t buffer_size,
                                         use_entropy_in_buffer use_buffer = use_entropy_in_buffer::no) noexcept {
-        NTSTATUS status{ BCryptGenRandom(nullptr,
+        std::error_code status{ static_cast<hcrypt::status>(BCryptGenRandom(nullptr,
                                          reinterpret_cast<unsigned char *>(buffer),
                                          static_cast<unsigned long>(buffer_size),
                                          BCRYPT_USE_SYSTEM_PREFERRED_RNG | 
-                                         (use_buffer == use_entropy_in_buffer::yes ? BCRYPT_RNG_USE_ENTROPY_IN_BUFFER : 0)) };
+                                         (use_buffer == use_entropy_in_buffer::yes ? BCRYPT_RNG_USE_ENTROPY_IN_BUFFER : 0))) };
         return status;
     }
 
     template <typename T> 
     [[nodiscard]]
-    inline NTSTATUS try_generate_random(T *v,
+    inline std::error_code try_generate_random(T *v,
                                         use_entropy_in_buffer use_buffer = use_entropy_in_buffer::no) noexcept {
         return try_generate_random(reinterpret_cast<char *>(v),
                                     sizeof(*v),
@@ -624,10 +625,10 @@ namespace bcrypt {
     inline void generate_random(char* buffer,
                                 size_t buffer_size,
                                 use_entropy_in_buffer use_buffer = use_entropy_in_buffer::no) {
-        NTSTATUS status{ try_generate_random( buffer,
+        std::error_code status{ try_generate_random( buffer,
                                               static_cast<unsigned long>(buffer_size)) };
-        if (!NT_SUCCESS(status)) {
-            throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptGenRandom failed");
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "BCryptGenRandom failed");
         }
     }
 
@@ -645,25 +646,25 @@ namespace bcrypt {
     protected:
 
         [[nodiscard]]
-        NTSTATUS try_get_property(wchar_t const* property_name, 
+        std::error_code try_get_property(wchar_t const* property_name,
                                   char *buffer, 
                                   size_t buffer_size, 
                                   size_t *rezult_size) const noexcept {
             unsigned long tmp_rezult_size{ 0 };
-            NTSTATUS status{ BCryptGetProperty(get_object_handle(),
+            std::error_code status{ static_cast<hcrypt::status>(BCryptGetProperty(get_object_handle(),
                                                property_name,
                                                reinterpret_cast<unsigned char *>(buffer),
                                                static_cast<unsigned long>(buffer_size),
                                                &tmp_rezult_size,
-                                               0) };
+                                               0)) };
             *rezult_size = tmp_rezult_size;
             return status;
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_property(wchar_t const* property_name, 
+        std::error_code try_get_property(wchar_t const* property_name,
                                   hcrypt::buffer *buffer) const noexcept {
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
             for (;;) {
                 size_t rezult_size{ 0 };
                 bool empty_buffer{ buffer->empty() };
@@ -671,14 +672,14 @@ namespace bcrypt {
                                             empty_buffer ? nullptr : buffer->data(),
                                             empty_buffer ? 0 : buffer->size(),
                                             &rezult_size);
-                if (NT_SUCCESS(status)) {
+                if (hcrypt::is_success(status)) {
                     if (rezult_size <= buffer->size()) {
                         status = hcrypt::try_resize(buffer, rezult_size);
                         break;
                     } else {
                         status = hcrypt::try_resize(buffer, rezult_size);
                     }
-                } else if (STATUS_BUFFER_TOO_SMALL == status) {
+                } else if (hcrypt::status::buffer_too_small == status) {
                     status = hcrypt::try_resize(buffer, rezult_size);
                 } else {
                     break;
@@ -688,10 +689,10 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_property(wchar_t const* property_name, 
+        std::error_code try_get_property(wchar_t const* property_name,
                                   std::wstring *buffer) const noexcept {
             
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
             
             for (;;) {
                 size_t rezult_size{ 0 };
@@ -700,7 +701,7 @@ namespace bcrypt {
                                             empty_buffer ? nullptr : reinterpret_cast<char *>(buffer->data()),
                                             empty_buffer ? 0 : buffer->size() * sizeof(wchar_t),
                                             &rezult_size);
-                if (NT_SUCCESS(status)) {
+                if (hcrypt::is_success(status)) {
                     if (rezult_size <= (buffer->size() * sizeof(wchar_t))) {
                         //
                         // Remove extra terminating 0
@@ -710,7 +711,7 @@ namespace bcrypt {
                     } else {
                         status = hcrypt::try_resize(buffer, (rezult_size / sizeof(wchar_t)));
                     }
-                } else if (STATUS_BUFFER_TOO_SMALL == status) {
+                } else if (hcrypt::status::buffer_too_small == status) {
                     status = hcrypt::try_resize(buffer, rezult_size / sizeof(wchar_t));
                 } else {
                     break;
@@ -721,12 +722,12 @@ namespace bcrypt {
 
         template<typename T>
         [[nodiscard]]
-        NTSTATUS try_get_property(wchar_t const* property_name, 
+        std::error_code try_get_property(wchar_t const* property_name,
                                   T *value,
                                   size_t *result_size = nullptr) const noexcept {
             static_assert(std::is_pod_v<T>);
             size_t tmp_result_size{ 0 };
-            NTSTATUS status{ try_get_property(property_name,
+            std::error_code status{ try_get_property(property_name,
                                               reinterpret_cast<char *>(value),
                                               sizeof (*value),
                                               &tmp_result_size) };
@@ -740,10 +741,10 @@ namespace bcrypt {
         hcrypt::buffer get_property_as_buffer(wchar_t const* property_name,
                                               size_t default_buffer_size = 256) const {
             hcrypt::buffer b(default_buffer_size);
-            NTSTATUS status{try_get_property(property_name, 
+            std::error_code status{try_get_property(property_name,
                                              &b)};
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptGetProperty failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptGetProperty failed");
             }
             return b;
         }
@@ -751,10 +752,10 @@ namespace bcrypt {
         std::wstring get_property_as_string(wchar_t const* property_name, 
                                             size_t default_buffer_size = 256) const {
             std::wstring b(default_buffer_size, 0);
-            NTSTATUS status{try_get_property(property_name, 
+            std::error_code status{try_get_property(property_name,
                                              &b)};
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptGetProperty failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptGetProperty failed");
             }
             return b;
         }
@@ -762,10 +763,10 @@ namespace bcrypt {
         template <typename T>
         T get_property_as(wchar_t const* property_name) const {
             T value{};
-            NTSTATUS status{try_get_property<T>(property_name, 
+            std::error_code status{try_get_property<T>(property_name,
                                                 &value)};
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptGetProperty failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptGetProperty failed");
             }
             return value;
         }
@@ -774,40 +775,40 @@ namespace bcrypt {
         size_t get_property(wchar_t const* property_name,
                             T *value) const {
             size_t property_size{ 0 };
-            NTSTATUS status{try_get_property(property_name, 
+            std::error_code status{try_get_property(property_name,
                                              &value,
                                              &property_size)};
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptGetProperty failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptGetProperty failed");
             }
             return property_size;
         }
 
         [[nodiscard]]
-        NTSTATUS try_set_property(wchar_t const* property_name, 
+        std::error_code try_set_property(wchar_t const* property_name,
                                   char const *buffer,
                                   size_t buffer_size) {
-            NTSTATUS status{ BCryptSetProperty(get_object_handle(),
+            std::error_code status{ static_cast<hcrypt::status>(BCryptSetProperty(get_object_handle(),
                                                property_name,
                                                reinterpret_cast<unsigned char *>(const_cast<char *>(buffer)),
                                                static_cast<unsigned long>(buffer_size),
-                                               0) };
+                                               0)) };
             return status;
         }
 
         [[nodiscard]]
-        NTSTATUS try_set_property(wchar_t const* property_name, 
+        std::error_code try_set_property(wchar_t const* property_name,
                                   hcrypt::buffer const &buffer) {
-            NTSTATUS status{ try_set_property(property_name,
+            std::error_code status{ try_set_property(property_name,
                                               const_cast<unsigned char *>(buffer.data()),
                                               static_cast<unsigned long>(buffer.size())) };
             return status;
         }
 
         [[nodiscard]]
-        NTSTATUS try_set_property(wchar_t const* property_name, 
+        std::error_code try_set_property(wchar_t const* property_name,
                                   std::wstring const &buffer) {
-            NTSTATUS status{ try_set_property(property_name,
+            std::error_code status{ try_set_property(property_name,
                                               const_cast<unsigned char*>(buffer.data()),
                                               static_cast<unsigned long>(buffer.size() * sizeof(wchar_t))) };
             return status;
@@ -815,9 +816,9 @@ namespace bcrypt {
 
         template <typename T>
         [[nodiscard]]
-        NTSTATUS try_set_property(wchar_t const* property_name,
+        std::error_code try_set_property(wchar_t const* property_name,
                                   T const &value) {
-            NTSTATUS status{ try_set_property(property_name,
+            std::error_code status{ try_set_property(property_name,
                                               &value,
                                               sizeof(value)) };
             return status;
@@ -826,21 +827,21 @@ namespace bcrypt {
         void set_property(wchar_t const* property_name, 
                           char const *buffer,
                           size_t buffer_size) {
-            NTSTATUS status{try_set_property(property_name,
+            std::error_code status{try_set_property(property_name,
                                              buffer,
                                              buffer_size)};
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptSetProperty failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptSetProperty failed");
             }
         }
 
         template <typename T>
         void set_property(wchar_t const* property_name, 
                           T const &value) {
-            NTSTATUS status{try_set_property(property_name,
+            std::error_code status{try_set_property(property_name,
                                              value)};
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptSetProperty failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptSetProperty failed");
             }
         }
 
@@ -851,7 +852,7 @@ namespace bcrypt {
     public:
 
         [[nodiscard]]
-        NTSTATUS try_get_name(std::wstring* name) const noexcept {
+        std::error_code try_get_name(std::wstring* name) const noexcept {
             return try_get_property(BCRYPT_ALGORITHM_NAME, name);
         }
 
@@ -860,7 +861,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_block_length(unsigned long *value) const noexcept {
+        std::error_code try_get_block_length(unsigned long *value) const noexcept {
             return try_get_property(BCRYPT_BLOCK_LENGTH, value);
         }
 
@@ -869,12 +870,12 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_chaining_mode(std::wstring* name) const noexcept {
+        std::error_code try_get_chaining_mode(std::wstring* name) const noexcept {
             return try_get_property(BCRYPT_CHAINING_MODE, name);
         }
 
         [[nodiscard]]
-        NTSTATUS try_set_chaining_mode(std::wstring_view  const &new_mode) {
+        std::error_code try_set_chaining_mode(std::wstring_view  const &new_mode) {
             return try_set_property(BCRYPT_CHAINING_MODE,
                                     reinterpret_cast<char const *>(new_mode.data()),
                                     new_mode.size());
@@ -891,7 +892,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_block_size_list(hcrypt::buffer *b) const noexcept {
+        std::error_code try_get_block_size_list(hcrypt::buffer *b) const noexcept {
             return try_get_property(BCRYPT_BLOCK_SIZE_LIST, b);
         }
 
@@ -900,12 +901,12 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_dh_parameters(hcrypt::buffer* b) const noexcept {
+        std::error_code try_get_dh_parameters(hcrypt::buffer* b) const noexcept {
             return try_get_property(BCRYPT_DH_PARAMETERS, b);
         }
 
         [[nodiscard]]
-        NTSTATUS try_set_dh_parameters(BCRYPT_DH_PARAMETER_HEADER const *b, size_t length_in_bytes) noexcept {
+        std::error_code try_set_dh_parameters(BCRYPT_DH_PARAMETER_HEADER const *b, size_t length_in_bytes) noexcept {
             return try_set_property(BCRYPT_DH_PARAMETERS, 
                                     reinterpret_cast<char const *>(b),
                                     length_in_bytes);
@@ -922,12 +923,12 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_dsa_parameters(BCRYPT_DSA_PARAMETER_HEADER_V2* b) const noexcept {
+        std::error_code try_get_dsa_parameters(BCRYPT_DSA_PARAMETER_HEADER_V2* b) const noexcept {
             return try_get_property(BCRYPT_DSA_PARAMETERS, b);
         }
 
         [[nodiscard]]
-        NTSTATUS try_set_dsa_parameters(BCRYPT_DSA_PARAMETER_HEADER_V2 const &b) noexcept {
+        std::error_code try_set_dsa_parameters(BCRYPT_DSA_PARAMETER_HEADER_V2 const &b) noexcept {
             return try_set_property(BCRYPT_DSA_PARAMETERS, b);
         }
 
@@ -940,7 +941,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_effective_key_length(unsigned long* value) const noexcept {
+        std::error_code try_get_effective_key_length(unsigned long* value) const noexcept {
             return try_get_property(BCRYPT_EFFECTIVE_KEY_LENGTH, value);
         }
 
@@ -949,7 +950,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_hash_block_length(unsigned long* value) const noexcept {
+        std::error_code try_get_hash_block_length(unsigned long* value) const noexcept {
             return try_get_property(BCRYPT_HASH_BLOCK_LENGTH, value);
         }
 
@@ -958,7 +959,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_hash_length(unsigned long* value) const noexcept {
+        std::error_code try_get_hash_length(unsigned long* value) const noexcept {
             return try_get_property(BCRYPT_HASH_LENGTH, value);
         }
 
@@ -967,7 +968,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_oid_list(hcrypt::buffer *b) const noexcept {
+        std::error_code try_get_oid_list(hcrypt::buffer *b) const noexcept {
             return try_get_property(BCRYPT_HASH_OID_LIST, b);
         }
 
@@ -976,7 +977,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_initialization_vector(hcrypt::buffer *b) const noexcept {
+        std::error_code try_get_initialization_vector(hcrypt::buffer *b) const noexcept {
             return try_get_property(BCRYPT_INITIALIZATION_VECTOR, b);
         }
 
@@ -985,7 +986,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_key_length(unsigned long* value) const noexcept {
+        std::error_code try_get_key_length(unsigned long* value) const noexcept {
             return try_get_property(BCRYPT_KEY_LENGTH, value);
         }
 
@@ -994,7 +995,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_key_lengts(BCRYPT_KEY_LENGTHS_STRUCT* b) const noexcept {
+        std::error_code try_get_key_lengts(BCRYPT_KEY_LENGTHS_STRUCT* b) const noexcept {
             return try_get_property(BCRYPT_KEY_LENGTHS, b);
         }
 
@@ -1003,7 +1004,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_key_object_length(unsigned long* value) const noexcept {
+        std::error_code try_get_key_object_length(unsigned long* value) const noexcept {
             return try_get_property(BCRYPT_OBJECT_LENGTH, value);
         }
 
@@ -1012,7 +1013,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_key_strength(unsigned long* value) const noexcept {
+        std::error_code try_get_key_strength(unsigned long* value) const noexcept {
             return try_get_property(BCRYPT_KEY_STRENGTH, value);
         }
 
@@ -1021,12 +1022,12 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_message_block_length(unsigned long* value) const noexcept {
+        std::error_code try_get_message_block_length(unsigned long* value) const noexcept {
             return try_get_property(BCRYPT_MESSAGE_BLOCK_LENGTH, value);
         }
 
         [[nodiscard]]
-        NTSTATUS try_set_message_block_length(unsigned long value) noexcept {
+        std::error_code try_set_message_block_length(unsigned long value) noexcept {
             return try_set_property(BCRYPT_MESSAGE_BLOCK_LENGTH, value);
         }
 
@@ -1039,7 +1040,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_multi_object_length(hcrypt::buffer *b) const noexcept {
+        std::error_code try_get_multi_object_length(hcrypt::buffer *b) const noexcept {
             return try_get_property(BCRYPT_MULTI_OBJECT_LENGTH, b);
         }
 
@@ -1048,7 +1049,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_object_length(unsigned long* value) const noexcept {
+        std::error_code try_get_object_length(unsigned long* value) const noexcept {
             return try_get_property(BCRYPT_OBJECT_LENGTH, value);
         }
 
@@ -1057,7 +1058,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_padding_schemes(unsigned long* value) const noexcept {
+        std::error_code try_get_padding_schemes(unsigned long* value) const noexcept {
             return try_get_property(BCRYPT_PADDING_SCHEMES, value);
         }
 
@@ -1066,7 +1067,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_get_signature_length(unsigned long* value) const noexcept {
+        std::error_code try_get_signature_length(unsigned long* value) const noexcept {
             return try_get_property(BCRYPT_SIGNATURE_LENGTH, value);
         }
 
@@ -1166,33 +1167,33 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_duplicate_to(hash *hash) const noexcept {
-            NTSTATUS status{ STATUS_SUCCESS };
+        std::error_code try_duplicate_to(hash *hash) const noexcept {
+            std::error_code status{ hcrypt::status::success };
             if (hash != this) {
                 
                 unsigned long hash_size{ 0 };
                 status = try_get_object_length(&hash_size);
 
-                if (!NT_SUCCESS(status)) {
+                if (hcrypt::is_failure(status)) {
                     return status;
                 }
 
                 hcrypt::buffer b;
                 status = hcrypt::try_resize(b, hash_size);
 
-                if (!NT_SUCCESS(status)) {
+                if (hcrypt::is_failure(status)) {
                     return status;
                 }
 
                 BCRYPT_HASH_HANDLE h{ nullptr };
                 
-                status = BCryptDuplicateHash(h_,
-                                                &h,
-                                                reinterpret_cast<unsigned char *>(b.data()),
-                                                static_cast<unsigned long>(b.size()),
-                                                0);
+                status = static_cast<hcrypt::status>(BCryptDuplicateHash(h_,
+                                                                        &h,
+                                                                        reinterpret_cast<unsigned char *>(b.data()),
+                                                                        static_cast<unsigned long>(b.size()),
+                                                                        0));
 
-                if (!NT_SUCCESS(status)) {
+                if (hcrypt::is_failure(status)) {
                     return status;
                 }
 
@@ -1212,14 +1213,14 @@ namespace bcrypt {
 
             BCRYPT_HASH_HANDLE h{ nullptr };
 
-            NTSTATUS status{ BCryptDuplicateHash(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptDuplicateHash(h_,
                                                  &h,
                                                  reinterpret_cast<unsigned char*>(b.data()),
                                                  static_cast<unsigned long>(b.size()),
-                                                 0) };
+                                                 0)) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptDuplicateHash failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptDuplicateHash failed");
             }
 
             hash_duplicate.h_ = h;
@@ -1230,56 +1231,56 @@ namespace bcrypt {
 
         void close() noexcept {
             if (is_valid()) {
-                NTSTATUS status{ BCryptDestroyHash(h_) };
+                std::error_code status{ static_cast<hcrypt::status>(BCryptDestroyHash(h_)) };
                 b_.clear();
-                BCRYPT_CODDING_ERROR_IF_NOT(NT_SUCCESS(status));
+                BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
             }
         }
 
         [[nodiscard]]
-        NTSTATUS try_hash_data(char const *buffer,
+        std::error_code try_hash_data(char const *buffer,
                                size_t buffer_length) {
-            return BCryptHashData(h_,
+            return static_cast<hcrypt::status>(BCryptHashData(h_,
                                   reinterpret_cast<unsigned char *>(const_cast<char *>(buffer)),
                                   static_cast<unsigned long>(buffer_length),
-                                  0);
+                                  0));
         }
 
         void hash_data(char const* buffer,
                        size_t buffer_length) {
-            NTSTATUS status{ try_hash_data(buffer,
+            std::error_code status{ try_hash_data(buffer,
                                            buffer_length) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptHashData failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptHashData failed");
             }
 
         }
 
         [[nodiscard]]
-        NTSTATUS try_process_multiple_operations(BCRYPT_MULTI_HASH_OPERATION const *operations,
+        std::error_code try_process_multiple_operations(BCRYPT_MULTI_HASH_OPERATION const *operations,
                                                  size_t operations_count) {
-            return BCryptProcessMultiOperations(h_,
+            return static_cast<hcrypt::status>(BCryptProcessMultiOperations(h_,
                                                 BCRYPT_OPERATION_TYPE_HASH,
                                                 reinterpret_cast<void *>(const_cast<BCRYPT_MULTI_HASH_OPERATION *>(operations)),
                                                 static_cast<LONG>(operations_count * sizeof(BCRYPT_MULTI_HASH_OPERATION)),
-                                                0);
+                                                0));
         }
 
         template<size_t N>
         [[nodiscard]]
-        NTSTATUS try_process_multiple_operations(BCRYPT_MULTI_HASH_OPERATION const (&operations)[N]) {
+        std::error_code try_process_multiple_operations(BCRYPT_MULTI_HASH_OPERATION const (&operations)[N]) {
             return try_process_multiple_operations(operations,
                                                    N);
         }
 
         void process_multiple_operations(BCRYPT_MULTI_HASH_OPERATION const *operations,
                                          size_t operations_count) {
-            NTSTATUS status{ try_process_multiple_operations(operations,
+            std::error_code status{ try_process_multiple_operations(operations,
                                                               operations_count) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptProcessMultiOperations failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptProcessMultiOperations failed");
             }
         }
 
@@ -1290,35 +1291,35 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_finish(char *output,
+        std::error_code try_finish(char *output,
                             size_t output_length) {
             
-            return BCryptFinishHash(h_, 
+            return static_cast<hcrypt::status>(BCryptFinishHash(h_,
                                     reinterpret_cast<unsigned char *>(output),
                                     static_cast<unsigned long>(output_length),
-                                    0);
+                                    0));
         }
 
         [[nodiscard]]
-        NTSTATUS try_finish(hcrypt::buffer *b) {
-            NTSTATUS status{ STATUS_SUCCESS };
+        std::error_code try_finish(hcrypt::buffer *b) {
+            std::error_code status{ hcrypt::status::success };
 
             unsigned long hash_length{ 0 };
             status = try_get_hash_length(&hash_length);
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             status = hcrypt::try_resize(b, hash_length);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             status = try_finish(b->data(),
                                 b->size());
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -1328,11 +1329,11 @@ namespace bcrypt {
         void finish(char *output,
                     size_t output_length) {
 
-            NTSTATUS status{ try_finish(output,
+            std::error_code status{ try_finish(output,
                                         output_length) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptFinishHash failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptFinishHash failed");
             }
         }
 
@@ -1340,11 +1341,11 @@ namespace bcrypt {
             hcrypt::buffer b;
             b.resize(get_hash_length());
 
-            NTSTATUS status{ try_finish(b.data(),
+            std::error_code status{ try_finish(b.data(),
                                         b.size()) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptFinishHash failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptFinishHash failed");
             }
 
             return b;
@@ -1423,47 +1424,47 @@ namespace bcrypt {
 
         void close() noexcept {
             if (is_valid()) {
-                NTSTATUS status{ BCryptDestroySecret(h_) };
-                BCRYPT_CODDING_ERROR_IF_NOT(NT_SUCCESS(status));
+                std::error_code status{ static_cast<hcrypt::status>(BCryptDestroySecret(h_)) };
+                BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
             }
         }
 
         [[nodiscard]]
-        NTSTATUS try_derive_key(wchar_t const *key_derivation_function,
+        std::error_code try_derive_key(wchar_t const *key_derivation_function,
                                 BCryptBufferDesc *parameters_list,
                                 hcrypt::buffer *b) noexcept {
 
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
 
             unsigned long key_size{ 0 };
                 
-            status = BCryptDeriveKey(h_,
+            status = static_cast<hcrypt::status>(BCryptDeriveKey(h_,
                                         key_derivation_function,
                                         parameters_list,
                                         nullptr,
                                         0,
                                         &key_size,
-                                        0);
+                                        0));
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             BCRYPT_KEY_HANDLE new_key{ nullptr };
             status = hcrypt::try_resize(b, key_size);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
-            status = BCryptDeriveKey(h_,
+            status = static_cast<hcrypt::status>(BCryptDeriveKey(h_,
                                         key_derivation_function,
                                         parameters_list,
                                         reinterpret_cast<unsigned char *>(b->data()),
                                         static_cast<unsigned long>(b->size()),
                                         &key_size,
-                                        0);
+                                        0));
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -1473,34 +1474,34 @@ namespace bcrypt {
         hcrypt::buffer derive_key(wchar_t const *key_derivation_function,
                                   BCryptBufferDesc *parameters_list = nullptr) {
 
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
             unsigned long key_size{ 0 };
             hcrypt::buffer b;
                 
-            status = BCryptDeriveKey(h_,
+            status = static_cast<hcrypt::status>(BCryptDeriveKey(h_,
                                      key_derivation_function,
                                      parameters_list,
                                      nullptr,
                                      0,
                                      &key_size,
-                                     0);
+                                     0));
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptDeriveKey failed to estimate key size");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptDeriveKey failed to estimate key size");
             }
 
             b.resize(key_size);
 
-            status = BCryptDeriveKey(h_,
+            status = static_cast<hcrypt::status>(BCryptDeriveKey(h_,
                                      key_derivation_function,
                                      parameters_list,
                                      reinterpret_cast<unsigned char *>(b.data()),
                                      static_cast<unsigned long>(b.size()),
                                      &key_size,
-                                     0);
+                                     0));
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptDeriveKey failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptDeriveKey failed");
             }
 
             return b;
@@ -1579,33 +1580,33 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_duplicate_to(key *key) const noexcept {
-            NTSTATUS status{ STATUS_SUCCESS };
+        std::error_code try_duplicate_to(key *key) const noexcept {
+            std::error_code status{ hcrypt::status::success };
 
             if (key != this) {
                 
                 unsigned long key_size{ 0 };
                 status = try_get_key_object_length(&key_size);
 
-                if (!NT_SUCCESS(status)) {
+                if (hcrypt::is_failure(status)) {
                     return status;
                 }
 
                 hcrypt::buffer b;
                 status = hcrypt::try_resize(b, key_size);
-                if (!NT_SUCCESS(status)) {
+                if (hcrypt::is_failure(status)) {
                     return status;
                 }
 
                 BCRYPT_KEY_HANDLE h{ nullptr };
                 
-                status = BCryptDuplicateKey(h_,
+                status = static_cast<hcrypt::status>(BCryptDuplicateKey(h_,
                                             &h,
                                             reinterpret_cast<unsigned char *>(b.data()),
                                             static_cast<unsigned long>(b.size()),
-                                            0);
+                                            0));
 
-                if (!NT_SUCCESS(status)) {
+                if (hcrypt::is_failure(status)) {
                     return status;
                 }
 
@@ -1626,14 +1627,14 @@ namespace bcrypt {
 
             BCRYPT_KEY_HANDLE h{ nullptr };
 
-            NTSTATUS status{ BCryptDuplicateKey(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptDuplicateKey(h_,
                                                 &h,
                                                 reinterpret_cast<unsigned char*>(b.data()),
                                                 static_cast<unsigned long>(b.size()),
-                                                0) };
+                                                0)) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptDuplicateKey failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptDuplicateKey failed");
             }
 
             key_duplicate.h_ = h;
@@ -1644,58 +1645,58 @@ namespace bcrypt {
 
         void close() noexcept {
             if (is_valid()) {
-                NTSTATUS status{ BCryptDestroyKey(h_) };
+                std::error_code status{ static_cast<hcrypt::status>(BCryptDestroyKey(h_)) };
                 b_.clear();
-                BCRYPT_CODDING_ERROR_IF_NOT(NT_SUCCESS(status));
+                BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
             }
         }
 
         [[nodiscard]]
-        NTSTATUS try_finalize_key_pair() {
-            NTSTATUS status{ BCryptFinalizeKeyPair(h_, 0) };
+        std::error_code try_finalize_key_pair() {
+            std::error_code status{ static_cast<hcrypt::status>(BCryptFinalizeKeyPair(h_, 0)) };
             return status;
         }
 
         void finalize_key_pair() {
-            NTSTATUS status{ try_finalize_key_pair() };
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptFinalizeKeyPair failed");
+            std::error_code status{ try_finalize_key_pair() };
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptFinalizeKeyPair failed");
             }
 
         }
 
         [[nodiscard]]
-        NTSTATUS try_export_key(wchar_t const *blob_type,
+        std::error_code try_export_key(wchar_t const *blob_type,
                                 BCRYPT_KEY_HANDLE export_key_protector,
                                 hcrypt::buffer *b) noexcept {
 
             unsigned long buffer_size{ 0 };
 
-            NTSTATUS status{ BCryptExportKey(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptExportKey(h_,
                                              export_key_protector,
                                              blob_type,
                                              nullptr,
                                              0,
                                              &buffer_size,
-                                             0) };
-            if (!NT_SUCCESS(status)) {
+                                             0)) };
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             status = hcrypt::try_resize(b, buffer_size);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
-            status = BCryptExportKey(h_,
+            status = static_cast<hcrypt::status>(BCryptExportKey(h_,
                                         export_key_protector,
                                         blob_type,
                                         b->empty() ? nullptr : reinterpret_cast<unsigned char*>(b->data()),
                                         b->empty() ? 0 : static_cast<unsigned long>(b->size()),
                                         &buffer_size,
-                                        0);
+                                        0));
 
-            if (NT_SUCCESS(status)) {
+            if (hcrypt::is_success(status)) {
                 status = hcrypt::try_resize(b, buffer_size);
             }
 
@@ -1703,7 +1704,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_export_key(wchar_t const *blob_type,
+        std::error_code try_export_key(wchar_t const *blob_type,
                                 key const & export_key_protector,
                                 hcrypt::buffer *b) noexcept {
             return try_export_key(blob_type,
@@ -1717,29 +1718,29 @@ namespace bcrypt {
             hcrypt::buffer b;
             unsigned long buffer_size{ 0 };
 
-            NTSTATUS status{ BCryptExportKey(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptExportKey(h_,
                                                 export_key_protector,
                                                 blob_type,
                                                 nullptr,
                                                 0,
                                                 &buffer_size,
-                                                0) };
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptExportKey failed");
+                                                0)) };
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptExportKey failed");
             }
 
             b.resize(buffer_size);
 
-            status = BCryptExportKey(h_,
+            status = static_cast<hcrypt::status>(BCryptExportKey(h_,
                                         export_key_protector,
                                         blob_type,
                                         b.empty() ? nullptr : reinterpret_cast<unsigned char*>(b.data()),
                                         b.empty() ? 0 : static_cast<unsigned long>(b.size()),
                                         &buffer_size,
-                                        0);
+                                        0));
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptExportKey failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptExportKey failed");
             }
 
             b.resize(buffer_size);
@@ -1755,7 +1756,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_key_derivation(char *key_buffer,
+        std::error_code try_key_derivation(char *key_buffer,
                                     size_t key_buffer_length,
                                     size_t *generated_key_length,
                                     BCryptBufferDesc *parameter_list,
@@ -1763,14 +1764,14 @@ namespace bcrypt {
 
             ULONG generated_key_length_tmp{ 0 };
 
-            NTSTATUS status{ BCryptKeyDerivation(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptKeyDerivation(h_,
                                                  parameter_list,
                                                  reinterpret_cast<unsigned char*>(key_buffer),
                                                  static_cast<unsigned long>(key_buffer_length),
                                                  &generated_key_length_tmp,
-                                                 flags) };
+                                                 flags)) };
 
-            if (NT_SUCCESS(status)) {
+            if (hcrypt::is_success(status)) {
                 *generated_key_length = generated_key_length_tmp;
             }
 
@@ -1778,16 +1779,16 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_key_derivation(size_t desired_key_size,
+        std::error_code try_key_derivation(size_t desired_key_size,
                                     BCryptBufferDesc *parameter_list,
                                     unsigned long flags,
                                     hcrypt::buffer *b) noexcept {
 
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
 
             size_t generated_key_size{ 0 };
             status = hcrypt::try_resize(b, desired_key_size);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -1797,7 +1798,7 @@ namespace bcrypt {
                                         parameter_list,
                                         flags);
 
-            if (NT_SUCCESS(status)) {
+            if (hcrypt::is_success(status)) {
                 status = hcrypt::try_resize(b, generated_key_size);
                 return status;
             } else {
@@ -1814,14 +1815,14 @@ namespace bcrypt {
 
             size_t generated_key_size{ 0 };
 
-            NTSTATUS status{ try_key_derivation(key_buffer,
+            std::error_code status{ try_key_derivation(key_buffer,
                                                 key_buffer_length,
                                                 &generated_key_size,
                                                 parameter_list,
                                                 flags) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptKeyDerivation failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptKeyDerivation failed");
             }
 
             return generated_key_size;
@@ -1834,23 +1835,23 @@ namespace bcrypt {
             b.resize(desired_key_size);
             size_t generated_key_size{ 0 };
 
-            NTSTATUS status{ try_key_derivation(b.empty() ? nullptr : b.data(),
+            std::error_code status{ try_key_derivation(b.empty() ? nullptr : b.data(),
                                                 b.empty() ? 0 : b.size(),
                                                 &generated_key_size,
                                                 parameter_list,
                                                 flags) };
 
-            if (NT_SUCCESS(status)) {
+            if (hcrypt::is_success(status)) {
                 b.resize(generated_key_size);
             } else {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptKeyDerivation failed");
+                throw std::system_error(status, "BCryptKeyDerivation failed");
             }
 
             return b;
         }
 
         [[nodiscard]]
-        NTSTATUS try_sign_hash(char const *hash_value_to_sign,
+        std::error_code try_sign_hash(char const *hash_value_to_sign,
                                size_t hash_value_to_sign_size,
                                void *padding_info,
                                unsigned long flags,
@@ -1860,16 +1861,16 @@ namespace bcrypt {
 ;
             unsigned long buffer_size{ 0 };
 
-            NTSTATUS status{ BCryptSignHash(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptSignHash(h_,
                                             padding_info,
                                             reinterpret_cast<unsigned char*>(const_cast<char*>(hash_value_to_sign)),
                                             static_cast<unsigned long>(hash_value_to_sign_size),
                                             reinterpret_cast<unsigned char*>(signature_buffer),
                                             static_cast<unsigned long>(signature_buffer_length),
                                             &buffer_size,
-                                            flags) };
+                                            flags)) };
 
-            if (NT_SUCCESS(status)) {
+            if (hcrypt::is_success(status)) {
                 *required_size = buffer_size;
             }
 
@@ -1877,13 +1878,13 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_sign_hash(char const *hash_value_to_sign,
+        std::error_code try_sign_hash(char const *hash_value_to_sign,
                                size_t hash_value_to_sign_size,
                                void *padding_info,
                                unsigned long flags,
                                hcrypt::buffer *b) noexcept {
 
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
 
             size_t buffer_size{ 0 };
 
@@ -1895,12 +1896,12 @@ namespace bcrypt {
                                     0,
                                     &buffer_size);
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             status = hcrypt::try_resize(b, buffer_size);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -1912,7 +1913,7 @@ namespace bcrypt {
                                     b->empty() ? 0 : b->size(),
                                     &buffer_size);
 
-            if (NT_SUCCESS(status)) {
+            if (hcrypt::is_success(status)) {
                 status = hcrypt::try_resize(b, buffer_size);
             }
 
@@ -1927,7 +1928,7 @@ namespace bcrypt {
             hcrypt::buffer b;
             size_t buffer_size{ 0 };
 
-            NTSTATUS status{ try_sign_hash(hash_value_to_sign,
+            std::error_code status{ try_sign_hash(hash_value_to_sign,
                                            hash_value_to_sign_size,
                                            padding_info,
                                            flags,
@@ -1935,8 +1936,8 @@ namespace bcrypt {
                                            0,
                                            &buffer_size) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptSignHash failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptSignHash failed");
             }
 
             b.resize(buffer_size);
@@ -1949,29 +1950,29 @@ namespace bcrypt {
                                     b.empty() ? 0 : b.size(),
                                     &buffer_size);
 
-            if (NT_SUCCESS(status)) {
+            if (hcrypt::is_success(status)) {
                 b.resize(buffer_size);
             } else {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptSignHash failed");
+                throw std::system_error(status, "BCryptSignHash failed");
             }
             return b;
         }
 
         [[nodiscard]]
-        NTSTATUS try_verify_signature(void const *padding_info,
+        std::error_code try_verify_signature(void const *padding_info,
                                       char *hash,
                                       size_t hash_size,
                                       char *signature,
                                       size_t signature_size,
                                       unsigned long flags = 0) noexcept {
 
-            return BCryptVerifySignature(h_,
+            return static_cast<hcrypt::status>(BCryptVerifySignature(h_,
                                          const_cast<void*>(padding_info),
                                          reinterpret_cast<unsigned char*>(const_cast<char*>(hash)),
                                          static_cast<unsigned long>(hash_size),
                                          reinterpret_cast<unsigned char*>(const_cast<char*>(signature)),
                                          static_cast<unsigned long>(signature_size),
-                                         flags);
+                                         flags));
         }
 
         [[nodiscard]]
@@ -1982,27 +1983,27 @@ namespace bcrypt {
                               size_t signature_size,
                               unsigned long flags = 0) {
 
-            NTSTATUS status = try_verify_signature(padding_info,
+            std::error_code status = try_verify_signature(padding_info,
                                                    hash,
                                                    hash_size,
                                                    signature,
                                                    signature_size,
                                                    flags);
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
 
-                if (STATUS_INVALID_SIGNATURE == status) {
+                if (hcrypt::status::invalid_signature == status) {
                     return false;
                 } 
 
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptVerifySignature failed");
+                throw std::system_error(status, "BCryptVerifySignature failed");
             }
 
             return true;
         }
 
         [[nodiscard]]
-        NTSTATUS try_encrypt(char const *input_buffer,
+        std::error_code try_encrypt(char const *input_buffer,
                              size_t encrypt_buffer_length,
                              void *padding_info,
                              char *initialization_vector,
@@ -2012,7 +2013,7 @@ namespace bcrypt {
                              size_t *output_expected_length,
                              unsigned long flags = 0) {
             unsigned long output_expected_length_tmp{ 0 };
-            NTSTATUS status{ BCryptEncrypt(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptEncrypt(h_,
                                            reinterpret_cast<unsigned char*>(const_cast<char*>(input_buffer)),
                                            static_cast<unsigned long>(encrypt_buffer_length),
                                            padding_info,
@@ -2021,7 +2022,7 @@ namespace bcrypt {
                                            reinterpret_cast<unsigned char*>(output),
                                            static_cast<unsigned long>(output_length),
                                            &output_expected_length_tmp,
-                                           flags) };
+                                           flags)) };
             
             *output_expected_length = output_expected_length_tmp;
             
@@ -2038,7 +2039,7 @@ namespace bcrypt {
                      size_t *output_expected_length,
                      unsigned long flags = 0) {
 
-            NTSTATUS status{ try_encrypt(input_buffer, 
+            std::error_code status{ try_encrypt(input_buffer,
                                          encrypt_buffer_length,
                                          padding_info,
                                          initialization_vector,
@@ -2048,13 +2049,13 @@ namespace bcrypt {
                                          output_expected_length,
                                          flags) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptEncrypt failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptEncrypt failed");
             }
         }
 
         [[nodiscard]]
-        NTSTATUS try_decrypt(char const *input_buffer,
+        std::error_code try_decrypt(char const *input_buffer,
                              size_t encrypt_buffer_length,
                              void *padding_info,
                              char *initialization_vector,
@@ -2064,7 +2065,7 @@ namespace bcrypt {
                              size_t *output_expected_length,
                              unsigned long flags = 0) {
             unsigned long output_expected_length_tmp{ 0 };
-            NTSTATUS status{ BCryptDecrypt(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptDecrypt(h_,
                                            reinterpret_cast<unsigned char*>(const_cast<char*>(input_buffer)),
                                            static_cast<unsigned long>(encrypt_buffer_length),
                                            padding_info,
@@ -2073,7 +2074,7 @@ namespace bcrypt {
                                            reinterpret_cast<unsigned char*>(output),
                                            static_cast<unsigned long>(output_length),
                                            &output_expected_length_tmp,
-                                           flags) };
+                                           flags)) };
             
             *output_expected_length = output_expected_length_tmp;
             
@@ -2091,7 +2092,7 @@ namespace bcrypt {
                      size_t *output_expected_length,
                      unsigned long flags = 0) {
 
-            NTSTATUS status{ try_decrypt(input_buffer, 
+            std::error_code status{ try_decrypt(input_buffer,
                                          encrypt_buffer_length,
                                          padding_info,
                                          initialization_vector,
@@ -2101,13 +2102,13 @@ namespace bcrypt {
                                          output_expected_length,
                                          flags) };
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
 
-                if (STATUS_AUTH_TAG_MISMATCH == status) {
+                if (hcrypt::status::auth_tag_mismatch == status) {
                     return false;
                 }
 
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptDecrypt failed");
+                throw std::system_error(status, "BCryptDecrypt failed");
             }
 
             return true;
@@ -2123,21 +2124,21 @@ namespace bcrypt {
     }
 
     [[nodiscard]]
-    inline NTSTATUS try_create_secret(BCRYPT_KEY_HANDLE private_key,
+    inline std::error_code try_create_secret(BCRYPT_KEY_HANDLE private_key,
                                       BCRYPT_KEY_HANDLE public_key,
                                       secret *s) noexcept {
 
         BCRYPT_SECRET_HANDLE h{ nullptr };
         
-        NTSTATUS status{ BCryptSecretAgreement(private_key, public_key, &h, 0) };
-        if (NT_SUCCESS(status)) {
+        std::error_code status{ static_cast<hcrypt::status>(BCryptSecretAgreement(private_key, public_key, &h, 0)) };
+        if (hcrypt::is_success(status)) {
             s->attach(h);
         }
         return status;
     }
 
     [[nodiscard]]
-    inline NTSTATUS try_create_secret(key const &private_key,
+    inline std::error_code try_create_secret(key const &private_key,
                                       key const &public_key,
                                       secret *s) noexcept {
 
@@ -2149,11 +2150,11 @@ namespace bcrypt {
     inline secret create_secret(BCRYPT_KEY_HANDLE private_key,
                                 BCRYPT_KEY_HANDLE public_key ) {
         secret s;
-        NTSTATUS status{ try_create_secret(private_key, 
+        std::error_code status{ try_create_secret(private_key,
                                            public_key, 
                                            &s) };
-        if (!NT_SUCCESS(status)) {
-            throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptSecretAgreement failed");
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "BCryptSecretAgreement failed");
         }
         return s;
     }
@@ -2234,65 +2235,65 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_open(wchar_t const *algorithm,
+        std::error_code try_open(wchar_t const *algorithm,
                           wchar_t const *provider = nullptr,
                           unsigned long flags = 0) noexcept {
             close();
-            NTSTATUS status{ BCryptOpenAlgorithmProvider(&h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptOpenAlgorithmProvider(&h_,
                                                          algorithm,
                                                          provider,
-                                                         flags) };
+                                                         flags)) };
             return status;
         }
 
         void open(wchar_t const *algorithm,
                   wchar_t const *provider = nullptr,
                   unsigned long flags = 0) {
-            NTSTATUS status{ try_open (algorithm,
+            std::error_code status{ try_open (algorithm,
                                        provider,
                                        flags)};
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptOpenAlgorithmProvider failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptOpenAlgorithmProvider failed");
             }
         }
 
         void close() noexcept {
             if (is_valid()) {
-                NTSTATUS status{ BCryptCloseAlgorithmProvider(h_, 0) };
-                BCRYPT_CODDING_ERROR_IF_NOT(NT_SUCCESS(status));
+                std::error_code status{ static_cast<hcrypt::status>(BCryptCloseAlgorithmProvider(h_, 0)) };
+                BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
             }
         }
 
         [[nodiscard]]
-        NTSTATUS try_generate_symmetric_key(char const *secret, 
+        std::error_code try_generate_symmetric_key(char const *secret,
                                             size_t secret_length,
                                             key *k) noexcept {
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
 
             unsigned long key_size{ 0 };
             status = try_get_key_object_length(&key_size);
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             hcrypt::buffer b;
             status = hcrypt::try_resize(b, key_size);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             BCRYPT_KEY_HANDLE key_handle{ nullptr };
 
-            status = BCryptGenerateSymmetricKey(h_,
+            status = static_cast<hcrypt::status>(BCryptGenerateSymmetricKey(h_,
                                                 &key_handle,
                                                 reinterpret_cast<unsigned char *>(b.data()),
                                                 static_cast<unsigned long>(b.size()),
                                                 reinterpret_cast<unsigned char *>(const_cast<char *>(secret)),
                                                 static_cast<unsigned long>(secret_length),
-                                                0);
+                                                0));
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -2310,16 +2311,16 @@ namespace bcrypt {
 
             BCRYPT_KEY_HANDLE key_handle{ nullptr };
 
-            NTSTATUS status{ BCryptGenerateSymmetricKey(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptGenerateSymmetricKey(h_,
                                                         &key_handle,
                                                         reinterpret_cast<unsigned char*>(b.data()),
                                                         static_cast<unsigned long>(b.size()),
                                                         reinterpret_cast<unsigned char*>(const_cast<char*>(secret)),
                                                         static_cast<unsigned long>(secret_length),
-                                                        0) };
+                                                        0)) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptDuplicateKey failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptDuplicateKey failed");
             }
 
             key new_key;
@@ -2331,17 +2332,17 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_generate_empty_key_pair(size_t key_size, 
+        std::error_code try_generate_empty_key_pair(size_t key_size,
                                              key *k) noexcept {
 
             BCRYPT_KEY_HANDLE new_key{ nullptr };
             
-            NTSTATUS status{ BCryptGenerateKeyPair(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptGenerateKeyPair(h_,
                                                    &new_key,
                                                    static_cast<unsigned long>(key_size),
-                                                   0) };
+                                                   0)) };
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -2355,13 +2356,13 @@ namespace bcrypt {
 
             BCRYPT_KEY_HANDLE new_key{ nullptr };
             
-            NTSTATUS status{ BCryptGenerateKeyPair(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptGenerateKeyPair(h_,
                                                    &new_key,
                                                    static_cast<unsigned long>(key_size),
-                                                   0) };
+                                                   0)) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptGenerateKeyPair failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptGenerateKeyPair failed");
             }
 
             key k;
@@ -2371,29 +2372,29 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_import_symetric_key(BCRYPT_KEY_HANDLE import_key,
+        std::error_code try_import_symetric_key(BCRYPT_KEY_HANDLE import_key,
                                          wchar_t const *blob_type,
                                          char const *key_object,
                                          size_t key_object_size,
                                          key *k) noexcept {
 
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
 
             unsigned long key_size{ 0 };
             status = try_get_object_length(&key_size);
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             BCRYPT_KEY_HANDLE new_key{ nullptr };
             hcrypt::buffer b;
             status = hcrypt::try_resize(b, key_size);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
-            status = BCryptImportKey(h_,
+            status = static_cast<hcrypt::status>(BCryptImportKey(h_,
                                      import_key,
                                      blob_type,
                                      &new_key,
@@ -2401,9 +2402,9 @@ namespace bcrypt {
                                      static_cast<unsigned long>(key_object_size),
                                      reinterpret_cast<unsigned char *>(b.data()),
                                      static_cast<unsigned long>(b.size()),
-                                     0);
+                                     0));
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -2416,7 +2417,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_import_symetric_key(key const &import_key,
+        std::error_code try_import_symetric_key(key const &import_key,
                                          wchar_t const *blob_type,
                                          char const *key_object,
                                          size_t key_object_size,
@@ -2438,7 +2439,7 @@ namespace bcrypt {
             hcrypt::buffer b;
             b.resize(get_object_length());
 
-            NTSTATUS status{ BCryptImportKey(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptImportKey(h_,
                                              import_key,
                                              blob_type,
                                              &new_key,
@@ -2446,10 +2447,10 @@ namespace bcrypt {
                                              static_cast<unsigned long>(b.size()),
                                              reinterpret_cast<unsigned char*>(const_cast<char*>(key_object)),
                                              static_cast<unsigned long>(key_object_size),
-                                             0) };
+                                             0)) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptImportKey failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptImportKey failed");
             }
 
             key k;
@@ -2471,26 +2472,26 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_import_key_pair(wchar_t const *blob_type,
+        std::error_code try_import_key_pair(wchar_t const *blob_type,
                                      char const *key_object,
                                      size_t key_object_size,
                                      BCRYPT_KEY_HANDLE import_key,
                                      unsigned long flags,
                                      key *k) noexcept {
 
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
 
             BCRYPT_KEY_HANDLE new_key{ nullptr };
 
-            status = BCryptImportKeyPair(h_,
+            status = static_cast<hcrypt::status>(BCryptImportKeyPair(h_,
                                          import_key,
                                          blob_type,
                                          &new_key,
                                          reinterpret_cast<unsigned char *>(const_cast<char *>(key_object)),
                                          static_cast<unsigned long>(key_object_size),
-                                         flags);
+                                         flags));
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -2501,7 +2502,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_import_key_pair(wchar_t const *blob_type,
+        std::error_code try_import_key_pair(wchar_t const *blob_type,
                                      char const *key_object,
                                      size_t key_object_size,
                                      key const &import_key,
@@ -2524,16 +2525,16 @@ namespace bcrypt {
 
             BCRYPT_KEY_HANDLE new_key{ nullptr };
 
-            NTSTATUS status{ BCryptImportKeyPair(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptImportKeyPair(h_,
                                                  import_key,
                                                  blob_type,
                                                  &new_key,
                                                  reinterpret_cast<unsigned char*>(const_cast<char*>(key_object)),
                                                  static_cast<unsigned long>(key_object_size),
-                                                 flags) };
+                                                 flags)) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptImportKeyPair failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptImportKeyPair failed");
             }
 
             key k;
@@ -2556,28 +2557,28 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_derive_key_PBKDF2(char const *password,
+        std::error_code try_derive_key_PBKDF2(char const *password,
                                        size_t password_length,
                                        char const *salt,
                                        size_t salt_length,
                                        unsigned long long iterations_count,
                                        hcrypt::buffer *b) noexcept {
 
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
 
             unsigned long key_size{ 0 };
             status = try_get_key_object_length(&key_size);
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
                 
             status = hcrypt::try_resize(b, key_size);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
-            status =  BCryptDeriveKeyPBKDF2(h_,
+            status = static_cast<hcrypt::status>(BCryptDeriveKeyPBKDF2(h_,
                                             reinterpret_cast<unsigned char*>(const_cast<char*>(password)),
                                             static_cast<unsigned long>(password_length),
                                             reinterpret_cast<unsigned char*>(const_cast<char*>(salt)),
@@ -2585,9 +2586,9 @@ namespace bcrypt {
                                             iterations_count,
                                             b->empty() ? nullptr : reinterpret_cast<unsigned char*>(b->data()),
                                             static_cast<unsigned long>(b->size()),
-                                            0);
+                                            0));
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -2602,7 +2603,7 @@ namespace bcrypt {
             hcrypt::buffer b;
             b.resize(get_key_object_length());
 
-            NTSTATUS status =  BCryptDeriveKeyPBKDF2(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptDeriveKeyPBKDF2(h_,
                                                      reinterpret_cast<unsigned char*>(const_cast<char*>(password)),
                                                      static_cast<unsigned long>(password_length),
                                                      reinterpret_cast<unsigned char*>(const_cast<char*>(salt)),
@@ -2610,46 +2611,46 @@ namespace bcrypt {
                                                      iterations_count,
                                                      b.empty() ? nullptr : reinterpret_cast<unsigned char*>(b.data()),
                                                      static_cast<unsigned long>(b.size()),
-                                                     0);
+                                                     0)) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptGenRandom failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptGenRandom failed");
             }
 
             return b;
         }
 
         [[nodiscard]]
-        NTSTATUS try_create_hash(char const *secret,
+        std::error_code try_create_hash(char const *secret,
                                  size_t secret_length,
                                  unsigned long flags,
                                  hash *hash) {
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
 
             unsigned long object_length{ 0 };
             status = try_get_object_length(&object_length);
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             hcrypt::buffer b;
             status = hcrypt::try_resize(b, object_length);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             BCRYPT_HASH_HANDLE h{ nullptr };
 
-            status = BCryptCreateHash(h_,
+            status = static_cast<hcrypt::status>(BCryptCreateHash(h_,
                 &h,
                 reinterpret_cast<unsigned char*>(b.data()),
                 static_cast<unsigned long>(b.size()),
                 reinterpret_cast<unsigned char*>(const_cast<char*>(secret)),
                 static_cast<unsigned long>(secret_length),
-                flags);
+                flags));
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -2670,16 +2671,16 @@ namespace bcrypt {
 
             BCRYPT_HASH_HANDLE new_h{ nullptr };
 
-            NTSTATUS status{ BCryptCreateHash(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptCreateHash(h_,
                                               &new_h,
                                               reinterpret_cast<unsigned char*>(b.data()),
                                               static_cast<unsigned long>(b.size()),
                                               reinterpret_cast<unsigned char*>(const_cast<char*>(secret)),
                                               static_cast<unsigned long>(secret_length),
-                                              flags) };
+                                              flags)) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptCreateHash failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptCreateHash failed");
             }
 
             h.h_ = new_h;
@@ -2689,17 +2690,17 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_create_multihash(unsigned long numer_of_hashes,
+        std::error_code try_create_multihash(unsigned long numer_of_hashes,
                                       char const *secret,
                                       size_t secret_length,
                                       unsigned long flags,
                                       hash *hash) {
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
 
             hcrypt::buffer multiobject_info;
             status = try_get_multi_object_length(&multiobject_info);
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -2710,22 +2711,22 @@ namespace bcrypt {
 
             hcrypt::buffer b;
             status = hcrypt::try_resize(b, multiobject_length);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             BCRYPT_HASH_HANDLE h{ nullptr };
 
-            status = BCryptCreateMultiHash(h_,
+            status = static_cast<hcrypt::status>(BCryptCreateMultiHash(h_,
                                            &h,
                                            numer_of_hashes,
                                            reinterpret_cast<unsigned char*>(b.data()),
                                            static_cast<unsigned long>(b.size()),
                                            reinterpret_cast<unsigned char*>(const_cast<char*>(secret)),
                                            static_cast<unsigned long>(secret_length),
-                                           flags);
+                                           flags));
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -2752,17 +2753,17 @@ namespace bcrypt {
 
             BCRYPT_HASH_HANDLE new_h{ nullptr };
 
-            NTSTATUS status{ BCryptCreateMultiHash(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptCreateMultiHash(h_,
                                                    &new_h,
                                                    numer_of_hashes,
                                                    reinterpret_cast<unsigned char*>(b.data()),
                                                    static_cast<unsigned long>(b.size()),
                                                    reinterpret_cast<unsigned char*>(const_cast<char*>(secret)),
                                                    static_cast<unsigned long>(secret_length),
-                                                   flags) };
+                                                   flags)) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptCreateMultiHash failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptCreateMultiHash failed");
             }
 
             hash h;
@@ -2773,38 +2774,38 @@ namespace bcrypt {
         }
 
         [[nodiscard]]
-        NTSTATUS try_hash_data(char const *secret,
+        std::error_code try_hash_data(char const *secret,
                                size_t secret_length,
                                char const *input,
                                size_t input_length,
                                char *hash_buffer,
                                size_t hash_buffer_length) noexcept {
-            return BCryptHash(h_,
+            return static_cast<hcrypt::status>(BCryptHash(h_,
                               reinterpret_cast<unsigned char*>(const_cast<char*>(secret)),
                               static_cast<unsigned long>(secret_length),
                               reinterpret_cast<unsigned char*>(const_cast<char*>(input)),
                               static_cast<unsigned long>(input_length),
                               reinterpret_cast<unsigned char*>(const_cast<char*>(hash_buffer)),
-                              static_cast<unsigned long>(hash_buffer_length));
+                              static_cast<unsigned long>(hash_buffer_length)));
         }
 
         [[nodiscard]]
-        NTSTATUS try_hash_data(char const *secret,
+        std::error_code try_hash_data(char const *secret,
                                size_t secret_length,
                                char const *input,
                                size_t input_length,
                                hcrypt::buffer *b) noexcept {
-            NTSTATUS status{ STATUS_SUCCESS };
+            std::error_code status{ hcrypt::status::success };
 
             unsigned long hash_length{ 0 };
             status = try_get_hash_length(&hash_length);
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
             status = hcrypt::try_resize(b, hash_length);
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -2815,7 +2816,7 @@ namespace bcrypt {
                                    b->data(),
                                    b->size());
 
-            if (!NT_SUCCESS(status)) {
+            if (hcrypt::is_failure(status)) {
                 return status;
             }
 
@@ -2829,15 +2830,15 @@ namespace bcrypt {
                        char *hash_buffer,
                        size_t hash_buffer_length) {
 
-            NTSTATUS status{ try_hash_data(secret,
+            std::error_code status{ try_hash_data(secret,
                                            secret_length,
                                            input,
                                            input_length,
                                            hash_buffer,
                                            hash_buffer_length) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptHash failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptHash failed");
             }
         }
 
@@ -2848,34 +2849,34 @@ namespace bcrypt {
             hcrypt::buffer b;
             b.resize(get_hash_length());
 
-            NTSTATUS status{ status = try_hash_data(secret,
+            std::error_code status{ status = try_hash_data(secret,
                                                     secret_length,
                                                     input,
                                                     input_length,
                                                     b.data(),
                                                     b.size()) };
 
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptHash failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptHash failed");
             }
 
             return b;
         }
 
         [[nodiscard]]
-        NTSTATUS try_generate_random(char *buffer,
+        std::error_code try_generate_random(char *buffer,
                                      size_t buffer_size,
                                      use_entropy_in_buffer use_buffer = use_entropy_in_buffer::no) noexcept {
-            NTSTATUS status{ BCryptGenRandom(h_,
+            std::error_code status{ static_cast<hcrypt::status>(BCryptGenRandom(h_,
                                              reinterpret_cast<unsigned char*>(buffer),
                                              static_cast<unsigned long>(buffer_size),
-                                             use_buffer == use_entropy_in_buffer::yes ? BCRYPT_RNG_USE_ENTROPY_IN_BUFFER : 0) };
+                                             use_buffer == use_entropy_in_buffer::yes ? BCRYPT_RNG_USE_ENTROPY_IN_BUFFER : 0)) };
             return status;
         }
 
         template <typename T> 
         [[nodiscard]]
-        NTSTATUS try_generate_random(T *v, 
+        std::error_code try_generate_random(T *v,
                                      use_entropy_in_buffer use_buffer = use_entropy_in_buffer::no) noexcept {
             return try_generate_random(reinterpret_cast<char *>(v),
                                        sizeof(*v),
@@ -2885,10 +2886,10 @@ namespace bcrypt {
         void generate_random(char* buffer,
                              size_t buffer_size,
                              use_entropy_in_buffer uese_buffer = use_entropy_in_buffer::no) {
-            NTSTATUS status{ try_generate_random( buffer,
+            std::error_code status{ try_generate_random( buffer,
                                                   static_cast<unsigned long>(buffer_size)) };
-            if (!NT_SUCCESS(status)) {
-                throw BCRYPT_MAKE_SYSTEM_ERROR(status, "BCryptGenRandom failed");
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "BCryptGenRandom failed");
             }
         }
 

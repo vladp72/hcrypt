@@ -22,14 +22,14 @@ void print(int offset, bcrypt::crypto_context_function_cptr const& crypto_contex
 template<typename T>
 inline void print_object_properties(int offset, T &obj, bool hide_errors = false) {
 
-    NTSTATUS status{ STATUS_SUCCESS };
+    std::error_code status{ hcrypt::status::success };
     
     std::wstring string_value;
     DWORD dword_value{ 0 };
     hcrypt::buffer buffer_value;
     
     status = obj.try_get_name(&string_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*cname: %ws\n", 
                offset,
                ' ',
@@ -38,11 +38,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cname: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_block_length(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*cblock length: %u\n", 
                offset,
                ' ',
@@ -51,11 +51,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cblock length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_chaining_mode(&string_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*cchaining mode: %ws\n", 
                offset,
                ' ',
@@ -64,11 +64,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cchaining mode: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_block_size_list(&buffer_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         DWORD* block_size_cur{ reinterpret_cast<DWORD*>(buffer_value.data()) };
         DWORD* block_size_end{ reinterpret_cast<DWORD*>(buffer_value.data() + buffer_value.size()) };
         for (int idx{ 0 }; block_size_cur <= block_size_end; ++idx, ++block_size_cur) {
@@ -82,11 +82,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cchaining mode: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_dh_parameters(&buffer_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         BCRYPT_DH_PARAMETER_HEADER* dh_parameter_header{ reinterpret_cast<BCRYPT_DH_PARAMETER_HEADER*>(buffer_value.data()) };
 
         printf("%*cDH parameter header: length %u, magic 0x%x, key length %u\n", 
@@ -108,12 +108,12 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cDH parameter header: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     BCRYPT_DSA_PARAMETER_HEADER_V2 dsa_parameter_header{};
     status = obj.try_get_dsa_parameters(&dsa_parameter_header);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*cDSA parameter header: length %u, magic %u, key length %u, %ws, %ws, seed length %u, group size %u, count{%u, %u, %u, %u}\n", 
                offset,
                ' ',
@@ -132,11 +132,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cDSA parameter header: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_effective_key_length(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*ceffective key length: %u\n", 
                offset,
                ' ',
@@ -145,11 +145,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*ceffective key length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_hash_block_length(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*chash block length: %u\n", 
                offset,
                ' ',
@@ -158,11 +158,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*chash block length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_hash_length(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*chash length: %u\n", 
                offset,
                ' ',
@@ -171,11 +171,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*chash length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_oid_list(&buffer_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         if (buffer_value.size() >= sizeof(BCRYPT_OID_LIST)) {
             
             bcrypt::find_first(reinterpret_cast<BCRYPT_OID_LIST*>(buffer_value.data()), 
@@ -199,11 +199,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*coid list: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_initialization_vector(&buffer_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
 
         printf("%*cinitialization vector: %ws\n",
                 offset,
@@ -214,11 +214,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cinitialization vector: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_key_length(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*ckey length: %u\n", 
                offset,
                ' ',
@@ -227,12 +227,12 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*ckey length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     BCRYPT_KEY_LENGTHS_STRUCT keys_length{};
     status = obj.try_get_key_lengts(&keys_length);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*ckeys length: min %u, max %u, increment %u\n", 
                offset,
                ' ',
@@ -243,11 +243,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*ckeys length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_key_object_length(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*ckey object length: %u\n", 
                offset,
                ' ',
@@ -256,11 +256,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*ckey object length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_key_strength(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*ckey strength: %u\n", 
                offset,
                ' ',
@@ -269,11 +269,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*ckey strength: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_message_block_length(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*cmessage block length: %u\n", 
                offset,
                ' ',
@@ -282,11 +282,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cmessage block length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
     status = obj.try_get_multi_object_length(&buffer_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
 
         BCRYPT_MULTI_OBJECT_LENGTH_STRUCT const* multi_object_length{ 
             reinterpret_cast<BCRYPT_MULTI_OBJECT_LENGTH_STRUCT const*>(buffer_value.data()) };
@@ -302,11 +302,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cmulti object length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
    status = obj.try_get_object_length(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*cobject length: %u\n", 
                offset,
                ' ',
@@ -315,11 +315,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cobject length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
    status = obj.try_get_padding_schemes(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*cpadding schemes: %u\n", 
                offset,
                ' ',
@@ -328,11 +328,11 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*cpadding schemes: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 
    status = obj.try_get_signature_length(&dword_value);
-    if (NT_SUCCESS(status)) {
+    if (hcrypt::is_success(status)) {
         printf("%*csignature length: %u\n", 
                offset,
                ' ',
@@ -341,7 +341,7 @@ inline void print_object_properties(int offset, T &obj, bool hide_errors = false
         printf("%*csignature length: error code = %x\n", 
                offset,
                ' ',
-               status);
+               status.value());
     }
 }
 

@@ -556,41 +556,41 @@ namespace hcrypt {
     using buffer = std::vector<char>;
 
     [[nodiscard]]
-    inline NTSTATUS try_resize(buffer &b, 
+    inline std::error_code try_resize(buffer &b, 
                                size_t new_size) noexcept {
-        NTSTATUS status{ STATUS_SUCCESS };
+        status s{ status::success };
         try{
             b.resize(new_size);
         } catch (std::bad_alloc const&) {
-            status = STATUS_NO_MEMORY;
+            s = status::no_memory;
         } catch(...) {
             BCRYPT_CRASH_APPLICATION();
         }
-        return status;
+        return s;
     }
 
     [[nodiscard]]
-    inline NTSTATUS try_resize(buffer *b, 
+    inline std::error_code try_resize(buffer *b,
                                size_t new_size) noexcept {
         return try_resize(*b, new_size);
     }
 
     [[nodiscard]]
-    inline NTSTATUS try_resize(std::wstring& b, 
+    inline std::error_code try_resize(std::wstring& b,
                                size_t new_size) noexcept {
-        NTSTATUS status{ STATUS_SUCCESS };
+        std::error_code s{ status::success };
         try {
             b.resize(new_size);
         } catch (std::bad_alloc const&) {
-            status = STATUS_NO_MEMORY;
+            s = status::no_memory;
         } catch (...) {
             BCRYPT_CRASH_APPLICATION();
         }
-        return status;
+        return s;
     }
 
     [[nodiscard]]
-    inline NTSTATUS try_resize(std::wstring* b, size_t new_size) noexcept {
+    inline std::error_code try_resize(std::wstring* b, size_t new_size) noexcept {
         return try_resize(*b, new_size);
     }
 
