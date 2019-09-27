@@ -6,8 +6,6 @@ void test_algorithm() {
 
         int offset{ 0 };
 
-        NTSTATUS status{ STATUS_SUCCESS };
-
         bcrypt::algorithm_provider ap;
 
         ap.open(BCRYPT_AES_ALGORITHM);

@@ -70,7 +70,7 @@ namespace {
                 printf("!!! %*cInitialization Vector must bre longer than block length !!!\n",
                     offset,
                     ' ');
-                throw BCRYPT_MAKE_SYSTEM_ERROR(STATUS_BUFFER_TOO_SMALL, "IV is too small");
+                throw std::system_error(hcrypt::status::buffer_too_small, "IV is too small");
             }
 
             hcrypt::buffer iv_buffer{ std::begin(iv),
@@ -185,7 +185,7 @@ namespace {
                 printf("!!! %*cMessage authentication failed !!!\n",
                        offset,
                        ' ');
-                throw BCRYPT_MAKE_SYSTEM_ERROR(STATUS_AUTH_TAG_MISMATCH, "IV is too small");
+                throw std::system_error(hcrypt::status::auth_tag_mismatch, "IV is too small");
             }
 
         } catch (std::system_error const& ex) {

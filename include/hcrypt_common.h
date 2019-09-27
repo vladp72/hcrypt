@@ -13,62 +13,6 @@
 
 #pragma comment (lib, "ntdll.lib")
 
-#ifndef STATUS_SUCCESS
-#define STATUS_SUCCESS ((NTSTATUS)0x0L)
-#endif
-
-#ifndef STATUS_BUFFER_TOO_SMALL
-#define STATUS_BUFFER_TOO_SMALL  ((NTSTATUS)0xC0000023L)
-#endif
-
-#ifndef STATUS_INSUFFICIENT_RESOURCES
-#define STATUS_INSUFFICIENT_RESOURCES  ((NTSTATUS)0xC000009AL)
-#endif
-
-#ifndef STATUS_INVALID_SIGNATURE
-#define STATUS_INVALID_SIGNATURE  ((NTSTATUS)0xC000A000L)
-#endif
-
-#ifndef STATUS_AUTH_TAG_MISMATCH
-#define STATUS_AUTH_TAG_MISMATCH  ((NTSTATUS)0xC000A002L)
-#endif
-
-#ifndef STATUS_UNSUCCESSFUL
-#define STATUS_UNSUCCESSFUL  ((NTSTATUS)0xC0000001L)
-#endif
-
-#ifndef STATUS_NOT_FOUND
-#define STATUS_NOT_FOUND  ((NTSTATUS)0xC0000225L)
-#endif
-
-#ifndef STATUS_INVALID_PARAMETER
-#define STATUS_INVALID_PARAMETER  ((NTSTATUS)0xC000000DL)
-#endif
-
-#ifndef STATUS_NO_MEMORY
-#define STATUS_NO_MEMORY  ((NTSTATUS)0xC0000017L)
-#endif
-
-#ifndef STATUS_INVALID_BUFFER_SIZE
-#define STATUS_INVALID_BUFFER_SIZE  ((NTSTATUS)0xC0000206L)
-#endif
-
-#ifndef STATUS_INVALID_HANDLE
-#define STATUS_INVALID_HANDLE  ((NTSTATUS)0xC0000008L)
-#endif
-
-#ifndef STATUS_NOT_SUPPORTED
-#define STATUS_NOT_SUPPORTED  ((NTSTATUS)0xC00000BBL)
-#endif
-
-#ifndef NT_SUCCESS
-#define NT_SUCCESS(S) ((NTSTATUS)(S) >= STATUS_SUCCESS)
-#endif
-
-#ifndef BCRYPT_MAKE_SYSTEM_ERROR
-#define BCRYPT_MAKE_SYSTEM_ERROR(E, T) std::system_error{ static_cast<int>(E), hcrypt::get_error_category(), (T) }
-#endif 
-
 #define BCRYPT_PLATFORM_FAIL_FAST(EC) {__debugbreak();__fastfail(EC);}
 
 #ifndef BCRYPT_FAST_FAIL
@@ -351,18 +295,18 @@ namespace hcrypt {
     }
 
     enum class status : long {
-        success                 = 0L,
-        unsuccessful            = static_cast<long>(0xC0000001L),
-        invalid_handle          = static_cast<long>(0xC0000008L),
-        no_memory               = static_cast<long>(0xC0000017L),
-        buffer_too_small        = static_cast<long>(0xC0000023L),
-        insufficient_resources  = static_cast<long>(0xC000009AL),
-        invalid_parameter       = static_cast<long>(0xC000000DL),
-        invalid_buffer_size     = static_cast<long>(0xC0000206L),
-        not_found               = static_cast<long>(0xC0000225L),
-        not_supported           = static_cast<long>(0xC00000BBL),
-        invalid_signature       = static_cast<long>(0xC000A000L),
-        auth_tag_mismatch       = static_cast<long>(0xC000A002L),
+        success                 = 0L                            , // STATUS_SUCCESS
+        unsuccessful            = static_cast<long>(0xC0000001L), // STATUS_UNSUCCESSFUL
+        invalid_handle          = static_cast<long>(0xC0000008L), // STATUS_INVALID_HANDLE
+        no_memory               = static_cast<long>(0xC0000017L), // STATUS_NO_MEMORY
+        buffer_too_small        = static_cast<long>(0xC0000023L), // STATUS_BUFFER_TOO_SMALL
+        insufficient_resources  = static_cast<long>(0xC000009AL), // STATUS_INSUFFICIENT_RESOURCES
+        invalid_parameter       = static_cast<long>(0xC000000DL), // STATUS_INVALID_PARAMETER
+        invalid_buffer_size     = static_cast<long>(0xC0000206L), // STATUS_INVALID_BUFFER_SIZE
+        not_found               = static_cast<long>(0xC0000225L), // STATUS_NOT_FOUND
+        not_supported           = static_cast<long>(0xC00000BBL), // STATUS_NOT_SUPPORTED
+        invalid_signature       = static_cast<long>(0xC000A000L), // STATUS_INVALID_SIGNATURE
+        auth_tag_mismatch       = static_cast<long>(0xC000A002L), // STATUS_AUTH_TAG_MISMATCH
     };
 
     constexpr inline bool is_success(status const s) {
