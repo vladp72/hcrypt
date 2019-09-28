@@ -1,10 +1,9 @@
-#include "hbcrypt_test_algorithms.h"
+#include "hbcrypt_test_algorithms.hpp"
 
 void test_algorithm() {
     printf("---Testing bcrypt::algorithm_provider---------------\n");
     try {
-
-        int offset{ 0 };
+        int offset{0};
 
         bcrypt::algorithm_provider ap;
 
@@ -12,12 +11,11 @@ void test_algorithm() {
 
         print_object_properties(offset + 2, ap);
 
-
-    } catch (std::system_error const& ex) {
+    } catch (std::system_error const &ex) {
         printf("test_algorithm, error code = ox%x, %s, %s\n",
-            ex.code().value(),
-            hcrypt::status_to_string(ex.code().value()),
-            ex.what());
+               ex.code().value(),
+               hcrypt::status_to_string(ex.code().value()),
+               ex.what());
     }
     printf("----------------\n");
 }

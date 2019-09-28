@@ -1,5 +1,5 @@
 #pragma once
 
-#include "hcrypt_test_helpers.h"
+#include "hcrypt_test_helpers.hpp"
 
 void test_algorithm();
