@@ -2,6 +2,12 @@
 # Creating and Enforcing a Code Formatting Standard with clang-format
 # https://embeddedartistry.com/blog/2017/10/23/creating-and-enforcing-a-coding-standard-with-clang-format
 #
+# ClangFormat Support in Visual Studio 2017
+# https://devblogs.microsoft.com/cppblog/clangformat-support-in-visual-studio-2017-15-7-preview-1/
+#
+# Tokens below are alhanumerecally ordered
+# Comented out tokes that supported according to clang doc, but VS2019 was complainig about them.
+#
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: false

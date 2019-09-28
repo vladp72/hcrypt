@@ -3,28 +3,28 @@
 
 namespace {
 
-    wchar_t const *hash_algorithms[]{
-        // BCRYPT_MD2_ALGORITHM,
-        // BCRYPT_MD4_ALGORITHM,
-        // BCRYPT_MD5_ALGORITHM,
-        BCRYPT_SHA1_ALGORITHM,
-        // BCRYPT_SHA256_ALGORITHM,
-        // BCRYPT_SHA384_ALGORITHM,
-        // BCRYPT_SHA512_ALGORITHM,
-    };
+    //wchar_t const *hash_algorithms[]{
+    //    // BCRYPT_MD2_ALGORITHM,
+    //    // BCRYPT_MD4_ALGORITHM,
+    //    // BCRYPT_MD5_ALGORITHM,
+    //    BCRYPT_SHA1_ALGORITHM,
+    //    // BCRYPT_SHA256_ALGORITHM,
+    //    // BCRYPT_SHA384_ALGORITHM,
+    //    // BCRYPT_SHA512_ALGORITHM,
+    //};
 
-    wchar_t const *encryption_algorithms[]{
-        BCRYPT_DSA_ALGORITHM,
-        /*  BCRYPT_AES_ALGORITHM,
-            BCRYPT_AES_GMAC_ALGORITHM,
-            BCRYPT_AES_CMAC_ALGORITHM,
-            BCRYPT_ECDSA_P256_ALGORITHM,
-            BCRYPT_ECDSA_P384_ALGORITHM,
-            BCRYPT_ECDSA_P521_ALGORITHM,
-            BCRYPT_ECDH_P256_ALGORITHM,
-            BCRYPT_ECDH_P384_ALGORITHM,
-            BCRYPT_ECDH_P521_ALGORITHM,*/
-    };
+    //wchar_t const *encryption_algorithms[]{
+    //    BCRYPT_DSA_ALGORITHM,
+    //    /*  BCRYPT_AES_ALGORITHM,
+    //        BCRYPT_AES_GMAC_ALGORITHM,
+    //        BCRYPT_AES_CMAC_ALGORITHM,
+    //        BCRYPT_ECDSA_P256_ALGORITHM,
+    //        BCRYPT_ECDSA_P384_ALGORITHM,
+    //        BCRYPT_ECDSA_P521_ALGORITHM,
+    //        BCRYPT_ECDH_P256_ALGORITHM,
+    //        BCRYPT_ECDH_P384_ALGORITHM,
+    //        BCRYPT_ECDH_P521_ALGORITHM,*/
+    //};
 
     struct test_signing_algorithm_t {
         wchar_t const *hashing_algorithm;

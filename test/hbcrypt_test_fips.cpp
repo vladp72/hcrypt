@@ -2,8 +2,6 @@
 
 void print_is_fips_complience_on() {
     try {
-        int offset{0};
-
         printf("---Query FIPS complience---------------\n");
 
         bool fips_complience_on{bcrypt::is_fips_complience_on()};

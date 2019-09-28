@@ -1,12 +1,12 @@
 #include "hcrypt_test_helpers.hpp"
 
 void print(int offset, CRYPT_INTERFACE_REG const *interface_registartion) {
-    printf("%*cinterface = %u, %ws\n",
+    printf("%*cinterface = %lu, %ws\n",
            offset,
            ' ',
            interface_registartion->dwInterface,
            bcrypt::interface_id_to_string(interface_registartion->dwInterface));
-    printf("%*cflags     = %u %ws\n",
+    printf("%*cflags     = %lu %ws\n",
            offset,
            ' ',
            interface_registartion->dwFlags,
@@ -24,20 +24,20 @@ void print(int offset, CRYPT_IMAGE_REG const *registartion) {
 }
 
 void print(int offset, CRYPT_PROPERTY_REF const *property_ref) {
-    printf("%*cproperty: %ws, bytes %u",
+    printf("%*cproperty: %ws, bytes %lu",
            offset,
            ' ',
            property_ref->pszProperty,
            property_ref->cbValue);
 
     if (4 == property_ref->cbValue) {
-        printf(", value %u", *reinterpret_cast<ULONG const *>(property_ref->pbValue));
+        printf(", value %lu", *reinterpret_cast<ULONG const *>(property_ref->pbValue));
     }
     printf("\n");
 }
 
 void print(int offset, CRYPT_IMAGE_REF const *image_ref) {
-    printf("%*cimage: %ws, flags 0x%x, %ws\n",
+    printf("%*cimage: %ws, flags 0x%lx, %ws\n",
            offset,
            ' ',
            image_ref->pszImage,
@@ -46,7 +46,7 @@ void print(int offset, CRYPT_IMAGE_REF const *image_ref) {
 }
 
 void print(int offset, CRYPT_PROVIDER_REF const *provider_ref) {
-    printf("%*cprovider: %ws, function - %ws; itf - %u, %ws\n",
+    printf("%*cprovider: %ws, function - %ws; itf - %lu, %ws\n",
            offset,
            ' ',
            provider_ref->pszProvider,
@@ -74,7 +74,7 @@ void print(int offset, CRYPT_PROVIDER_REFS const *interface_registartion_ref) {
 }
 
 void print(int offset, BCRYPT_ALGORITHM_IDENTIFIER const *algorithm_info) {
-    printf("%*cname: %ws, class %ws, flags 0x%x\n",
+    printf("%*cname: %ws, class %ws, flags 0x%lx\n",
            offset,
            ' ',
            algorithm_info->pszName,

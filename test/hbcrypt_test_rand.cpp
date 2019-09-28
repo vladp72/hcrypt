@@ -24,7 +24,7 @@ namespace {
 
         unsigned long ul{bcrypt::generate_random<unsigned long>()};
 
-        printf("%*cunsigned long: %u\n", offset, ' ', ul);
+        printf("%*cunsigned long: %lu\n", offset, ' ', ul);
 
         unsigned long long ull{bcrypt::generate_random<unsigned long long>()};
 
@@ -66,7 +66,7 @@ namespace {
 
             unsigned long ul{ap.generate_random<unsigned long>()};
 
-            printf("%*cunsigned long: %u\n", offset, ' ', ul);
+            printf("%*cunsigned long: %lu\n", offset, ' ', ul);
 
             unsigned long long ull{ap.generate_random<unsigned long long>()};
 

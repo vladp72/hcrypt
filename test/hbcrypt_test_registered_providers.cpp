@@ -1,7 +1,7 @@
 #include "hbcrypt_test_registered_providers.hpp"
 
 void print_provider_interface_info(int offset, wchar_t const *provider_name, ULONG mode, ULONG itf_id) {
-    printf("%*cprovider: %ws, mode - %u, %ws; itf - %u, %ws\n",
+    printf("%*cprovider: %ws, mode - %lu, %ws; itf - %lu, %ws\n",
            offset,
            ' ',
            provider_name,

@@ -1350,7 +1350,6 @@ namespace bcrypt {
                 return status;
             }
 
-            BCRYPT_KEY_HANDLE new_key{nullptr};
             status = hcrypt::try_resize(b, key_size);
             if (hcrypt::is_failure(status)) {
                 return status;
@@ -2643,9 +2642,8 @@ namespace bcrypt {
             hcrypt::buffer b;
             b.resize(get_hash_length());
 
-            std::error_code status{
-                status = try_hash_data(
-                    secret, secret_length, input, input_length, b.data(), b.size())};
+            std::error_code status{try_hash_data(
+                secret, secret_length, input, input_length, b.data(), b.size())};
 
             if (hcrypt::is_failure(status)) {
                 throw std::system_error(status, "BCryptHash failed");

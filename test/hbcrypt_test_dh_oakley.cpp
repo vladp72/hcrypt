@@ -127,7 +127,7 @@ void tesh_dh_oakley() {
         // specify hash algorithm, SHA1 if null
 
         DWORD const BufferLength{2};
-        BCryptBuffer BufferArray[BufferLength] = {0};
+        BCryptBuffer BufferArray[BufferLength] = {};
 
         // specify secret to append
         BufferArray[0].BufferType = KDF_TLS_PRF_SEED;

@@ -1,4 +1,4 @@
-#include "hbcrypt_test_sha1_hmac.hpp"
+#include "hbcrypt_test_SHA1_HMAC.hpp"
 #include <algorithm>
 
 namespace {

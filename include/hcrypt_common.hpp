@@ -436,7 +436,7 @@ namespace hcrypt {
                 std::system_category());
         }
 
-        virtual bool equivalent(int e, const std::error_condition &cond) const noexcept {
+        virtual bool equivalent(int e, const std::error_condition &cond) const noexcept override {
             return false;
         }
     };

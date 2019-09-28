@@ -1,4 +1,4 @@
-#include "hbcrypt_test_aes_cbc.hpp"
+#include "hbcrypt_test_AES_CBC.hpp"
 #include <algorithm>
 
 namespace {

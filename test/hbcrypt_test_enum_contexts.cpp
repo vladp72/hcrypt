@@ -31,7 +31,7 @@ namespace {
                                         });
 
                                 } catch (std::system_error const &ex) {
-                                    printf("% *cenum_crypto_context_function, "
+                                    printf("%*cenum_crypto_context_function, "
                                            "error code = 0x%x, %s, %s\n",
                                            offset,
                                            ' ',
@@ -44,7 +44,7 @@ namespace {
                             });
 
                     } catch (std::system_error const &ex) {
-                        printf("% *cenum_crypto_context_function, error code = "
+                        printf("%*cenum_crypto_context_function, error code = "
                                "0x%x, %s, %s\n",
                                offset,
                                ' ',

@@ -8,7 +8,7 @@ void resolve_providers() {
 
         bcrypt::find_first_interface([offset = offset + 2](ULONG itf_id) -> bool {
             try {
-                printf("%*c--Querying itf - %u, %ws\n",
+                printf("%*c--Querying itf - %lu, %ws\n",
                        offset,
                        ' ',
                        itf_id,

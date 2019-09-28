@@ -3,7 +3,7 @@
 namespace {
     void print_algorithms(int offset, ULONG ciypher_operations) {
         try {
-            printf("%*c--Querying algorithms for cipher operations - %u, %ws\n",
+            printf("%*c--Querying algorithms for cipher operations - %lu, %ws\n",
                    offset,
                    ' ',
                    ciypher_operations,

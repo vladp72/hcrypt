@@ -11,9 +11,9 @@
 #include "hbcrypt_test_message_signing.hpp"
 #include "hbcrypt_test_rand.hpp"
 #include "hbcrypt_test_dh_oakley.hpp"
-#include "hbcrypt_test_sha1_hmac.hpp"
-#include "hbcrypt_test_aes_cmac.hpp"
-#include "hbcrypt_test_aes_cbc.hpp"
+#include "hbcrypt_test_SHA1_HMAC.hpp"
+#include "hbcrypt_test_AES_CMAC.hpp"
+#include "hbcrypt_test_AES_CBC.hpp"
 #include "hncrypt_test_providers.hpp"
 //
 // https://github.com/microsoft/Windows-classic-samples/tree/master/Samples/Security
