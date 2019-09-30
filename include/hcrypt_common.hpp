@@ -264,12 +264,15 @@ namespace hcrypt {
 
     enum class status : long {
         success = 0L,                                    // STATUS_SUCCESS
-        unsuccessful = static_cast<long>(0xC0000001L),   // STATUS_UNSUCCESSFUL
+        no_more_entries = static_cast<long>(0x8000001AL), // STATUS_NO_MORE_ENTRIES
+        unsuccessful = static_cast<long>(0xC0000001L),    // STATUS_UNSUCCESSFUL
         invalid_handle = static_cast<long>(0xC0000008L), // STATUS_INVALID_HANDLE
         no_memory = static_cast<long>(0xC0000017L),      // STATUS_NO_MEMORY
         buffer_too_small = static_cast<long>(0xC0000023L), // STATUS_BUFFER_TOO_SMALL
+        object_name_not_found = static_cast<long>(0xC0000034L), // STATUS_OBJECT_NAME_NOT_FOUND
         insufficient_resources = static_cast<long>(0xC000009AL), // STATUS_INSUFFICIENT_RESOURCES
         invalid_parameter = static_cast<long>(0xC000000DL), // STATUS_INVALID_PARAMETER
+        internal_error = static_cast<long>(0xC00000E5L), // STATUS_INTERNAL_ERROR
         invalid_buffer_size = static_cast<long>(0xC0000206L), // STATUS_INVALID_BUFFER_SIZE
         not_found = static_cast<long>(0xC0000225L),     // STATUS_NOT_FOUND
         not_supported = static_cast<long>(0xC00000BBL), // STATUS_NOT_SUPPORTED
@@ -307,6 +310,9 @@ namespace hcrypt {
         case status::success:
             str = "success";
             break;
+        case status::no_more_entries:
+            str = "no_more_entries";
+            break;
         case status::buffer_too_small:
             str = "buffer_too_small";
             break;
@@ -325,8 +331,14 @@ namespace hcrypt {
         case status::not_found:
             str = "not_found";
             break;
+        case status::object_name_not_found:
+            str = "object_name_not_found";
+            break;
         case status::invalid_parameter:
             str = "invalid_parameter";
+            break;
+        case status::internal_error:
+            str = "internal_error";
             break;
         case status::no_memory:
             str = "no_memory";
@@ -380,8 +392,14 @@ namespace hcrypt {
         case status::not_found:
             win32_error = ERROR_NOT_FOUND;
             break;
+        case status::object_name_not_found:
+            win32_error = ERROR_FILE_NOT_FOUND;
+            break;
         case status::invalid_parameter:
             win32_error = ERROR_INVALID_PARAMETER;
+            break;
+        case status::internal_error:
+            win32_error = ERROR_INTERNAL_ERROR;
             break;
         case status::no_memory:
             win32_error = ERROR_NOT_ENOUGH_MEMORY;
@@ -397,6 +415,99 @@ namespace hcrypt {
             break;
         }
         return win32_error;
+    }
+
+    constexpr inline status nte_error_to_status(HRESULT nte_error) {
+        //
+        // NTE errors are subset of win32 error domain
+        //
+        status s{status::internal_error};
+
+        switch (nte_error) {
+        case ERROR_SUCCESS:
+            s = status::success;
+            break;
+        case NTE_NO_MEMORY:
+            s = status::insufficient_resources;
+            break;
+        case NTE_INVALID_PARAMETER:
+            s = status::invalid_parameter;
+            break;
+        case NTE_INVALID_HANDLE:
+            s = status::invalid_handle;
+            break;
+        case NTE_BUFFER_TOO_SMALL:
+            s = status::buffer_too_small;
+            break;
+        case NTE_NOT_SUPPORTED:
+            s = status::not_supported;
+            break;
+        case NTE_INTERNAL_ERROR:
+            s = status::internal_error;
+            break;
+        case NTE_BAD_SIGNATURE:
+            s = status::invalid_signature;
+            break;
+        case NTE_BAD_FLAGS:
+            s = status::invalid_parameter;
+            break;
+        case NTE_NO_MORE_ITEMS:
+            s = status::no_more_entries;
+            break;
+        case NTE_SILENT_CONTEXT:
+            s = status::not_supported;
+            break;
+        case NTE_NOT_FOUND:
+            s = status::not_found;
+            break;
+        default:
+            s = status::internal_error;
+            break;
+        }
+        return s;
+    }
+
+    constexpr inline HRESULT status_to_nte_error(status s) {
+        HRESULT e{NTE_INTERNAL_ERROR};
+
+        switch (s) {
+        case status::success:
+            e = ERROR_SUCCESS;
+            break;
+        case status::no_memory:
+            [[fallthrough]];
+        case status::insufficient_resources:
+            e = NTE_NO_MEMORY;
+            break;
+        case status::invalid_parameter:
+            e = NTE_INVALID_PARAMETER;
+            break;
+        case status::invalid_handle:
+            e = NTE_INVALID_HANDLE;
+            break;
+        case status::buffer_too_small:
+            e = NTE_BUFFER_TOO_SMALL;
+            break;
+        case status::not_supported:
+            e = NTE_NOT_SUPPORTED;
+            break;
+        case status::not_found:
+            e = NTE_NOT_FOUND;
+            break;
+        case status::internal_error:
+            [[fallthrough]];
+        case static_cast<status>(ERROR_INTERNAL_ERROR):
+            e = NTE_INTERNAL_ERROR;
+            break;
+        case status::invalid_signature:
+            e = NTE_BAD_SIGNATURE;
+            break;
+        default:
+            e = NTE_INTERNAL_ERROR;
+            break;
+        }
+
+        return e;
     }
 
     inline DWORD nt_status_to_win32_error_ex(long const status) {
@@ -436,7 +547,8 @@ namespace hcrypt {
                 std::system_category());
         }
 
-        virtual bool equivalent(int e, const std::error_condition &cond) const noexcept override {
+        virtual bool equivalent(int e, const std::error_condition &cond) const
+            noexcept override {
             return false;
         }
     };

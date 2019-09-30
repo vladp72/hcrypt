@@ -116,12 +116,21 @@ namespace bcrypt {
     }
 
     template<typename FN>
-    inline void find_first(providers_cptr const &providers, FN const &fn) {
+    inline void find_first(providers_cptr const &providers, FN &&fn) {
         if (providers) {
             for (unsigned long idx = 0; idx < providers->cProviders; ++idx) {
                 if (!fn(providers->rgpszProviders[idx])) {
                     break;
                 }
+            }
+        }
+    }
+
+    template<typename FN>
+    inline void for_each(providers_cptr const &providers, FN &&fn) {
+        if (providers) {
+            for (unsigned long idx = 0; idx < providers->cProviders; ++idx) {
+                fn(providers->rgpszProviders[idx]);
             }
         }
     }
@@ -198,13 +207,21 @@ namespace bcrypt {
     }
 
     template<typename FN>
-    inline void find_first(provider_registration_refs_cptr const &registration,
-                           FN const &fn) {
+    inline void find_first(provider_registration_refs_cptr const &registration, FN &&fn) {
         if (registration) {
             for (unsigned long idx = 0; idx < registration->cProviders; ++idx) {
                 if (!fn(registration->rgpProviders[idx])) {
                     break;
                 }
+            }
+        }
+    }
+
+    template<typename FN>
+    inline void for_each(provider_registration_refs_cptr const &registration, FN &&fn) {
+        if (registration) {
+            for (unsigned long idx = 0; idx < registration->cProviders; ++idx) {
+                fn(registration->rgpProviders[idx]);
             }
         }
     }
@@ -235,12 +252,20 @@ namespace bcrypt {
     }
 
     template<typename FN>
-    inline void find_first(algorithm_identifiers_t const &algorithms, FN const &fn) {
+    inline void find_first(algorithm_identifiers_t const &algorithms, FN &&fn) {
         auto const &[buffer, element_count] = algorithms;
         for (unsigned long idx = 0; idx < element_count; ++idx) {
             if (!fn(buffer.get()[idx])) {
                 break;
             }
+        }
+    }
+
+    template<typename FN>
+    inline void for_each(algorithm_identifiers_t const &algorithms, FN &&fn) {
+        auto const &[buffer, element_count] = algorithms;
+        for (unsigned long idx = 0; idx < element_count; ++idx) {
+            fn(buffer.get()[idx]);
         }
     }
 
@@ -268,12 +293,21 @@ namespace bcrypt {
     }
 
     template<typename FN>
-    inline void find_first(crypto_context_cptr const &crypto_contexts, FN const &fn) {
+    inline void find_first(crypto_context_cptr const &crypto_contexts, FN &&fn) {
         if (crypto_contexts) {
             for (unsigned long idx = 0; idx < crypto_contexts->cContexts; ++idx) {
                 if (!fn(crypto_contexts->rgpszContexts[idx])) {
                     break;
                 }
+            }
+        }
+    }
+
+    template<typename FN>
+    inline void for_each(crypto_context_cptr const &crypto_contexts, FN &&fn) {
+        if (crypto_contexts) {
+            for (unsigned long idx = 0; idx < crypto_contexts->cContexts; ++idx) {
+                fn(crypto_contexts->rgpszContexts[idx]);
             }
         }
     }
@@ -308,12 +342,22 @@ namespace bcrypt {
 
     template<typename FN>
     inline void find_first(crypto_context_function_cptr const &crypto_context_functions,
-                           FN const &fn) {
+                           FN &&fn) {
         if (crypto_context_functions) {
             for (unsigned long idx = 0; idx < crypto_context_functions->cFunctions; ++idx) {
                 if (!fn(crypto_context_functions->rgpszFunctions[idx])) {
                     break;
                 }
+            }
+        }
+    }
+
+    template<typename FN>
+    inline void for_each(crypto_context_function_cptr const &crypto_context_functions,
+                         FN &&fn) {
+        if (crypto_context_functions) {
+            for (unsigned long idx = 0; idx < crypto_context_functions->cFunctions; ++idx) {
+                fn(crypto_context_functions->rgpszFunctions[idx]);
             }
         }
     }
@@ -350,13 +394,24 @@ namespace bcrypt {
 
     template<typename FN>
     inline void find_first(crypto_context_function_providers_cptr const &crypto_context_function_providers,
-                           FN const &fn) {
+                           FN &&fn) {
         if (crypto_context_function_providers) {
             for (unsigned long idx = 0; idx < crypto_context_function_providers->cProviders;
                  ++idx) {
                 if (!fn(crypto_context_function_providers->rgpszProviders[idx])) {
                     break;
                 }
+            }
+        }
+    }
+
+    template<typename FN>
+    inline void for_each(crypto_context_function_providers_cptr const &crypto_context_function_providers,
+                         FN &&fn) {
+        if (crypto_context_function_providers) {
+            for (unsigned long idx = 0; idx < crypto_context_function_providers->cProviders;
+                 ++idx) {
+                fn(crypto_context_function_providers->rgpszProviders[idx]);
             }
         }
     }
@@ -524,6 +579,13 @@ namespace bcrypt {
         }
     }
 
+    template<typename F>
+    constexpr inline void for_each_interface(F const &fn) {
+        for (unsigned long itf_id : interfaces) {
+            fn(itf_id);
+        }
+    }
+
     inline std::wstring algorithm_operations_to_string(unsigned long operations) {
         std::wstring str;
         if (hcrypt::consume_flag(
@@ -553,12 +615,21 @@ namespace bcrypt {
     }
 
     template<typename FN>
-    inline void find_first(BCRYPT_OID_LIST const *oid_list, FN const &fn) {
+    inline void find_first(BCRYPT_OID_LIST const *oid_list, FN &&fn) {
         if (oid_list) {
             for (unsigned long idx = 0; idx < oid_list->dwOIDCount; ++idx) {
                 if (!fn(oid_list->pOIDs[idx])) {
                     break;
                 }
+            }
+        }
+    }
+
+    template<typename FN>
+    inline void for_each(BCRYPT_OID_LIST const *oid_list, FN &&fn) {
+        if (oid_list) {
+            for (unsigned long idx = 0; idx < oid_list->dwOIDCount; ++idx) {
+                fn(oid_list->pOIDs[idx]);
             }
         }
     }
@@ -1158,8 +1229,9 @@ namespace bcrypt {
         void close() noexcept {
             if (is_valid()) {
                 std::error_code status{static_cast<hcrypt::status>(BCryptDestroyHash(h_))};
-                b_.clear();
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
+                h_ = nullptr;
+                b_.clear();
             }
         }
 
@@ -1333,6 +1405,7 @@ namespace bcrypt {
             if (is_valid()) {
                 std::error_code status{static_cast<hcrypt::status>(BCryptDestroySecret(h_))};
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
+                h_ = nullptr;
             }
         }
 
@@ -1538,8 +1611,9 @@ namespace bcrypt {
         void close() noexcept {
             if (is_valid()) {
                 std::error_code status{static_cast<hcrypt::status>(BCryptDestroyKey(h_))};
-                b_.clear();
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
+                h_ = nullptr;
+                b_.clear();
             }
         }
 
@@ -2084,6 +2158,7 @@ namespace bcrypt {
                 std::error_code status{
                     static_cast<hcrypt::status>(BCryptCloseAlgorithmProvider(h_, 0))};
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
+                h_ = nullptr;
             }
         }
 
