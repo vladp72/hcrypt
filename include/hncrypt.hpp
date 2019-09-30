@@ -778,6 +778,7 @@ namespace ncrypt {
     };
 
     class key;
+    class secret;
     class storage_provider;
 
     inline bool is_key_handle(NCRYPT_KEY_HANDLE k) {
@@ -1115,14 +1116,67 @@ namespace ncrypt {
             if (status == hcrypt::status::success) {
                 result = true;
             } else if (status != hcrypt::status::not_supported) {
-                throw std::system_error(status,
-                                        "NCryptIsAlgSupported failed");
+                throw std::system_error(status, "NCryptIsAlgSupported failed");
             }
             return result;
         }
 
-        //try_open_key NCryptOpenKey
-        //try_create NCryptCreatePersistedKey
+        std::error_code try_open_key(wchar_t const *key_name,
+                                     unsigned long legacy_key_spec,
+                                     unsigned long flags,
+                                     key *k) {
+            NCRYPT_KEY_HANDLE new_key{0};
+            std::error_code status{hcrypt::nte_error_to_status(
+                NCryptOpenKey(h_, &new_key, key_name, legacy_key_spec, flags))};
+
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+            k->attach(new_key);
+            return status;
+        }
+
+        key open_key(wchar_t const *key_name, unsigned long legacy_key_spec, unsigned long flags) {
+            key new_key;
+            std::error_code status{try_open_key(key_name, legacy_key_spec, flags, &new_key)};
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptOpenKey failed");
+            }
+            return new_key;
+        }
+
+        std::error_code try_create_key(wchar_t const *algorithm_id,
+                                       wchar_t const *key_name,
+                                       unsigned long legacy_key_spec,
+                                       unsigned long flags,
+                                       key *k) {
+            NCRYPT_KEY_HANDLE new_key{0};
+            std::error_code status{hcrypt::nte_error_to_status(NCryptCreatePersistedKey(
+                h_, &new_key, algorithm_id, key_name, legacy_key_spec, flags))};
+
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+            k->attach(new_key);
+            return status;
+        }
+
+        key create_key(wchar_t const *algorithm_id,
+                       wchar_t const *key_name,
+                       unsigned long legacy_key_spec,
+                       unsigned long flags) {
+            key new_key;
+            std::error_code status{try_create_key(
+                algorithm_id, key_name, legacy_key_spec, flags, &new_key)};
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptCreatePersistedKey failed");
+            }
+            return new_key;
+        }
+
+        // try_import_key NCryptImportKey
+
+        //notify_changes NCryptNotifyChangeKey
 
     private:
         NCRYPT_PROV_HANDLE h_{0};

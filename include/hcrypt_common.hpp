@@ -263,7 +263,7 @@ namespace hcrypt {
     }
 
     enum class status : long {
-        success = 0L,                                    // STATUS_SUCCESS
+        success = 0L,                                     // STATUS_SUCCESS
         no_more_entries = static_cast<long>(0x8000001AL), // STATUS_NO_MORE_ENTRIES
         unsuccessful = static_cast<long>(0xC0000001L),    // STATUS_UNSUCCESSFUL
         invalid_handle = static_cast<long>(0xC0000008L), // STATUS_INVALID_HANDLE
@@ -568,13 +568,23 @@ namespace hcrypt {
     }
 
     inline bool is_success(std::error_code const &err) {
-        BCRYPT_DBG_CODDING_ERROR_IF_NOT(get_error_category() == err.category());
-        return is_success(err.value());
+        if (get_error_category() == err.category()) {
+            return is_success(err.value());
+        } else if (std::system_category() == err.category()) {
+            return 0 == err.value();
+        }
+        BCRYPT_CRASH_APPLICATION();
+        return false;
     }
 
     inline bool is_failure(std::error_code const &err) {
-        BCRYPT_DBG_CODDING_ERROR_IF_NOT(get_error_category() == err.category());
-        return is_failure(err.value());
+        if (get_error_category() == err.category()) {
+            return is_failure(err.value());
+        } else if (std::system_category() == err.category()) {
+            return 0 != err.value();
+        }
+        BCRYPT_CRASH_APPLICATION();
+        return false;
     }
 
     using buffer = std::vector<char>;
