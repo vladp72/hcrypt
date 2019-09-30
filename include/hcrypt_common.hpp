@@ -624,7 +624,7 @@ namespace hcrypt {
     inline void append_with_separator(std::wstring *str,
                                       std::wstring_view const &separator,
                                       std::wstring_view const &tail) {
-        if (str->empty()) {
+        if (!str->empty()) {
             *str += separator;
         }
         *str += tail;

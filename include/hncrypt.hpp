@@ -266,6 +266,18 @@ namespace ncrypt {
         return str;
     }
 
+    inline std::wstring enum_flags_to_string(unsigned long enum_flags) {
+        std::wstring str;
+        if (hcrypt::consume_flag(
+                &enum_flags, static_cast<unsigned long>(NCRYPT_MACHINE_KEY_FLAG))) {
+            hcrypt::append_with_separator(&str, L" | ", L"NCRYPT_MACHINE_KEY_FLAG");
+        }
+        if (hcrypt::consume_flag(&enum_flags, static_cast<unsigned long>(NCRYPT_SILENT_FLAG))) {
+            hcrypt::append_with_separator(&str, L" | ", L"NCRYPT_SILENT_FLAG");
+        }
+        return str;
+    }
+
     template<typename T>
     struct property_impl {
     protected:

@@ -19,6 +19,8 @@ void print(int offset, BCRYPT_ALGORITHM_IDENTIFIER const *algorithm_info);
 
 void print(int offset, bcrypt::crypto_context_function_cptr const &crypto_context_functions);
 
+void print(int offset, NCryptKeyName const &key_name);
+
 template<typename T>
 inline void print_object_properties(int offset, T &obj, bool hide_errors = false) {
     std::error_code status{hcrypt::status::success};

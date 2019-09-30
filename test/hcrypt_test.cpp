@@ -15,43 +15,46 @@
 #include "hbcrypt_test_AES_CMAC.hpp"
 #include "hbcrypt_test_AES_CBC.hpp"
 #include "hncrypt_test_providers.hpp"
+#include "hncrypt_test_enum_keys.hpp"
 //
 // https://github.com/microsoft/Windows-classic-samples/tree/master/Samples/Security
 //
 
 int main() {
     try {
-        test_CTAD();
+        //test_CTAD();
 
-        print_is_fips_complience_on();
+        //print_is_fips_complience_on();
 
-        print_registered_providers();
+        //print_registered_providers();
 
-        resolve_providers();
+        //resolve_providers();
 
-        print_algorithms();
+        //print_algorithms();
 
-        print_crypto_contexts();
+        //print_crypto_contexts();
 
-        test_algorithm();
+        //test_algorithm();
 
-        test_rand();
+        //test_rand();
 
-        test_sample_key_derivation();
+        //test_sample_key_derivation();
 
-        test_sample_hash();
+        //test_sample_hash();
 
-        test_message_signing();
+        //test_message_signing();
 
-        tesh_dh_oakley();
+        //tesh_dh_oakley();
 
-        test_sha1_hmac();
+        //test_sha1_hmac();
 
-        test_aes_cmac();
+        //test_aes_cmac();
 
-        test_aes_cbc();
+        //test_aes_cbc();
 
-        test_ncrypt_providers();
+        //test_ncrypt_providers();
+
+        test_ncrypt_enum_keys();
 
     } catch (std::system_error const &ex) {
         printf("Error code = 0x%x, %s, %s\n",

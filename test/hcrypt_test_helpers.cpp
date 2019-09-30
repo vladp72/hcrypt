@@ -89,3 +89,15 @@ void print(int offset, bcrypt::crypto_context_function_cptr const &crypto_contex
         return true;
     });
 }
+
+void print(int offset, NCryptKeyName const &key_name) {
+    printf("%*ckey name: %ws, algorithm: \"0x%ws\", legacy keys spec: 0x%lx, %ws, flags 0x%lx, %ws\n",
+           offset,
+           ' ',
+           key_name.pszName,
+           key_name.pszAlgid,
+           key_name.dwLegacyKeySpec,
+           ncrypt::legacy_key_spec_to_string(key_name.dwLegacyKeySpec).c_str(),
+           key_name.dwFlags,
+           ncrypt::key_flags_to_string(key_name.dwFlags).c_str());
+}
