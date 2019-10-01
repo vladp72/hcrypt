@@ -22,37 +22,37 @@
 
 int main() {
     try {
-        test_CTAD();
+        //test_CTAD();
 
-        print_is_fips_complience_on();
+        //print_is_fips_complience_on();
 
-        print_registered_providers();
+        //print_registered_providers();
 
-        resolve_providers();
+        //resolve_providers();
 
-        print_algorithms();
+        //print_algorithms();
 
-        print_crypto_contexts();
+        //print_crypto_contexts();
 
-        test_algorithm();
+        //test_algorithm();
 
-        test_rand();
+        //test_rand();
 
-        test_sample_key_derivation();
+        //test_sample_key_derivation();
 
-        test_sample_hash();
+        //test_sample_hash();
 
-        test_message_signing();
+        //test_message_signing();
 
-        tesh_dh_oakley();
+        //tesh_dh_oakley();
 
-        test_sha1_hmac();
+        //test_sha1_hmac();
 
-        test_aes_cmac();
+        //test_aes_cmac();
 
-        test_aes_cbc();
+        //test_aes_cbc();
 
-        test_ncrypt_providers();
+        //test_ncrypt_providers();
 
         test_ncrypt_enum_keys();
 
