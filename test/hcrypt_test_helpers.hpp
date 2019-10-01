@@ -248,3 +248,61 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
         printf("%*csignature length: error code = %x\n", offset, ' ', status.value());
     }
 }
+
+template<typename T>
+inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors = false) {
+    std::error_code status{hcrypt::status::success};
+
+    std::wstring string_value;
+    DWORD dword_value{0};
+    hcrypt::buffer buffer_value;
+
+    status = obj.try_get_algorithm_name(&string_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*calgorithm name: %ws\n", offset, ' ', string_value.c_str());
+    } else if (!hide_errors) {
+        printf("%*calgorithm name: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_associated_ecdh_name(&string_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*cecdh name: %ws\n", offset, ' ', string_value.c_str());
+    } else if (!hide_errors) {
+        printf("%*cecdh name: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_block_length(&dword_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*cblock length: %lu\n", offset, ' ', dword_value);
+    } else if (!hide_errors) {
+        printf("%*cblock length: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_export_policy(&dword_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*cexport policy: %lu\n", offset, ' ', dword_value);
+    } else if (!hide_errors) {
+        printf("%*cexport policy: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_implementation_flags(&dword_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*cimplementation flags: %lu\n", offset, ' ', dword_value);
+    } else if (!hide_errors) {
+        printf("%*cimplementation flags: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_key_type(&dword_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*ckey type: %lu\n", offset, ' ', dword_value);
+    } else if (!hide_errors) {
+        printf("%*ckey type: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_key_usage(&dword_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*ckey usage: %lu\n", offset, ' ', dword_value);
+    } else if (!hide_errors) {
+        printf("%*ckey usage: error code = %x\n", offset, ' ', status.value());
+    }
+}

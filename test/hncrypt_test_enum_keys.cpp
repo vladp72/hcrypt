@@ -11,12 +11,29 @@ void enum_keys(int offset, NCryptProviderName const &provider_name, unsigned lon
     try {
         ncrypt::storage_provider sp{provider_name.pszName};
 
+        print_ncrypt_object_properties(offset + 2, sp, true);
+
         ncrypt::storage_provider::key_iterator cur{sp.key_begin(flags)};
         ncrypt::storage_provider::key_iterator end{};
 
         for (; cur != end; ++cur) {
             NCryptKeyName const &key_name{*cur};
-            print(offset + 2, key_name);
+            print(offset + 4, key_name);
+
+            ncrypt::key k;
+
+            std::error_code key_status{sp.try_open_key(
+                key_name.pszName, key_name.dwLegacyKeySpec, key_name.dwFlags, &k)};
+
+            if (hcrypt::is_success(key_status)) {
+                print_ncrypt_object_properties(offset + 6, k, true);
+            } else {
+                printf("%*copen_keys, error code = 0x%x, %s\n",
+                       offset + 2,
+                       ' ',
+                       key_status.value(),
+                       hcrypt::status_to_string(key_status.value()));
+            }
         }
 
     } catch (std::system_error const &ex) {

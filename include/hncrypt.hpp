@@ -464,7 +464,7 @@ namespace ncrypt {
             }
         }
 
-        BCRYPT_HANDLE get_object_handle() const {
+        NCRYPT_HANDLE get_object_handle() const {
             return static_cast<T const *>(this)->get_handle();
         }
 
