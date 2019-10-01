@@ -18,12 +18,12 @@ namespace {
             printf("\n%*cOpening algorithm %S.\n", offset + 2, ' ', algorithm_name);
 
             bcrypt::algorithm_provider provider{algorithm_name};
-            print_object_properties(offset + 4, provider, true);
+            print_bcrypt_object_properties(offset + 4, provider, true);
 
             printf("%*cCreating hash object.\n", offset + 2, ' ');
 
             bcrypt::hash h{provider.create_hash()};
-            print_object_properties(offset + 4, h, true);
+            print_bcrypt_object_properties(offset + 4, h, true);
 
             printf("%*cHashing data.\n", offset + 2, ' ');
 

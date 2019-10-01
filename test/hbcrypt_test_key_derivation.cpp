@@ -131,7 +131,7 @@ namespace {
 
             provider.open(algorithm);
 
-            print_object_properties(offset + 2, provider, true);
+            print_bcrypt_object_properties(offset + 2, provider, true);
 
             printf("%*cGenerating symmetric key for the secret %S\n",
                    offset,
@@ -143,7 +143,7 @@ namespace {
             bcrypt::key key{provider.generate_symmetric_key(
                 derivation_algorithms_secret, sizeof(derivation_algorithms_secret))};
 
-            print_object_properties(offset + 2, key, true);
+            print_bcrypt_object_properties(offset + 2, key, true);
 
             printf("%*cDeriving key length 60 bytes\n", offset, ' ');
 

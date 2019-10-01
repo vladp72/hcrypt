@@ -55,17 +55,17 @@ namespace {
             printf("\n%*cOpening hash algorithm %S.\n", offset, ' ', hash_algorithm_name);
 
             bcrypt::algorithm_provider hash_provider{hash_algorithm_name};
-            print_object_properties(offset + 2, hash_provider, true);
+            print_bcrypt_object_properties(offset + 2, hash_provider, true);
 
             printf("%*cCreating hash object.\n", offset, ' ');
 
             bcrypt::hash h{hash_provider.create_hash()};
-            print_object_properties(offset + 2, h, true);
+            print_bcrypt_object_properties(offset + 2, h, true);
 
             printf("\n%*cOpening encryption algorithm %S.\n", offset, ' ', encryption_algorithm_name);
 
             bcrypt::algorithm_provider encryption_provider{encryption_algorithm_name};
-            print_object_properties(offset + 2, encryption_provider, true);
+            print_bcrypt_object_properties(offset + 2, encryption_provider, true);
 
             printf("%*cCreating key pair, key length %zu\n", offset, ' ', encryption_key_length);
 
@@ -75,7 +75,7 @@ namespace {
 
             k.finalize_key_pair();
 
-            print_object_properties(offset + 2, k, true);
+            print_bcrypt_object_properties(offset + 2, k, true);
 
             printf("\n%*cHashing data.\n", offset, ' ');
 
@@ -109,7 +109,7 @@ namespace {
 
             bcrypt::key public_encryption_key{encryption_provider.import_key_pair(
                 BCRYPT_DSA_PUBLIC_BLOB, public_key_blob.data(), public_key_blob.size())};
-            print_object_properties(offset + 2, k, true);
+            print_bcrypt_object_properties(offset + 2, k, true);
 
             printf("\n%*cVerifying signatire using imported key\n", offset, ' ');
 

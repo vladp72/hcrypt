@@ -33,7 +33,7 @@ namespace {
 
             offset += 2;
 
-            print_object_properties(offset + 2, ap, true);
+            print_bcrypt_object_properties(offset + 2, ap, true);
 
             printf("%*cCreating reusable hash with key %S\n",
                    offset,
@@ -44,7 +44,7 @@ namespace {
                                           sizeof(hmac_key),
                                           BCRYPT_HASH_REUSABLE_FLAG)};
 
-            print_object_properties(offset + 2, h, true);
+            print_bcrypt_object_properties(offset + 2, h, true);
 
             for (int i = 0; i < 3; ++i) {
                 h.hash_data(reinterpret_cast<char const *>(message), sizeof(message));

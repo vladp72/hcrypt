@@ -78,7 +78,7 @@ void tesh_dh_oakley() {
         printf("\n%*cCreating algorithm providers: %S\n", offset, ' ', BCRYPT_DH_ALGORITHM);
 
         bcrypt::algorithm_provider alg_a{BCRYPT_DH_ALGORITHM};
-        print_object_properties(offset + 2, alg_a, true);
+        print_bcrypt_object_properties(offset + 2, alg_a, true);
 
         bcrypt::algorithm_provider alg_b{BCRYPT_DH_ALGORITHM};
 
@@ -88,7 +88,7 @@ void tesh_dh_oakley() {
         key_a.set_dh_parameters(dh_param, dh_param_buffer.size());
         key_a.finalize_key_pair();
 
-        print_object_properties(offset + 2, key_a, true);
+        print_bcrypt_object_properties(offset + 2, key_a, true);
 
         printf("%*cExporting public KeyA\n", offset, ' ');
 
@@ -102,7 +102,7 @@ void tesh_dh_oakley() {
         key_b.set_dh_parameters(dh_param, dh_param_buffer.size());
         key_b.finalize_key_pair();
 
-        print_object_properties(offset + 2, key_b, true);
+        print_bcrypt_object_properties(offset + 2, key_b, true);
 
         printf("%*cExporting public KeyB\n", offset, ' ');
 
@@ -115,14 +115,14 @@ void tesh_dh_oakley() {
         bcrypt::key public_key_b{alg_a.import_key_pair(
             BCRYPT_DH_PUBLIC_BLOB, key_b_buffer.data(), key_b_buffer.size())};
 
-        print_object_properties(offset + 2, public_key_b, true);
+        print_bcrypt_object_properties(offset + 2, public_key_b, true);
 
         printf("\n%*cProvider B importing public KeyA\n", offset, ' ');
 
         bcrypt::key public_key_a{alg_a.import_key_pair(
             BCRYPT_DH_PUBLIC_BLOB, key_a_buffer.data(), key_a_buffer.size())};
 
-        print_object_properties(offset + 2, public_key_a, true);
+        print_bcrypt_object_properties(offset + 2, public_key_a, true);
 
         // specify hash algorithm, SHA1 if null
 
@@ -151,7 +151,7 @@ void tesh_dh_oakley() {
 
         bcrypt::secret secret_a{bcrypt::create_secret(key_a, public_key_b)};
 
-        print_object_properties(offset + 2, secret_a, true);
+        print_bcrypt_object_properties(offset + 2, secret_a, true);
 
         printf("%*cCreating key using %S from shared secret\n", offset, ' ', BCRYPT_KDF_TLS_PRF);
 
@@ -168,7 +168,7 @@ void tesh_dh_oakley() {
 
         bcrypt::secret secret_b{bcrypt::create_secret(key_b, public_key_a)};
 
-        print_object_properties(offset + 2, secret_b, true);
+        print_bcrypt_object_properties(offset + 2, secret_b, true);
 
         printf("%*cCreating key using %S from shared secret\n", offset, ' ', BCRYPT_KDF_TLS_PRF);
 

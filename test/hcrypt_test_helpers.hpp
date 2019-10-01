@@ -22,7 +22,7 @@ void print(int offset, bcrypt::crypto_context_function_cptr const &crypto_contex
 void print(int offset, NCryptKeyName const &key_name);
 
 template<typename T>
-inline void print_object_properties(int offset, T &obj, bool hide_errors = false) {
+inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors = false) {
     std::error_code status{hcrypt::status::success};
 
     std::wstring string_value;

@@ -29,12 +29,12 @@ namespace {
 
             offset += 2;
 
-            print_object_properties(offset + 2, ap, true);
+            print_bcrypt_object_properties(offset + 2, ap, true);
 
             printf("%*cSetting chaining mode to %S\n", offset, ' ', chain_mode);
 
             ap.set_chaining_mode(chain_mode);
-            print_object_properties(offset + 2, ap, true);
+            print_bcrypt_object_properties(offset + 2, ap, true);
 
             size_t block_length{ap.get_block_length()};
 
@@ -72,7 +72,7 @@ namespace {
             bcrypt::key k_a{ap.generate_symmetric_key(
                 reinterpret_cast<char const *>(key128), 16)};
 
-            print_object_properties(offset + 2, k_a, true);
+            print_bcrypt_object_properties(offset + 2, k_a, true);
 
             printf("%*cExporting key\n", offset, ' ');
 
@@ -125,7 +125,7 @@ namespace {
                                                    exported_key.data(),
                                                    exported_key.size())};
 
-            print_object_properties(offset + 2, k_b, true);
+            print_bcrypt_object_properties(offset + 2, k_b, true);
 
             iv_buffer.assign(std::begin(iv), std::begin(iv) + block_length);
 

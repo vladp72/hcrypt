@@ -32,19 +32,19 @@ namespace {
 
             offset += 2;
 
-            print_object_properties(offset + 2, ap, true);
+            print_bcrypt_object_properties(offset + 2, ap, true);
 
             printf("%*cSetting chaining mode to %S\n", offset, ' ', chain_mode);
 
             ap.set_chaining_mode(chain_mode);
-            print_object_properties(offset + 2, ap, true);
+            print_bcrypt_object_properties(offset + 2, ap, true);
 
             printf("%*cCreating symmetric key\n", offset, ' ');
 
             bcrypt::key k{ap.generate_symmetric_key(
                 reinterpret_cast<char const *>(key), 32)};
 
-            print_object_properties(offset + 2, k, true);
+            print_bcrypt_object_properties(offset + 2, k, true);
 
             // The data to be GMAC'd. It is not encrypted.
             std::string_view aad(

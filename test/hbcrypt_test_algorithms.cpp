@@ -9,7 +9,7 @@ void test_algorithm() {
 
         ap.open(BCRYPT_AES_ALGORITHM);
 
-        print_object_properties(offset + 2, ap);
+        print_bcrypt_object_properties(offset + 2, ap);
 
     } catch (std::system_error const &ex) {
         printf("test_algorithm, error code = ox%x, %s, %s\n",
