@@ -91,7 +91,7 @@ void print(int offset, bcrypt::crypto_context_function_cptr const &crypto_contex
 }
 
 void print(int offset, NCryptKeyName const &key_name) {
-    printf("%*ckey name: %ws, algorithm: \"0x%ws\", legacy keys spec: 0x%lx, %ws, flags 0x%lx, %ws\n",
+    printf("%*ckey name: \"%ws\", algorithm: \"0x%ws\", legacy keys spec: 0x%lx, %ws, flags 0x%lx, %ws\n",
            offset,
            ' ',
            key_name.pszName,

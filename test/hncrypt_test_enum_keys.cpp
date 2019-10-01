@@ -1,7 +1,7 @@
 #include "hncrypt_test_enum_keys.hpp"
 
 void enum_keys(int offset, NCryptProviderName const &provider_name, unsigned long flags) {
-    printf("%*cProvider \"%S\", comment \"%S\" with flags 0x%lx, %S :\n",
+    printf("\n%*cProvider \"%S\", comment \"%S\" with flags 0x%lx, %S :\n",
            offset,
            ' ',
            provider_name.pszName,
@@ -21,7 +21,7 @@ void enum_keys(int offset, NCryptProviderName const &provider_name, unsigned lon
 
     } catch (std::system_error const &ex) {
         printf("%*cenum_keys, error code = 0x%x, %s, %s\n",
-               offset,
+               offset + 2,
                ' ',
                ex.code().value(),
                hcrypt::status_to_string(ex.code().value()),

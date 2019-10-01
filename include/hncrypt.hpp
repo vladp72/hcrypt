@@ -1053,7 +1053,7 @@ namespace ncrypt {
             }
 
             bool operator==(key_iterator const &other) const noexcept {
-                return !enumirator_state_ || !other.enumirator_state_;
+                return !enumirator_state_ && !other.enumirator_state_;
             }
 
             bool operator!=(key_iterator const &other) const noexcept {
