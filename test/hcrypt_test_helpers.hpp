@@ -21,6 +21,10 @@ void print(int offset, bcrypt::crypto_context_function_cptr const &crypto_contex
 
 void print(int offset, NCryptKeyName const &key_name);
 
+std::chrono::system_clock::time_point filetime_to_time_point(FILETIME ft);
+
+FILETIME time_point_to_filetime(std::chrono::system_clock::time_point ft);
+
 template<typename T>
 inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors = false) {
     std::error_code status{hcrypt::status::success};
@@ -362,10 +366,10 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
 
     status = obj.try_get_last_modified(&ft);
     if (hcrypt::is_success(status)) {
-        printf("%*clast modified: %ws\n",
+        printf("%*clast modified: %s\n",
                offset,
                ' ',
-               /*hcrypt::filetime_to_string(ft).c_str()*/ L"TODO");
+               hcrypt::filetime_to_string(ft).c_str());
     } else if (!hide_errors) {
         printf("%*clast modified: error code = %x\n", offset, ' ', status.value());
     }

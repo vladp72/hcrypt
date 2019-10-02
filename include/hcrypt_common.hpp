@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <string_view>
+#include <chrono>
 
 #include <windows.h>
 #include <winternl.h>
@@ -742,5 +743,79 @@ namespace hcrypt {
         // to previous processed character
         //
         return ((count % 2) == 0) ? cur : prev;
+    }
+
+    // filetime_duration has the same layout as FILETIME; 100ns intervals
+    using filetime_duration = std::chrono::duration<int64_t, std::ratio<1, 10'000'000>>;
+
+    // January 1, 1601 (NT epoch) - January 1, 1970 (Unix epoch):
+    inline constexpr std::chrono::duration<int64_t> const nt_to_unix_epoch{-11644473600LL};
+
+    inline std::chrono::system_clock::time_point filetime_to_time_point(FILETIME ft) noexcept {
+        filetime_duration ft_duration{(static_cast<long long>(ft.dwHighDateTime) << 32) |
+                                      static_cast<long long>(ft.dwLowDateTime)};
+        auto const ft_with_unix_epoch{ft_duration + nt_to_unix_epoch};
+        return std::chrono::system_clock::time_point{
+            std::chrono::duration_cast<std::chrono::system_clock::duration>(ft_with_unix_epoch)};
+    }
+
+    inline FILETIME time_point_to_filetime(std::chrono::system_clock::time_point tp) noexcept {
+        auto const duration{
+            std::chrono::duration_cast<filetime_duration>(tp.time_since_epoch())};
+        auto const duration_with_nt_epoch{duration - nt_to_unix_epoch};
+        long long const raw_count{duration_with_nt_epoch.count()};
+
+        FILETIME ft;
+        ft.dwHighDateTime = static_cast<unsigned long>(raw_count);
+        ft.dwLowDateTime = static_cast<unsigned long>(raw_count >> 32);
+
+        return ft;
+    }
+
+    inline FILETIME systemtime_to_filetime(SYSTEMTIME const &st) noexcept {
+        FILETIME ft;
+        SystemTimeToFileTime(&st, &ft);
+        return ft;
+    }
+
+    inline void filetime_to_systemtime(FILETIME const &ft, SYSTEMTIME *st) noexcept {
+        FileTimeToSystemTime(&ft, st);
+    }
+
+    inline SYSTEMTIME filetime_to_systemtime(FILETIME const &ft) noexcept {
+        SYSTEMTIME st;
+        filetime_to_systemtime(ft, &st);
+        return st;
+    }
+
+    inline std::string systemtime_to_string(SYSTEMTIME const &st) {
+        return hcrypt::make_string("%04hu/%02hu/%02hu %02hu:%02hu:%02hu.%03hu",
+                                   st.wYear,
+                                   st.wMonth,
+                                   st.wDay,
+                                   st.wHour,
+                                   st.wMinute,
+                                   st.wSecond,
+                                   st.wMilliseconds);
+    }
+
+    inline std::wstring systemtime_to_wstring(SYSTEMTIME const &st) {
+        return hcrypt::make_wstring(
+            L"%04hu/%02hu/%02hu %02hu:%02hu:%02hu.%03hu",
+            st.wYear,
+            st.wMonth,
+            st.wDay,
+            st.wHour,
+            st.wMinute,
+            st.wSecond,
+            st.wMilliseconds);
+    }
+
+    inline std::string filetime_to_string(FILETIME ft) {
+        return systemtime_to_string(filetime_to_systemtime(ft));
+    }
+
+    inline std::wstring filetime_to_wstring(FILETIME ft) {
+        return systemtime_to_wstring(filetime_to_systemtime(ft));
     }
 } // namespace hcrypt
