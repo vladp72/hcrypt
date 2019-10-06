@@ -102,3 +102,13 @@ void print(int offset, NCryptKeyName const &key_name) {
            key_name.dwFlags,
            ncrypt::key_flags_to_string(key_name.dwFlags).c_str());
 }
+
+void print(int offset, NCRYPT_SUPPORTED_LENGTHS const &supported_lengths) {
+    printf("%*clength min %lu, max %lu, increment %lu, default %lu\n",
+           offset,
+           ' ',
+           supported_lengths.dwMinLength,
+           supported_lengths.dwMaxLength,
+           supported_lengths.dwIncrement,
+           supported_lengths.dwDefaultLength);
+}

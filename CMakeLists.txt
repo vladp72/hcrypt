@@ -112,6 +112,7 @@ add_executable ( hcrypt_test
                  test/hcrypt_test.cpp
                  test/hcrypt_test_helpers.cpp
                  test/hbcrypt_test_CTAD.cpp
+                 test/hbcrypt_test_base64.cpp
                  test/hbcrypt_test_fips.cpp
                  test/hbcrypt_test_algorithms.cpp
                  test/hbcrypt_test_registered_providers.cpp

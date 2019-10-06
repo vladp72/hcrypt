@@ -745,6 +745,269 @@ namespace hcrypt {
         return ((count % 2) == 0) ? cur : prev;
     }
 
+    // clang-format off
+    inline constexpr char const base64_encoding_table[] = {
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
+    };
+    // clang-format on
+
+    template<typename I>
+    inline void get_base64_length(char const *buffer, size_t buffer_size) {
+        size_t length{(buffer_size / 3) * 4};
+        if (buffer_size % 3) {
+            length += 4;
+        }
+        return length;
+    }
+
+    template<typename I>
+    inline void to_base64(char const *buffer, size_t buffer_size, I out) {
+        size_t blk_count{buffer_size / 3};
+        char const *cur{buffer};
+        char const *end{buffer + buffer_size};
+        char code[4];
+        //
+        // Fast case
+        //
+        for (; cur + 3 <= end; cur += 3) {
+            code[0] = (cur[0] & 0b1111'1100) >> 2;
+            code[1] = ((cur[0] & 0b0000'0011) << 4) + ((cur[1] & 0b1111'0000) >> 4);
+            code[2] = ((cur[1] & 0b0000'1111) << 2) + ((cur[2] & 0b1100'0000) >> 6);
+            code[3] = (cur[2] & 0b0011'1111);
+
+            *out = base64_encoding_table[code[0]];
+            ++out;
+            *out = base64_encoding_table[code[1]];
+            ++out;
+            *out = base64_encoding_table[code[2]];
+            ++out;
+            *out = base64_encoding_table[code[3]];
+            ++out;
+        }
+        //
+        // Special cases at the tail
+        //
+        switch (buffer_size % 3) {
+        case 2:
+            code[0] = (cur[0] & 0b1111'1100) >> 2;
+            code[1] = ((cur[0] & 0b0000'0011) << 4) + ((cur[1] & 0b1111'0000) >> 4);
+            code[2] = (cur[1] & 0b0000'1111) << 2;
+
+            *out = base64_encoding_table[code[0]];
+            ++out;
+            *out = base64_encoding_table[code[1]];
+            ++out;
+            *out = base64_encoding_table[code[2]];
+            ++out;
+            *out = '=';
+            ++out;
+            break;
+        case 1:
+            code[0] = (cur[0] & 0b1111'1100) >> 2;
+            code[1] = (cur[0] & 0b0000'0011) << 4;
+
+            *out = base64_encoding_table[code[0]];
+            ++out;
+            *out = base64_encoding_table[code[1]];
+            ++out;
+            *out = '=';
+            ++out;
+            *out = '=';
+            ++out;
+        default:;
+        }
+    }
+
+    // clang-format off
+    //
+    // Reverse mapping from ASCII code to a positions in base64_encoding_table.
+    // For invalid characters, and for '=' index is 0xFF
+    //
+    inline constexpr unsigned char const base64_decoding_table[256] = {
+   //0x00,      0x01,      0x02,      0x03,      0x04,      0x05,      0x06,      0x07
+     0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x00
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x01
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x02
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x03
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x04
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0x3e /*+*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0x3f /*/*/ // 0x05
+    ,0x34 /*0*/,0x35 /*1*/,0x36 /*2*/,0x37 /*3*/,0x38 /*4*/,0x39 /*5*/,0x3a /*6*/,0x3b /*7*/ // 0x06
+    ,0x3c /*8*/,0x3d /*9*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*=*/,0xff /*-*/,0xff /*-*/ // 0x07
+    ,0xff /*-*/,0x00 /*A*/,0x01 /*B*/,0x02 /*C*/,0x03 /*D*/,0x04 /*E*/,0x05 /*F*/,0x06 /*G*/ // 0x08
+    ,0x07 /*H*/,0x08 /*I*/,0x09 /*J*/,0x0a /*K*/,0x0b /*L*/,0x0c /*M*/,0x0d /*N*/,0x0e /*O*/ // 0x09
+    ,0x0f /*P*/,0x10 /*Q*/,0x11 /*R*/,0x12 /*S*/,0x13 /*T*/,0x14 /*U*/,0x15 /*V*/,0x16 /*W*/ // 0x0a
+    ,0x17 /*X*/,0x18 /*Y*/,0x19 /*Z*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x0b
+    ,0xff /*-*/,0x1a /*a*/,0x1b /*b*/,0x1c /*c*/,0x1d /*d*/,0x1e /*e*/,0x1f /*f*/,0x20 /*g*/ // 0x0c
+    ,0x21 /*h*/,0x22 /*i*/,0x23 /*j*/,0x24 /*k*/,0x25 /*l*/,0x26 /*m*/,0x27 /*n*/,0x28 /*o*/ // 0x0d
+    ,0x29 /*p*/,0x2a /*q*/,0x2b /*r*/,0x2c /*s*/,0x2d /*t*/,0x2e /*u*/,0x2f /*v*/,0x30 /*w*/ // 0x0e
+    ,0x31 /*x*/,0x32 /*y*/,0x33 /*z*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x0f
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x10
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x11
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x12
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x13
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x14
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x15
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x16
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x17
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x18
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x19
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x1a
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x1b
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x1c
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x1d
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x1e
+    ,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/,0xff /*-*/ // 0x1f
+    };
+    // clang-format on
+
+    inline int find_base64_decoding_index(int c) noexcept {
+        char const *pos{std::find(
+            std::begin(base64_encoding_table), std::end(base64_encoding_table), c)};
+        if (pos != std::end(base64_encoding_table)) {
+            return int(pos - base64_encoding_table);
+        }
+        return 0xFF;
+    }
+
+    inline bool is_base64_character(unsigned int const c) noexcept {
+        return isalnum(c) || c == '+' || c == '/';
+    }
+
+    inline void print_base64_decoding_table() noexcept {
+        printf("//0x00,      0x01,      0x02,      0x03,      0x04,      0x05, "
+               "     0x06,      0x07\n");
+
+        for (int c = 0; c < 256; ++c) {
+            unsigned char j = c / 8;
+            unsigned char i = c % 8;
+
+            if (0 == c) {
+                printf(" ");
+            } else {
+                printf(",");
+            }
+
+            printf("0x%02x", find_base64_decoding_index(c));
+
+            if (is_base64_character(c) || c == '=') {
+                printf(" /*%c*/", char(c));
+            } else {
+                printf(" /*-*/");
+            }
+
+            if (7 == c % 8) {
+                printf(" // 0x%02x\n", unsigned int(j));
+            }
+        }
+    }
+
+    inline bool is_base64_character_fast(unsigned int const c) noexcept {
+        return base64_decoding_table[c] != 0xFF;
+    }
+
+    //
+    // @brief Algorithm consumes input in blocks of 4 bytes
+    //
+    template<typename I>
+    [[nodiscard]] inline std::pair<bool, unsigned char const *> from_base64(
+        unsigned char const *buffer, size_t buffer_size, I out) {
+        if (0 == buffer_size) {
+            return std::pair{true, buffer};
+        }
+        //
+        // Algorithms consumes data in blocks of 4 bytes
+        //
+        if (buffer_size % 4 != 0) {
+            return std::pair{false, buffer};
+        }
+
+        unsigned char idx[4];
+        unsigned char decoded[3];
+        unsigned char const *cur{buffer};
+        unsigned char const *end{buffer + buffer_size};
+
+        //
+        // Fast case
+        //
+        for (; cur < end; cur += 4) {
+            idx[0] = base64_decoding_table[cur[0]];
+            if (idx[0] == 0xFF) {
+                break;
+            }
+            idx[1] = base64_decoding_table[cur[1]];
+            if (idx[1] == 0xFF) {
+                break;
+            }
+            idx[2] = base64_decoding_table[cur[2]];
+            if (idx[2] == 0xFF) {
+                break;
+            }
+            idx[3] = base64_decoding_table[cur[3]];
+            if (idx[3] == 0xFF) {
+                break;
+            }
+
+            decoded[0] = (idx[0] << 2) + ((idx[1] & 0b0011'0000) >> 4);
+            decoded[1] = ((idx[1] & 0b0000'1111) << 4) + ((idx[2] & 0b0011'1100) >> 2);
+            decoded[2] = ((idx[2] & 0b0000'0011) << 6) + idx[3];
+
+            *out = decoded[0];
+            ++out;
+            *out = decoded[1];
+            ++out;
+            *out = decoded[2];
+            ++out;
+        }
+        //
+        // Special cases
+        //
+        if (cur + 4 == end) {
+            if (cur[2] == '=' && cur[3] == '=') {
+                if (idx[0] == 0xFF || idx[1] == 0xFF) {
+                    return std::pair{false, cur};
+                }
+                decoded[0] = (idx[0] << 2) + ((idx[1] & 0b0011'0000) >> 4);
+                *out = decoded[0];
+                ++out;
+            } else if (cur[2] != '=' && cur[3] == '=') {
+                if (idx[0] == 0xFF || idx[1] == 0xFF || idx[2] == 0xFF) {
+                    return std::pair{false, cur};
+                }
+                decoded[0] = (idx[0] << 2) + ((idx[1] & 0b0011'0000) >> 4);
+                decoded[1] =
+                    ((idx[1] & 0b0000'1111) << 4) + ((idx[2] & 0b0011'1100) >> 2);
+
+                *out = decoded[0];
+                ++out;
+                *out = decoded[1];
+                ++out;
+
+            } else {
+                //
+                // this case should have been handled
+                // by the main loop above unless we found
+                // an invalid character
+                //
+                return std::pair{false, cur};
+            }
+        }
+
+        return std::pair{true, cur};
+    }
+
+    template<typename I>
+    [[nodiscard]] inline std::pair<bool, char const *> from_base64(char const *buffer,
+                                                                   size_t buffer_size,
+                                                                   I out) {
+        auto result{from_base64(
+            reinterpret_cast<unsigned char const *>(buffer), buffer_size, out)};
+        return std::pair{result.first, reinterpret_cast<char const *>(result.second)};
+    }
+
     // filetime_duration has the same layout as FILETIME; 100ns intervals
     using filetime_duration = std::chrono::duration<int64_t, std::ratio<1, 10'000'000>>;
 

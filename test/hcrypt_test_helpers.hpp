@@ -21,6 +21,8 @@ void print(int offset, bcrypt::crypto_context_function_cptr const &crypto_contex
 
 void print(int offset, NCryptKeyName const &key_name);
 
+void print(int offset, NCRYPT_SUPPORTED_LENGTHS const &key_name);
+
 template<typename T>
 inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors = false) {
     std::error_code status{hcrypt::status::success};
@@ -377,10 +379,41 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
         printf("%*clength: error code = %x\n", offset, ' ', status.value());
     }
 
+    NCRYPT_SUPPORTED_LENGTHS supported_lengths;
+    status = obj.try_get_supported_lengths(&supported_lengths);
+    if (hcrypt::is_success(status)) {
+        print(offset, supported_lengths);
+    } else if (!hide_errors) {
+        printf("%*csupported length: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_max_name_length(&dword_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*cmax name length: %lu\n", offset, ' ', dword_value);
+    } else if (!hide_errors) {
+        printf("%*cmax name length: error code = %x\n", offset, ' ', status.value());
+    }
+
     status = obj.try_get_name(&string_value);
     if (hcrypt::is_success(status)) {
         printf("%*cname: %ws\n", offset, ' ', string_value.c_str());
     } else if (!hide_errors) {
         printf("%*cname: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_security_descriptor_supported(&dword_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*csecurity descriptod supported: %lu\n", offset, ' ', dword_value);
+    } else if (!hide_errors) {
+        printf("%*csecurity descriptod supported: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_security_descriptor(&buffer_value);
+    if (hcrypt::is_success(status)) {
+        printf(
+            "%*csecurity descriptor: %ws\n", offset, ' ', hcrypt::to_hex(buffer_value).c_str());
+
+    } else if (!hide_errors) {
+        printf("%*ccertificate: error code = %x\n", offset, ' ', status.value());
     }
 }

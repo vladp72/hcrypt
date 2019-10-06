@@ -1,5 +1,6 @@
 #include "hcrypt_test_helpers.hpp"
 #include "hbcrypt_test_CTAD.hpp"
+#include "hbcrypt_test_base64.hpp"
 #include "hbcrypt_test_fips.hpp"
 #include "hbcrypt_test_algorithms.hpp"
 #include "hbcrypt_test_registered_providers.hpp"
@@ -23,6 +24,8 @@
 int main() {
     try {
         test_CTAD();
+
+        test_base64();
 
         print_is_fips_complience_on();
 
