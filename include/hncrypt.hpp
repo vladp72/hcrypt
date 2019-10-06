@@ -877,7 +877,12 @@ namespace ncrypt {
     public:
         using handle_t = NCRYPT_PROV_HANDLE;
 
-        storage_provider() noexcept = default;
+        //
+        // Workaround for clang bogus warning
+        // https://stackoverflow.com/questions/43819314/default-member-initializer-needed-within-definition-of-enclosing-class-outside
+        //
+        storage_provider() noexcept {
+        } //= default;
 
         explicit storage_provider(wchar_t const *provider) {
             open(provider);
@@ -1005,10 +1010,10 @@ namespace ncrypt {
             }
 
             key_iterator(key_iterator &&other)
-                : k_{std::move(other.k_)}
-                , p_{other.p_}
+                : p_{other.p_}
                 , enumirator_state_{other.enumirator_state_}
-                , flags_{other.flags_} {
+                , flags_{other.flags_}
+                , k_{std::move(other.k_)}  {
                 other.k_ = nullptr;
                 other.enumirator_state_ = nullptr;
                 other.flags_ = 0;
@@ -1188,7 +1193,7 @@ namespace ncrypt {
 
         // try_import_key NCryptImportKey
 
-        //notify_changes NCryptNotifyChangeKey
+        // notify_changes NCryptNotifyChangeKey
 
     private:
         NCRYPT_PROV_HANDLE h_{0};

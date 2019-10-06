@@ -1,7 +1,0 @@
-C:/Users/vpetter/source/repos/bcryptlib/out/build/x64-Clang-Release/CMakeFiles/rebuild_cache.dir
-C:/Users/vpetter/source/repos/bcryptlib/out/build/x64-Clang-Release/CMakeFiles/test.dir
-C:/Users/vpetter/source/repos/bcryptlib/out/build/x64-Clang-Release/CMakeFiles/list_install_components.dir
-C:/Users/vpetter/source/repos/bcryptlib/out/build/x64-Clang-Release/CMakeFiles/hcrypt_test.dir
-C:/Users/vpetter/source/repos/bcryptlib/out/build/x64-Clang-Release/CMakeFiles/install/local.dir
-C:/Users/vpetter/source/repos/bcryptlib/out/build/x64-Clang-Release/CMakeFiles/install.dir
-C:/Users/vpetter/source/repos/bcryptlib/out/build/x64-Clang-Release/CMakeFiles/edit_cache.dir

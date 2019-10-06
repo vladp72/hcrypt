@@ -414,6 +414,9 @@ namespace hcrypt {
         case status::not_supported:
             win32_error = ERROR_NOT_SUPPORTED;
             break;
+        case status::no_more_entries:
+            win32_error = ERROR_NO_MORE_ITEMS;
+            break;
         }
         return win32_error;
     }
@@ -470,37 +473,42 @@ namespace hcrypt {
 
     constexpr inline HRESULT status_to_nte_error(status s) {
         HRESULT e{NTE_INTERNAL_ERROR};
-
-        switch (s) {
-        case status::success:
+        //
+        // casting to underlying enumiration type
+        // is a workaround to clang warning complainig that
+        // we are comparing to a value that is not in the enumeration:
+        //      case static_cast<status>(ERROR_INTERNAL_ERROR):
+        //
+        switch (long(s)) {
+        case long(status::success):
             e = ERROR_SUCCESS;
             break;
-        case status::no_memory:
+        case long(status::no_memory):
             [[fallthrough]];
-        case status::insufficient_resources:
+        case long(status::insufficient_resources):
             e = NTE_NO_MEMORY;
             break;
-        case status::invalid_parameter:
+        case long(status::invalid_parameter):
             e = NTE_INVALID_PARAMETER;
             break;
-        case status::invalid_handle:
+        case long(status::invalid_handle):
             e = NTE_INVALID_HANDLE;
             break;
-        case status::buffer_too_small:
+        case long(status::buffer_too_small):
             e = NTE_BUFFER_TOO_SMALL;
             break;
-        case status::not_supported:
+        case long(status::not_supported):
             e = NTE_NOT_SUPPORTED;
             break;
-        case status::not_found:
+        case long(status::not_found):
             e = NTE_NOT_FOUND;
             break;
-        case status::internal_error:
+        case long(status::internal_error):
             [[fallthrough]];
-        case static_cast<status>(ERROR_INTERNAL_ERROR):
+        case ERROR_INTERNAL_ERROR:
             e = NTE_INTERNAL_ERROR;
             break;
-        case status::invalid_signature:
+        case long(status::invalid_signature):
             e = NTE_BAD_SIGNATURE;
             break;
         default:
@@ -764,11 +772,10 @@ namespace hcrypt {
     }
 
     template<typename I>
-    inline void to_base64(char const *buffer, size_t buffer_size, I out) {
-        size_t blk_count{buffer_size / 3};
-        char const *cur{buffer};
-        char const *end{buffer + buffer_size};
-        char code[4];
+    inline void to_base64(unsigned char const *buffer, size_t buffer_size, I out) {
+        unsigned char const *cur{buffer};
+        unsigned char const *end{buffer + buffer_size};
+        unsigned char code[4];
         //
         // Fast case
         //
@@ -821,7 +828,19 @@ namespace hcrypt {
         }
     }
 
+    template<typename I>
+    inline void to_base64(char const *buffer, size_t buffer_size, I out) {
+        to_base64(reinterpret_cast<unsigned char const *>(buffer), buffer_size, out);
+    }
+
     [[nodiscard]] inline std::string to_base64(char const *buffer, size_t buffer_size) {
+        std::string result;
+        result.reserve(get_base64_length(buffer_size));
+        to_base64(buffer, buffer_size, std::back_inserter(result));
+        return result;
+    }
+
+    [[nodiscard]] inline std::string to_base64(unsigned char const *buffer, size_t buffer_size) {
         std::string result;
         result.reserve(get_base64_length(buffer_size));
         to_base64(buffer, buffer_size, std::back_inserter(result));
@@ -889,7 +908,6 @@ namespace hcrypt {
 
         for (int c = 0; c < 256; ++c) {
             unsigned char j = c / 8;
-            unsigned char i = c % 8;
 
             if (0 == c) {
                 printf(" ");
@@ -906,7 +924,7 @@ namespace hcrypt {
             }
 
             if (7 == c % 8) {
-                printf(" // 0x%02x\n", unsigned int(j));
+                printf(" // 0x%02x\n", (unsigned int) j);
             }
         }
     }
@@ -1019,7 +1037,8 @@ namespace hcrypt {
         str.reserve((buffer_size / 4) * 3);
         auto [result, last] = from_base64(buffer, buffer_size, std::back_inserter(str));
         if (!result) {
-            throw std::invalid_argument{"Buffer does not contain valid Base64 encoded string"};
+            throw std::invalid_argument{
+                "Buffer does not contain valid Base64 encoded string"};
         }
         return str;
     }
