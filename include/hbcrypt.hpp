@@ -998,6 +998,15 @@ namespace bcrypt {
             return get_property_as<unsigned long>(BCRYPT_KEY_LENGTH);
         }
 
+        [[nodiscard]] std::error_code try_get_auth_tag_lengts(BCRYPT_KEY_LENGTHS_STRUCT *b) const
+            noexcept {
+            return try_get_property(BCRYPT_AUTH_TAG_LENGTH, b);
+        }
+
+        BCRYPT_KEY_LENGTHS_STRUCT get_auth_tag_lengts() const {
+            return get_property_as<BCRYPT_AUTH_TAG_LENGTH>(BCRYPT_KEY_LENGTHS);
+        }
+
         [[nodiscard]] std::error_code try_get_key_lengts(BCRYPT_KEY_LENGTHS_STRUCT *b) const
             noexcept {
             return try_get_property(BCRYPT_KEY_LENGTHS, b);

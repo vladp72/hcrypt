@@ -755,8 +755,7 @@ namespace hcrypt {
     };
     // clang-format on
 
-    template<typename I>
-    inline void get_base64_length(char const *buffer, size_t buffer_size) {
+    inline size_t get_base64_length(size_t buffer_size) {
         size_t length{(buffer_size / 3) * 4};
         if (buffer_size % 3) {
             length += 4;
@@ -820,6 +819,13 @@ namespace hcrypt {
             ++out;
         default:;
         }
+    }
+
+    [[nodiscard]] inline std::string to_base64(char const *buffer, size_t buffer_size) {
+        std::string result;
+        result.reserve(get_base64_length(buffer_size));
+        to_base64(buffer, buffer_size, std::back_inserter(result));
+        return result;
     }
 
     // clang-format off
@@ -1006,6 +1012,27 @@ namespace hcrypt {
         auto result{from_base64(
             reinterpret_cast<unsigned char const *>(buffer), buffer_size, out)};
         return std::pair{result.first, reinterpret_cast<char const *>(result.second)};
+    }
+
+    [[nodiscard]] inline std::string from_base64(char const *buffer, size_t buffer_size) {
+        std::string str;
+        str.reserve((buffer_size / 4) * 3);
+        auto [result, last] = from_base64(buffer, buffer_size, std::back_inserter(str));
+        if (!result) {
+            throw std::invalid_argument{"Buffer does not contain valid Base64 encoded string"};
+        }
+        return str;
+    }
+
+    [[nodiscard]] inline std::string from_base64(unsigned char const *buffer, size_t buffer_size) {
+        std::string str;
+        str.reserve((buffer_size / 4) * 3);
+        auto [result, last] = from_base64(buffer, buffer_size, std::back_inserter(str));
+        if (!result) {
+            throw std::invalid_argument{
+                "Buffer does not contain valid Base64 encoded string"};
+        }
+        return str;
     }
 
     // filetime_duration has the same layout as FILETIME; 100ns intervals

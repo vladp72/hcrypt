@@ -205,6 +205,18 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
         printf("%*ckey strength: error code = %x\n", offset, ' ', status.value());
     }
 
+    status = obj.try_get_auth_tag_lengts(&keys_length);
+    if (hcrypt::is_success(status)) {
+        printf("%*cauth tag length: min %lu, max %lu, increment %lu\n",
+               offset,
+               ' ',
+               keys_length.dwMinLength,
+               keys_length.dwMaxLength,
+               keys_length.dwIncrement);
+    } else if (!hide_errors) {
+        printf("%*cauth tag length: error code = %x\n", offset, ' ', status.value());
+    }
+
     status = obj.try_get_message_block_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*cmessage block length: %lu\n", offset, ' ', dword_value);
