@@ -2,10 +2,69 @@
 
 #include "hcrypt_common.hpp"
 #include <ncrypt.h>
+#include <wincrypt.h>
 
 #pragma comment(lib, "ncrypt.lib")
+#pragma comment(lib, "crypt32.lib")
+
+//
+// Hack for missing cardmod.h
+// Make sure to include cardmod.h
+// before hncrypt.h
+//
+#ifndef __CARDMOD__H__ // cardmod.h
+
+typedef DWORD PIN_SET, *PPIN_SET;
+
+typedef enum {
+    AlphaNumericPinType = 0,  // Regular PIN
+    ExternalPinType,          // Biometric PIN
+    ChallengeResponsePinType, // Challenge/Response PIN
+    EmptyPinType              // No PIN
+} SECRET_TYPE;
+
+typedef enum {
+    AuthenticationPin,   // Authentication PIN
+    DigitalSignaturePin, // Digital Signature PIN
+    EncryptionPin,       // Encryption PIN
+    NonRepudiationPin,   // Non Repudiation PIN
+    AdministratorPin,    // Administrator PIN
+    PrimaryCardPin,      // Primary Card PIN
+    UnblockOnlyPin       // Unblock only PIN (PUK)
+} SECRET_PURPOSE;
+
+typedef enum {
+    PinCacheNormal = 0,
+    PinCacheTimed,
+    PinCacheNone,
+    PinCacheAlwaysPrompt
+} PIN_CACHE_POLICY_TYPE;
+
+typedef struct _PIN_CACHE_POLICY {
+    DWORD dwVersion;
+    PIN_CACHE_POLICY_TYPE PinCachePolicyType;
+    DWORD dwPinCachePolicyInfo;
+} PIN_CACHE_POLICY, *PPIN_CACHE_POLICY;
+
+#define PIN_INFO_CURRENT_VERSION 6
+
+#define PIN_INFO_REQUIRE_SECURE_ENTRY 1
+
+typedef struct _PIN_INFO {
+    DWORD dwVersion;
+    SECRET_TYPE PinType;
+    SECRET_PURPOSE PinPurpose;
+    PIN_SET dwChangePermission;
+    PIN_SET dwUnblockPermission;
+    PIN_CACHE_POLICY PinCachePolicy;
+    DWORD dwFlags;
+} PIN_INFO, *PPIN_INFO;
+
+#endif //__CARDMOD__H__
 
 namespace ncrypt {
+
+    using pin_id = unsigned long;
 
     template<typename T>
     class buffer_ptr final {
@@ -164,6 +223,10 @@ namespace ncrypt {
         if (hcrypt::consume_flag(&legacy_key_spec, static_cast<unsigned long>(AT_SIGNATURE))) {
             hcrypt::append_with_separator(&str, L" | ", L"AT_SIGNATURE");
         }
+        if (legacy_key_spec) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", legacy_key_spec).c_str());
+        }
         return str;
     }
 
@@ -172,6 +235,10 @@ namespace ncrypt {
         if (hcrypt::consume_flag(
                 &key_flags, static_cast<unsigned long>(NCRYPT_MACHINE_KEY_FLAG))) {
             hcrypt::append_with_separator(&str, L" | ", L"NCRYPT_MACHINE_KEY_FLAG");
+        }
+        if (key_flags) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", key_flags).c_str());
         }
         return str;
     }
@@ -194,6 +261,10 @@ namespace ncrypt {
                 &key_flags, static_cast<unsigned long>(NCRYPT_ALLOW_PLAINTEXT_ARCHIVING_FLAG))) {
             hcrypt::append_with_separator(&str, L" | ", L"NCRYPT_ALLOW_PLAINTEXT_ARCHIVING_FLAG");
         }
+        if (key_flags) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", key_flags).c_str());
+        }
         return str;
     }
 
@@ -215,6 +286,10 @@ namespace ncrypt {
                 &key_flags, static_cast<unsigned long>(NCRYPT_IMPL_HARDWARE_RNG_FLAG))) {
             hcrypt::append_with_separator(&str, L" | ", L"NCRYPT_IMPL_HARDWARE_RNG_FLAG");
         }
+        if (key_flags) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", key_flags).c_str());
+        }
         return str;
     }
 
@@ -223,6 +298,10 @@ namespace ncrypt {
         if (hcrypt::consume_flag(
                 &key_flags, static_cast<unsigned long>(NCRYPT_MACHINE_KEY_FLAG))) {
             hcrypt::append_with_separator(&str, L" | ", L"NCRYPT_MACHINE_KEY_FLAG");
+        }
+        if (key_flags) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", key_flags).c_str());
         }
         return str;
     }
@@ -245,6 +324,10 @@ namespace ncrypt {
                 &key_flags, static_cast<unsigned long>(NCRYPT_ALLOW_KEY_AGREEMENT_FLAG))) {
             hcrypt::append_with_separator(&str, L" | ", L"NCRYPT_ALLOW_KEY_AGREEMENT_FLAG");
         }
+        if (key_flags) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", key_flags).c_str());
+        }
         return str;
     }
 
@@ -263,6 +346,10 @@ namespace ncrypt {
             hcrypt::append_with_separator(
                 &str, L" | ", L"NCRYPT_UI_APPCONTAINER_ACCESS_MEDIUM_FLAG");
         }
+        if (key_flags) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", key_flags).c_str());
+        }
         return str;
     }
 
@@ -275,8 +362,82 @@ namespace ncrypt {
         if (hcrypt::consume_flag(&enum_flags, static_cast<unsigned long>(NCRYPT_SILENT_FLAG))) {
             hcrypt::append_with_separator(&str, L" | ", L"NCRYPT_SILENT_FLAG");
         }
+        if (enum_flags) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", enum_flags).c_str());
+        }
         return str;
     }
+
+    constexpr inline wchar_t const *secret_type_to_string(SECRET_TYPE secret_type) {
+        wchar_t const *secret_type_name{L"unknown secret type"};
+        switch (secret_type) {
+        case AlphaNumericPinType:
+            secret_type_name = L"AlphaNumericPinType";
+            break;
+        case ExternalPinType:
+            secret_type_name = L"ExternalPinType";
+            break;
+        case ChallengeResponsePinType:
+            secret_type_name = L"ChallengeResponsePinType";
+            break;
+        case EmptyPinType:
+            secret_type_name = L"EmptyPinType";
+            break;
+        }
+        return secret_type_name;
+    }
+
+    constexpr inline wchar_t const *secret_purpose_to_string(SECRET_PURPOSE secret_purpose) {
+        wchar_t const *secret_purpose_name{L"unknown secret purpose"};
+        switch (secret_purpose) {
+        case AuthenticationPin:
+            secret_purpose_name = L"AuthenticationPin";
+            break;
+        case DigitalSignaturePin:
+            secret_purpose_name = L"DigitalSignaturePin";
+            break;
+        case EncryptionPin:
+            secret_purpose_name = L"EncryptionPin";
+            break;
+        case NonRepudiationPin:
+            secret_purpose_name = L"NonRepudiationPin";
+            break;
+        case AdministratorPin:
+            secret_purpose_name = L"AdministratorPin";
+            break;
+        case PrimaryCardPin:
+            secret_purpose_name = L"PrimaryCardPin";
+            break;
+        case UnblockOnlyPin:
+            secret_purpose_name = L"UnblockOnlyPin";
+            break;
+        }
+        return secret_purpose_name;
+    }
+
+    constexpr inline wchar_t const *pin_cache_policy_type_to_string(PIN_CACHE_POLICY_TYPE pin_cache_policy_type) {
+        wchar_t const *pin_cache_policy_type_name{L"unknown secret type"};
+        switch (pin_cache_policy_type) {
+        case PinCacheNormal:
+            pin_cache_policy_type_name = L"PinCacheNormal";
+            break;
+        case PinCacheTimed:
+            pin_cache_policy_type_name = L"PinCacheTimed";
+            break;
+        case PinCacheNone:
+            pin_cache_policy_type_name = L"PinCacheNone";
+            break;
+        case PinCacheAlwaysPrompt:
+            pin_cache_policy_type_name = L"PinCacheAlwaysPrompt";
+            break;
+        }
+        return pin_cache_policy_type_name;
+    }
+
+    class key;
+    class secret;
+    class storage_provider;
 
     template<typename T>
     struct property_impl {
@@ -615,8 +776,6 @@ namespace ncrypt {
                          pin.size());
         }
 
-        // todo: NCRYPT_PROVIDER_HANDLE_PROPERTY
-
         [[nodiscard]] std::error_code try_set_reader(std::wstring_view const &reader) {
             return try_set_property(NCRYPT_READER_PROPERTY,
                                     reinterpret_cast<char const *>(reader.data()),
@@ -629,13 +788,35 @@ namespace ncrypt {
                          reader.size());
         }
 
-        // todo NCRYPT_ROOT_CERTSTORE_PROPERTY
+        [[nodiscard]] std::error_code try_get_storage_provider(storage_provider *value) const
+            noexcept;
 
-        // todo NCRYPT_SCARD_PIN_ID PIN_ID Cardmod.h
+        storage_provider get_storage_provider() const;
 
-        // todo NCRYPT_SCARD_PIN_INFO PIN_INFO Cardmod.h
+        [[nodiscard]] std::error_code try_get_pin_id(pin_id *pid) const noexcept {
+            return try_get_property(NCRYPT_SCARD_PIN_ID, pid);
+        }
 
-        // todo NCRYPT_SECURE_PIN_PROPERTY
+        pin_id get_ping_id() const {
+            return get_property_as<pin_id>(NCRYPT_SCARD_PIN_ID);
+        }
+
+        [[nodiscard]] std::error_code try_get_pin_info(PIN_INFO *pin_info) const noexcept {
+            return try_get_property(NCRYPT_SCARD_PIN_INFO, pin_info);
+        }
+
+        PIN_INFO get_ping_info() const {
+            return get_property_as<PIN_INFO>(NCRYPT_SCARD_PIN_INFO);
+        }
+
+        [[nodiscard]] std::error_code try_get_root_certificate_store(HCERTSTORE *value) const
+            noexcept {
+            return try_get_property(NCRYPT_ROOT_CERTSTORE_PROPERTY, value);
+        }
+
+        HCERTSTORE get_root_certificate_store() const {
+            return get_property_as<>(NCRYPT_ROOT_CERTSTORE_PROPERTY);
+        }
 
         [[nodiscard]] std::error_code try_set_secure_pin(std::wstring_view const &secure_pin) {
             return try_set_property(NCRYPT_SECURE_PIN_PROPERTY,
@@ -762,7 +943,14 @@ namespace ncrypt {
             return get_property_as<unsigned long long>(NCRYPT_USE_COUNT_PROPERTY);
         }
 
-        // todo: NCRYPT_USER_CERTSTORE_PROPERTY
+        [[nodiscard]] std::error_code try_get_user_certificate_store(HCERTSTORE *value) const
+            noexcept {
+            return try_get_property(NCRYPT_USER_CERTSTORE_PROPERTY, value);
+        }
+
+        HCERTSTORE get_user_certificate_store() const {
+            return get_property_as<>(NCRYPT_USER_CERTSTORE_PROPERTY);
+        }
 
         [[nodiscard]] std::error_code try_get_version(unsigned long *value) const noexcept {
             return try_get_property(NCRYPT_VERSION_PROPERTY, value);
@@ -788,10 +976,6 @@ namespace ncrypt {
             return set_property(NCRYPT_WINDOW_HANDLE_PROPERTY, value);
         }
     };
-
-    class key;
-    class secret;
-    class storage_provider;
 
     inline bool is_key_handle(NCRYPT_KEY_HANDLE k) {
         return NCryptIsKeyHandle(k) ? true : false;
@@ -1013,7 +1197,7 @@ namespace ncrypt {
                 : p_{other.p_}
                 , enumirator_state_{other.enumirator_state_}
                 , flags_{other.flags_}
-                , k_{std::move(other.k_)}  {
+                , k_{std::move(other.k_)} {
                 other.k_ = nullptr;
                 other.enumirator_state_ = nullptr;
                 other.flags_ = 0;
@@ -1207,4 +1391,22 @@ namespace ncrypt {
                      storage_provider::key_iterator &r) noexcept {
         l.swap(r);
     }
+
+    template<typename T>
+    [[nodiscard]] std::error_code property_impl<T>::try_get_storage_provider(storage_provider *value) const
+        noexcept {
+        NCRYPT_PROV_HANDLE h{0};
+        std::error_code error{try_get_property(NCRYPT_PROVIDER_HANDLE_PROPERTY, &h)};
+        if (hcrypt::is_success(error)) {
+            value->attach(h);
+        }
+        return error;
+    }
+
+    template<typename T>
+    storage_provider property_impl<T>::get_storage_provider() const {
+        return storage_provider{
+            get_property_as<NCRYPT_PROV_HANDLE>(NCRYPT_PROVIDER_HANDLE_PROPERTY)};
+    }
+
 } // namespace ncrypt

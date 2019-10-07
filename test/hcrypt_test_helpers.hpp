@@ -297,6 +297,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
 
     std::wstring string_value;
     DWORD dword_value{0};
+    unsigned long long ull_value{0};
     hcrypt::buffer buffer_value;
     FILETIME ft{0};
 
@@ -323,8 +324,10 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
 
     status = obj.try_get_certificate(&buffer_value);
     if (hcrypt::is_success(status)) {
-        printf(
-            "%*ccertificate: %ws\n", offset, ' ', hcrypt::to_hex(buffer_value).c_str());
+        printf("%*ccertificate: %s\n",
+               offset,
+               ' ',
+               hcrypt::to_base64(buffer_value.data(), buffer_value.size()).c_str());
 
     } else if (!hide_errors) {
         printf("%*ccertificate: error code = %x\n", offset, ' ', status.value());
@@ -417,15 +420,142 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
     if (hcrypt::is_success(status)) {
         printf("%*csecurity descriptod supported: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*csecurity descriptod supported: error code = %x\n", offset, ' ', status.value());
+        printf("%*csecurity descriptod supported: error code = %x\n",
+               offset,
+               ' ',
+               status.value());
     }
 
     status = obj.try_get_security_descriptor(&buffer_value);
     if (hcrypt::is_success(status)) {
-        printf(
-            "%*csecurity descriptor: %ws\n", offset, ' ', hcrypt::to_hex(buffer_value).c_str());
+        printf("%*csecurity descriptor: %ws\n",
+               offset,
+               ' ',
+               hcrypt::to_hex(buffer_value).c_str());
 
     } else if (!hide_errors) {
         printf("%*ccertificate: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_ui_policy(&buffer_value);
+    if (hcrypt::is_success(status)) {
+        NCRYPT_UI_POLICY *ui_policy{
+            reinterpret_cast<NCRYPT_UI_POLICY *>(buffer_value.data())};
+
+        printf(
+            "%*cUI Policy: version %lu, magic 0x%lx, title \"%ws\", friendly "
+            "name \"%ws\", descrption \"%ws\"\n",
+            offset,
+            ' ',
+            ui_policy->dwVersion,
+            ui_policy->dwFlags,
+            ui_policy->pszCreationTitle,
+            ui_policy->pszFriendlyName,
+            ui_policy->pszDescription);
+    } else if (!hide_errors) {
+        printf("%*cUI Policy: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_uniqie_name(&string_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*cunique name: %ws\n", offset, ' ', string_value.c_str());
+    } else if (!hide_errors) {
+        printf("%*cunique name: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_use_context(&string_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*cuse context: %ws\n", offset, ' ', string_value.c_str());
+    } else if (!hide_errors) {
+        printf("%*cuse context: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_use_count_enabled(&dword_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*cuse count enabled: %lu\n", offset, ' ', dword_value);
+    } else if (!hide_errors) {
+        printf("%*cuse count enabled: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_use_count(&ull_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*cuse count: %llu\n", offset, ' ', ull_value);
+    } else if (!hide_errors) {
+        printf("%*cuse count: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_version(&dword_value);
+    if (hcrypt::is_success(status)) {
+        printf("%*cversion: %lu, 0x%lx\n", offset, ' ', dword_value, dword_value);
+    } else if (!hide_errors) {
+        printf("%*cversion: error code = %x\n", offset, ' ', status.value());
+    }
+
+    HWND wnd{nullptr};
+    status = obj.try_get_hwnd(&wnd);
+    if (hcrypt::is_success(status)) {
+        printf("%*cHWND: %lx\n", offset, ' ', dword_value);
+    } else if (!hide_errors) {
+        printf("%*cHWND: error code = %x\n", offset, ' ', status.value());
+    }
+
+    ncrypt::storage_provider provider;
+    status = obj.try_get_storage_provider(&provider);
+    if (hcrypt::is_success(status)) {
+        printf("%*cprovider handle: %zx\n", offset, ' ', provider.get_handle());
+    } else if (!hide_errors) {
+        printf("%*cprovider handle: error code = %x\n", offset, ' ', status.value());
+    }
+
+    ncrypt::pin_id pin_id{0};
+    status = obj.try_get_pin_id(&pin_id);
+    if (hcrypt::is_success(status)) {
+        printf("%*cpin id: %lx\n", offset, ' ', pin_id);
+    } else if (!hide_errors) {
+        printf("%*cpin id: error code = %x\n", offset, ' ', status.value());
+    }
+
+    PIN_INFO pin_info{};
+    status = obj.try_get_pin_info(&pin_info);
+    if (hcrypt::is_success(status)) {
+        printf("%*cpin info: ver 0x%lx, type %ws, purpose %ws, change permissions 0x%lx, unblock permissions 0x%lx, flags 0x%x, cache policy ver 0x%lx, cache policy info 0x%lx, cache policy type %ws\n",
+               offset,
+               ' ',
+               pin_info.dwVersion,
+               ncrypt::secret_type_to_string(pin_info.PinType),
+               ncrypt::secret_purpose_to_string(pin_info.PinPurpose),
+               pin_info.dwChangePermission,
+               pin_info.dwUnblockPermission,
+               pin_info.dwFlags,
+               pin_info.PinCachePolicy.dwVersion,
+               pin_info.PinCachePolicy.dwPinCachePolicyInfo,
+               ncrypt::pin_cache_policy_type_to_string(pin_info.PinCachePolicy.PinCachePolicyType));
+    } else if (!hide_errors) {
+        printf("%*cpin info: error code = %x\n", offset, ' ', status.value());
+    }
+
+    HCERTSTORE cert_store{nullptr};
+    status = obj.try_get_root_certificate_store(&cert_store);
+    if (hcrypt::is_success(status)) {
+        BCRYPT_CODDING_ERROR_IF_NOT(CertCloseStore(cert_store, 0));
+        printf("%*croot cert store: %p\n", offset, ' ', cert_store);
+    } else if (!hide_errors) {
+        printf("%*croot cert store: error code = %x\n", offset, ' ', status.value());
+    }
+
+    status = obj.try_get_user_certificate_store(&cert_store);
+    if (hcrypt::is_success(status)) {
+        BCRYPT_CODDING_ERROR_IF_NOT(CertCloseStore(cert_store, 0));
+        printf("%*cuser cert store: %p\n", offset, ' ', cert_store);
+    } else if (!hide_errors) {
+        printf("%*cuser cert store: error code = %x\n", offset, ' ', status.value());    
+    }
+
+    GUID guid{};
+    status = obj.try_get_smartcard_guid(&guid);
+    if (hcrypt::is_success(status)) {
+        printf("%*csmartcard GUID: %s\n", offset, ' ', hcrypt::guid_to_string(guid).c_str());
+    } else if (!hide_errors) {
+        printf("%*csmartcard GUID: error code = %x\n", offset, ' ', status.value());
     }
 }

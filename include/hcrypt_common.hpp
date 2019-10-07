@@ -1127,4 +1127,19 @@ namespace hcrypt {
     inline std::wstring filetime_to_wstring(FILETIME ft) {
         return systemtime_to_wstring(filetime_to_systemtime(ft));
     }
+
+    inline std::string guid_to_string(GUID const &guid) {
+        return make_string("{%lX-%hX-%hX-%X%X-%X%X%X%X%X%X}", 
+                           guid.Data1,
+                           guid.Data2,
+                           guid.Data3,
+                           static_cast<int>(guid.Data4[7]),
+                           static_cast<int>(guid.Data4[6]),
+                           static_cast<int>(guid.Data4[5]),
+                           static_cast<int>(guid.Data4[4]),
+                           static_cast<int>(guid.Data4[3]),
+                           static_cast<int>(guid.Data4[2]),
+                           static_cast<int>(guid.Data4[1]),
+                           static_cast<int>(guid.Data4[0]));
+    }
 } // namespace hcrypt

@@ -542,6 +542,10 @@ namespace bcrypt {
         if (hcrypt::consume_flag(&flags, static_cast<unsigned long>(CRYPT_LOCAL))) {
             hcrypt::append_with_separator(&str, L" | ", L"CRYPT_LOCAL");
         }
+        if (flags) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", flags).c_str());
+        }
         return str;
     }
 
@@ -552,6 +556,10 @@ namespace bcrypt {
         }
         if (hcrypt::consume_flag(&flags, static_cast<unsigned long>(CRYPT_PROCESS_ISOLATE))) {
             hcrypt::append_with_separator(&str, L" | ", L"CRYPT_PROCESS_ISOLATE");
+        }
+        if (flags) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", flags).c_str());
         }
         return str;
     }
@@ -610,6 +618,10 @@ namespace bcrypt {
         }
         if (hcrypt::consume_flag(&operations, static_cast<unsigned long>(BCRYPT_RNG_OPERATION))) {
             hcrypt::append_with_separator(&str, L" | ", L"BCRYPT_RNG_OPERATION");
+        }
+        if (operations) {
+            hcrypt::append_with_separator(
+                &str, L" | ", hcrypt::make_wstring(L"0x%lx", operations).c_str());
         }
         return str;
     }
