@@ -71,7 +71,11 @@ namespace hcrypt {
         }
 
         if (count) {
-            str.erase(idx, count);
+            //
+            // idx was moved to the positition 1 before
+            // last observed 0
+            //
+            str.erase(idx + 1, count);
         }
     }
 
@@ -89,7 +93,11 @@ namespace hcrypt {
         }
 
         if (count) {
-            str.erase(idx, count);
+            //
+            // idx was moved to the positition 1 before
+            // last observed 0
+            //
+            str.erase(idx + 1, count);
         }
     }
 
@@ -1129,17 +1137,32 @@ namespace hcrypt {
     }
 
     inline std::string guid_to_string(GUID const &guid) {
-        return make_string("{%lX-%hX-%hX-%X%X-%X%X%X%X%X%X}", 
+        return make_string("%08lX-%04hX-%04hX-%02X%02X-%02X%02X%02X%02X%02X%02X",
                            guid.Data1,
                            guid.Data2,
                            guid.Data3,
-                           static_cast<int>(guid.Data4[7]),
-                           static_cast<int>(guid.Data4[6]),
-                           static_cast<int>(guid.Data4[5]),
-                           static_cast<int>(guid.Data4[4]),
-                           static_cast<int>(guid.Data4[3]),
-                           static_cast<int>(guid.Data4[2]),
+                           static_cast<int>(guid.Data4[0]),
                            static_cast<int>(guid.Data4[1]),
-                           static_cast<int>(guid.Data4[0]));
+                           static_cast<int>(guid.Data4[2]),
+                           static_cast<int>(guid.Data4[3]),
+                           static_cast<int>(guid.Data4[4]),
+                           static_cast<int>(guid.Data4[5]),
+                           static_cast<int>(guid.Data4[6]),
+                           static_cast<int>(guid.Data4[7]));
+    }
+
+    inline std::wstring guid_to_wstring(GUID const &guid) {
+        return make_wstring(L"%08lX-%04hX-%04hX-%02X%02X-%02X%02X%02X%02X%02X%02X",
+                            guid.Data1,
+                            guid.Data2,
+                            guid.Data3,
+                            static_cast<int>(guid.Data4[0]),
+                            static_cast<int>(guid.Data4[1]),
+                            static_cast<int>(guid.Data4[2]),
+                            static_cast<int>(guid.Data4[3]),
+                            static_cast<int>(guid.Data4[4]),
+                            static_cast<int>(guid.Data4[5]),
+                            static_cast<int>(guid.Data4[6]),
+                            static_cast<int>(guid.Data4[7]));
     }
 } // namespace hcrypt

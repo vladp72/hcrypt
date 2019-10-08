@@ -551,10 +551,10 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
         printf("%*cuser cert store: error code = %x\n", offset, ' ', status.value());    
     }
 
-    GUID guid{};
+   GUID guid{};
     status = obj.try_get_smartcard_guid(&guid);
     if (hcrypt::is_success(status)) {
-        printf("%*csmartcard GUID: %s\n", offset, ' ', hcrypt::guid_to_string(guid).c_str());
+        printf("%*csmartcard GUID: {%s}\n", offset, ' ', hcrypt::guid_to_string(guid).c_str());
     } else if (!hide_errors) {
         printf("%*csmartcard GUID: error code = %x\n", offset, ' ', status.value());
     }
