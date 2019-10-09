@@ -981,6 +981,146 @@ namespace ncrypt {
         return NCryptIsKeyHandle(k) ? true : false;
     }
 
+    class secret final: public property_impl<secret> {
+    public:
+        friend class storage_provider;
+
+        secret() noexcept = default;
+
+        secret(secret const &other) = delete;
+        secret &operator=(secret const &other) = delete;
+
+        secret(secret &&other) noexcept
+            : h_(other.h_) {
+            other.h_ = 0;
+        }
+
+        secret &operator=(secret &&other) noexcept {
+            if (this != &other) {
+                close();
+                h_ = other.h_;
+                other.h_ = 0;
+            }
+            return *this;
+        }
+
+        ~secret() noexcept {
+            close();
+        }
+
+        NCRYPT_SECRET_HANDLE get_handle() const {
+            return h_;
+        }
+
+        void swap(secret &other) noexcept {
+            NCRYPT_SECRET_HANDLE h{h_};
+            h_ = other.h_;
+            other.h_ = h;
+        }
+
+        bool is_valid() const noexcept {
+            return h_ != 0;
+        }
+
+        explicit operator bool() const noexcept {
+            return is_valid();
+        }
+
+        void attach(NCRYPT_SECRET_HANDLE h) noexcept {
+            close();
+            h_ = h;
+        }
+
+        [[nodiscard]] NCRYPT_SECRET_HANDLE detach() noexcept {
+            NCRYPT_SECRET_HANDLE h = h_;
+            h_ = 0;
+            return h;
+        }
+
+        void close() noexcept {
+            if (is_valid()) {
+                std::error_code status{static_cast<hcrypt::status>(NCryptFreeObject(h_))};
+                BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
+                h_ = 0;
+            }
+        }
+
+        [[nodiscard]] std::error_code try_derive_key(wchar_t const *key_derivation_function,
+                                                     BCryptBufferDesc *parameters_list,
+                                                     unsigned long flags,
+                                                     hcrypt::buffer *b) noexcept {
+            std::error_code status{hcrypt::status::success};
+
+            unsigned long key_size{0};
+
+            status = static_cast<hcrypt::status>(NCryptDeriveKey(
+                h_, key_derivation_function, parameters_list, nullptr, 0, &key_size, flags));
+
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            status = hcrypt::try_resize(b, key_size);
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            status = static_cast<hcrypt::status>(
+                NCryptDeriveKey(h_,
+                                key_derivation_function,
+                                parameters_list,
+                                reinterpret_cast<unsigned char *>(b->data()),
+                                static_cast<unsigned long>(b->size()),
+                                &key_size,
+                                flags));
+
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            return status;
+        }
+
+        hcrypt::buffer derive_key(wchar_t const *key_derivation_function,
+                                  BCryptBufferDesc *parameters_list = nullptr,
+                                  unsigned long flags = 0) {
+            std::error_code status{hcrypt::status::success};
+            unsigned long key_size{0};
+            hcrypt::buffer b;
+
+            status = static_cast<hcrypt::status>(NCryptDeriveKey(
+                h_, key_derivation_function, parameters_list, nullptr, 0, &key_size, flags));
+
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptDeriveKey failed to estimate key size");
+            }
+
+            b.resize(key_size);
+
+            status = static_cast<hcrypt::status>(
+                NCryptDeriveKey(h_,
+                                key_derivation_function,
+                                parameters_list,
+                                reinterpret_cast<unsigned char *>(b.data()),
+                                static_cast<unsigned long>(b.size()),
+                                &key_size,
+                                0));
+
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptDeriveKey failed");
+            }
+
+            return b;
+        }
+
+    private:
+        NCRYPT_SECRET_HANDLE h_{0};
+    };
+
+    inline void swap(secret &l, secret &r) noexcept {
+        l.swap(r);
+    }
+
     class key final: public property_impl<key> {
     public:
         friend class storage_provider;
@@ -1049,12 +1189,73 @@ namespace ncrypt {
             }
         }
 
+        std::error_code try_delete_key(unsigned long flags = NCRYPT_SILENT_FLAG) noexcept {
+            std::error_code status{hcrypt::nte_error_to_status(NCryptDeleteKey(h_, flags))};
+            return status;
+        }
+
+        void delete_key(unsigned long flags = NCRYPT_SILENT_FLAG) {
+            std::error_code status{try_delete_key(flags)};
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptDeleteKey failed");
+            }
+        }
+
+        //todo: NCryptCreateClaim 
+        //todo: NCryptVerifyClaim
+        //toto: NCryptVerifySignature
+        //todo: NCryptSignHash
+        //todo: NCryptKeyDerivation
+        //todo: NCryptFinalizeKey
+        //todo: NCryptExportKey
+        //todo: NCryptEncrypt
+        //todo: NCryptDecrypt
+
     private:
         NCRYPT_KEY_HANDLE h_{0};
     };
 
     inline void swap(key &l, key &r) noexcept {
         l.swap(r);
+    }
+
+    [[nodiscard]] inline std::error_code try_create_secret(NCRYPT_KEY_HANDLE private_key,
+                                                           NCRYPT_KEY_HANDLE public_key,
+                                                           unsigned long flags,
+                                                           secret *s) noexcept {
+        NCRYPT_SECRET_HANDLE h{0};
+
+        std::error_code status{static_cast<hcrypt::status>(
+            NCryptSecretAgreement(private_key, public_key, &h, 0))};
+        if (hcrypt::is_success(status)) {
+            s->attach(h);
+        }
+        return status;
+    }
+
+    [[nodiscard]] inline std::error_code try_create_secret(key const &private_key,
+                                                           key const &public_key,
+                                                           unsigned long flags,
+                                                           secret *s) noexcept {
+        return try_create_secret(
+            private_key.get_handle(), public_key.get_handle(), flags, s);
+    }
+
+    inline secret create_secret(NCRYPT_KEY_HANDLE private_key,
+                                NCRYPT_KEY_HANDLE public_key,
+                                unsigned long flags = NCRYPT_SILENT_FLAG) {
+        secret s;
+        std::error_code status{try_create_secret(private_key, public_key, flags, &s)};
+        if (hcrypt::is_failure(status)) {
+            throw std::system_error(status, "NCryptSecretAgreement failed");
+        }
+        return s;
+    }
+
+    inline secret create_secret(key const &private_key,
+                                key const &public_key,
+                                unsigned long flags = NCRYPT_SILENT_FLAG) {
+        return create_secret(private_key.get_handle(), public_key.get_handle(), flags);
     }
 
     class storage_provider final: public property_impl<storage_provider> {
@@ -1375,9 +1576,7 @@ namespace ncrypt {
             return new_key;
         }
 
-        // try_import_key NCryptImportKey
-
-        // notify_changes NCryptNotifyChangeKey
+        // todo: NCryptImportKey
 
     private:
         NCRYPT_PROV_HANDLE h_{0};

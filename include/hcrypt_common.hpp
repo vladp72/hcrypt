@@ -564,10 +564,18 @@ namespace hcrypt {
                 std::system_category());
         }
 
-        virtual bool equivalent(int e, const std::error_condition &cond) const
+        virtual bool equivalent(int e, const std::error_condition &condition) const
             noexcept override {
-            return false;
+            return default_error_condition(e) == condition;
         }
+
+        virtual bool equivalent(std::error_code const &e, int condition) const
+            noexcept override {
+            return (*this == e.category() && e.value() == condition) ||
+                   (std::system_category() == e.category() &&
+                    nt_status_to_win32_error_ex(static_cast<long>(condition)) == e.value());
+        }
+
     };
 
     inline error_category_t const error_category_singleton;

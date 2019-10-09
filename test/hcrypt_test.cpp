@@ -1,5 +1,6 @@
 #include "hcrypt_test_helpers.hpp"
 #include "hbcrypt_test_CTAD.hpp"
+#include "hbcrypt_test_err.hpp"
 #include "hbcrypt_test_base64.hpp"
 #include "hbcrypt_test_fips.hpp"
 #include "hbcrypt_test_algorithms.hpp"
@@ -24,6 +25,8 @@
 int main() {
     try {
         test_CTAD();
+
+        test_err();
 
         test_base64();
 
@@ -63,6 +66,9 @@ int main() {
         printf("Error code = 0x%x, %s, %s\n",
                ex.code().value(),
                hcrypt::status_to_string(ex.code().value()),
+               ex.what());
+    } catch (std::exception const &ex) {
+        printf("Exception = %s\n",
                ex.what());
     }
 }
