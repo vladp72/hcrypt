@@ -447,7 +447,7 @@ namespace ncrypt {
                                                        size_t buffer_size,
                                                        size_t *rezult_size) const noexcept {
             unsigned long tmp_rezult_size{0};
-            std::error_code status{hcrypt::nte_error_to_status(
+            std::error_code status{hcrypt::win32_error(
                 NCryptGetProperty(get_object_handle(),
                                   property_name,
                                   reinterpret_cast<unsigned char *>(buffer),
@@ -460,7 +460,7 @@ namespace ncrypt {
 
         [[nodiscard]] std::error_code try_get_property(wchar_t const *property_name,
                                                        hcrypt::buffer *buffer) const noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{ERROR_SUCCESS, std::system_category()};
             for (;;) {
                 size_t rezult_size{0};
                 bool empty_buffer{buffer->empty()};
@@ -475,7 +475,7 @@ namespace ncrypt {
                     } else {
                         status = hcrypt::try_resize(buffer, rezult_size);
                     }
-                } else if (hcrypt::status::buffer_too_small == status) {
+                } else if (ERROR_INSUFFICIENT_BUFFER == status.value()) {
                     status = hcrypt::try_resize(buffer, rezult_size);
                 } else {
                     break;
@@ -508,7 +508,7 @@ namespace ncrypt {
                         status = hcrypt::try_resize(
                             buffer, (rezult_size / sizeof(wchar_t)));
                     }
-                } else if (hcrypt::status::buffer_too_small == status) {
+                } else if (ERROR_INSUFFICIENT_BUFFER == status.value()) {
                     status = hcrypt::try_resize(buffer, rezult_size / sizeof(wchar_t));
                 } else {
                     break;
@@ -576,7 +576,7 @@ namespace ncrypt {
         [[nodiscard]] std::error_code try_set_property(wchar_t const *property_name,
                                                        char const *buffer,
                                                        size_t buffer_size) {
-            std::error_code status{hcrypt::nte_error_to_status(NCryptSetProperty(
+            std::error_code status{hcrypt::win32_error(NCryptSetProperty(
                 get_object_handle(),
                 property_name,
                 reinterpret_cast<unsigned char *>(const_cast<char *>(buffer)),
@@ -646,7 +646,7 @@ namespace ncrypt {
         std::wstring get_associated_ecdh_name() const {
             std::wstring name;
             hcrypt::status status{try_get_property(NCRYPT_ASSOCIATED_ECDH_KEY, &name)};
-            if (!hcrypt::is_success(status) && status != hcrypt::status::not_found) {
+            if (!hcrypt::is_success(status) && status.value() != ERROR_NOT_FOUND) {
                 throw std::system_error(status, "NCryptGetProperty failed");
             }
             return name;
@@ -860,7 +860,7 @@ namespace ncrypt {
             unsigned long value{0};
             hcrypt::status status{try_get_property(
                 NCRYPT_SECURITY_DESCR_SUPPORT_PROPERTY, &value)};
-            if (!hcrypt::is_success(status) && status != hcrypt::status::not_found) {
+            if (!hcrypt::is_success(status) && status.value() != ERROR_NOT_FOUND) {
                 throw std::system_error(status, "NCryptGetProperty failed");
             }
             return hcrypt::is_flag_on(value, 1);
@@ -929,7 +929,7 @@ namespace ncrypt {
         bool get_use_count_enabled() const {
             unsigned long value{0};
             hcrypt::status status{try_get_property(NCRYPT_USE_COUNT_ENABLED_PROPERTY, &value)};
-            if (!hcrypt::is_success(status) && status != hcrypt::status::not_found) {
+            if (!hcrypt::is_success(status) && status.value() != ERROR_NOT_FOUND) {
                 throw std::system_error(status, "NCryptGetProperty failed");
             }
             return hcrypt::is_flag_on(value, 1);
@@ -1039,21 +1039,21 @@ namespace ncrypt {
 
         void close() noexcept {
             if (is_valid()) {
-                std::error_code status{static_cast<hcrypt::status>(NCryptFreeObject(h_))};
+                std::error_code status{hcrypt::win32_error(NCryptFreeObject(h_))};
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
                 h_ = 0;
             }
         }
 
         [[nodiscard]] std::error_code try_derive_key(wchar_t const *key_derivation_function,
-                                                     BCryptBufferDesc *parameters_list,
+                                                     NCryptBufferDesc *parameters_list,
                                                      unsigned long flags,
                                                      hcrypt::buffer *b) noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{ERROR_SUCCESS, std::system_category()};
 
             unsigned long key_size{0};
 
-            status = static_cast<hcrypt::status>(NCryptDeriveKey(
+            status = hcrypt::win32_error(NCryptDeriveKey(
                 h_, key_derivation_function, parameters_list, nullptr, 0, &key_size, flags));
 
             if (hcrypt::is_failure(status)) {
@@ -1065,7 +1065,7 @@ namespace ncrypt {
                 return status;
             }
 
-            status = static_cast<hcrypt::status>(
+            status = hcrypt::win32_error(
                 NCryptDeriveKey(h_,
                                 key_derivation_function,
                                 parameters_list,
@@ -1082,13 +1082,13 @@ namespace ncrypt {
         }
 
         hcrypt::buffer derive_key(wchar_t const *key_derivation_function,
-                                  BCryptBufferDesc *parameters_list = nullptr,
+                                  NCryptBufferDesc *parameters_list = nullptr,
                                   unsigned long flags = 0) {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{ERROR_SUCCESS, std::system_category()};
             unsigned long key_size{0};
             hcrypt::buffer b;
 
-            status = static_cast<hcrypt::status>(NCryptDeriveKey(
+            status = hcrypt::win32_error(NCryptDeriveKey(
                 h_, key_derivation_function, parameters_list, nullptr, 0, &key_size, flags));
 
             if (hcrypt::is_failure(status)) {
@@ -1097,7 +1097,7 @@ namespace ncrypt {
 
             b.resize(key_size);
 
-            status = static_cast<hcrypt::status>(
+            status = hcrypt::win32_error(
                 NCryptDeriveKey(h_,
                                 key_derivation_function,
                                 parameters_list,
@@ -1183,14 +1183,14 @@ namespace ncrypt {
 
         void close() noexcept {
             if (is_valid()) {
-                std::error_code status{static_cast<hcrypt::status>(NCryptFreeObject(h_))};
+                std::error_code status{hcrypt::win32_error(NCryptFreeObject(h_))};
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
                 h_ = 0;
             }
         }
 
         std::error_code try_delete_key(unsigned long flags = NCRYPT_SILENT_FLAG) noexcept {
-            std::error_code status{hcrypt::nte_error_to_status(NCryptDeleteKey(h_, flags))};
+            std::error_code status{hcrypt::win32_error(NCryptDeleteKey(h_, flags))};
             return status;
         }
 
@@ -1201,19 +1201,557 @@ namespace ncrypt {
             }
         }
 
-        //todo: NCryptCreateClaim 
-        //todo: NCryptVerifyClaim
-        //toto: NCryptVerifySignature
-        //todo: NCryptSignHash
-        //todo: NCryptKeyDerivation
-        //todo: NCryptFinalizeKey
-        //todo: NCryptExportKey
-        //todo: NCryptEncrypt
-        //todo: NCryptDecrypt
+        [[nodiscard]] std::error_code try_create_claim(NCRYPT_KEY_HANDLE authority_key,
+                                                       unsigned long claim_type,
+                                                       NCryptBufferDesc *parameter_list,
+                                                       unsigned long flags,
+                                                       hcrypt::buffer *b) noexcept {
+            unsigned long buffer_size{0};
+
+            std::error_code status{hcrypt::win32_error(NCryptCreateClaim(
+                h_, authority_key, claim_type, parameter_list, nullptr, 0, &buffer_size, flags))};
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            status = hcrypt::try_resize(b, buffer_size);
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            status = hcrypt::win32_error(NCryptCreateClaim(
+                h_,
+                authority_key,
+                claim_type,
+                parameter_list,
+                b->empty() ? nullptr : reinterpret_cast<unsigned char *>(b->data()),
+                b->empty() ? 0 : static_cast<unsigned long>(b->size()),
+                &buffer_size,
+                flags));
+
+            if (hcrypt::is_success(status)) {
+                status = hcrypt::try_resize(b, buffer_size);
+            }
+
+            return status;
+        }
+
+        [[nodiscard]] std::error_code try_create_claim(key const &authority_key,
+                                                       unsigned long claim_type,
+                                                       NCryptBufferDesc *parameter_list,
+                                                       unsigned long flags,
+                                                       hcrypt::buffer *b) noexcept {
+            return try_create_claim(
+                authority_key.get_handle(), claim_type, parameter_list, flags, b);
+        }
+
+        [[nodiscard]] hcrypt::buffer create_claim(NCRYPT_KEY_HANDLE authority_key,
+                                                  unsigned long claim_type,
+                                                  NCryptBufferDesc *parameter_list = nullptr,
+                                                  unsigned long flags = 0) {
+            hcrypt::buffer b;
+            unsigned long buffer_size{0};
+
+            std::error_code status{hcrypt::win32_error(NCryptCreateClaim(
+                h_, authority_key, claim_type, parameter_list, nullptr, 0, &buffer_size, flags))};
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptCreateClaim failed to estimate size");
+            }
+
+            status = hcrypt::try_resize(b, buffer_size);
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptCreateClaim failed to resize buffer");
+            }
+
+            status = hcrypt::win32_error(NCryptCreateClaim(
+                h_,
+                authority_key,
+                claim_type,
+                parameter_list,
+                b.empty() ? nullptr : reinterpret_cast<unsigned char *>(b.data()),
+                b.empty() ? 0 : static_cast<unsigned long>(b.size()),
+                &buffer_size,
+                flags));
+
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptCreateClaim failed");
+            }
+
+            status = hcrypt::try_resize(b, buffer_size);
+
+            return b;
+        }
+
+        [[nodiscard]] hcrypt::buffer create_claim(key const &authority_key,
+                                                  unsigned long claim_type,
+                                                  NCryptBufferDesc *parameter_list = nullptr,
+                                                  unsigned long flags = 0) {
+            return this->create_claim(
+                authority_key.get_handle(), claim_type, parameter_list, flags);
+        }
+
+        // todo: NCryptVerifyClaim
+
+        [[nodiscard]] std::error_code try_verify_claim(NCRYPT_KEY_HANDLE authority_key,
+                                                       unsigned long claim_type,
+                                                       NCryptBufferDesc *parameter_list,
+                                                       char const *claim_blob,
+                                                       size_t claim_blob_size,
+                                                       unsigned long flags,
+                                                       NCryptBufferDesc *result) noexcept {
+            std::error_code status{hcrypt::win32_error(NCryptVerifyClaim(
+                h_,
+                authority_key,
+                claim_type,
+                parameter_list,
+                reinterpret_cast<unsigned char *>(const_cast<char *>(claim_blob)),
+                static_cast<unsigned long>(claim_blob_size),
+                result,
+                flags))};
+
+            return status;
+        }
+
+        [[nodiscard]] std::error_code try_verify_claim(key const &authority_key,
+                                                       unsigned long claim_type,
+                                                       NCryptBufferDesc *parameter_list,
+                                                       char const *claim_blob,
+                                                       size_t claim_blob_size,
+                                                       unsigned long flags,
+                                                       NCryptBufferDesc *result) noexcept {
+            return try_verify_claim(
+                authority_key.get_handle(), claim_type, parameter_list, claim_blob, claim_blob_size, flags, result);
+        }
+
+        void verify_claim(NCRYPT_KEY_HANDLE authority_key,
+                          unsigned long claim_type,
+                          NCryptBufferDesc *parameter_list,
+                          char const *claim_blob,
+                          size_t claim_blob_size,
+                          unsigned long flags,
+                          NCryptBufferDesc *result) {
+            std::error_code status{try_verify_claim(
+                authority_key, claim_type, parameter_list, claim_blob, claim_blob_size, flags, result)};
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptVerifyClaim failed");
+            }
+        }
+
+        void verify_claim(key const &authority_key,
+                          unsigned long claim_type,
+                          NCryptBufferDesc *parameter_list,
+                          char const *claim_blob,
+                          size_t claim_blob_size,
+                          unsigned long flags,
+                          NCryptBufferDesc *result) {
+            std::error_code status{try_verify_claim(
+                authority_key.get_handle(), claim_type, parameter_list, claim_blob, claim_blob_size, flags, result)};
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptVerifyClaim failed");
+            }
+        }
+
+        [[nodiscard]] std::error_code try_finalize_key() {
+            std::error_code status{hcrypt::win32_error(NCryptFinalizeKey(h_, 0))};
+            return status;
+        }
+
+        void finalize_key() {
+            std::error_code status{try_finalize_key()};
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptFinalizeKey failed");
+            }
+        }
+
+        [[nodiscard]] std::error_code try_export_key(wchar_t const *blob_type,
+                                                     NCRYPT_KEY_HANDLE export_key_protector,
+                                                     NCryptBufferDesc *parameter_list,
+                                                     unsigned long flags,
+                                                     hcrypt::buffer *b) noexcept {
+            unsigned long buffer_size{0};
+
+            std::error_code status{hcrypt::win32_error(NCryptExportKey(
+                h_, export_key_protector, blob_type, parameter_list, nullptr, 0, &buffer_size, flags))};
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            status = hcrypt::try_resize(b, buffer_size);
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            status = hcrypt::win32_error(NCryptExportKey(
+                h_,
+                export_key_protector,
+                blob_type,
+                parameter_list,
+                b->empty() ? nullptr : reinterpret_cast<unsigned char *>(b->data()),
+                b->empty() ? 0 : static_cast<unsigned long>(b->size()),
+                &buffer_size,
+                flags));
+
+            if (hcrypt::is_success(status)) {
+                status = hcrypt::try_resize(b, buffer_size);
+            }
+
+            return status;
+        }
+
+        [[nodiscard]] std::error_code try_export_key(wchar_t const *blob_type,
+                                                     key const &export_key_protector,
+                                                     NCryptBufferDesc *parameter_list,
+                                                     unsigned long flags,
+                                                     hcrypt::buffer *b) noexcept {
+            return try_export_key(
+                blob_type, export_key_protector.get_handle(), parameter_list, flags, b);
+        }
+
+        hcrypt::buffer export_key(wchar_t const *blob_type,
+                                  NCRYPT_KEY_HANDLE export_key_protector = 0,
+                                  NCryptBufferDesc *parameter_list = nullptr,
+                                  unsigned long flags = 0) {
+            hcrypt::buffer b;
+            unsigned long buffer_size{0};
+
+            std::error_code status{hcrypt::win32_error(NCryptExportKey(
+                h_, export_key_protector, blob_type, parameter_list, nullptr, 0, &buffer_size, flags))};
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptExportKey failed");
+            }
+
+            b.resize(buffer_size);
+
+            status = hcrypt::win32_error(NCryptExportKey(
+                h_,
+                export_key_protector,
+                blob_type,
+                parameter_list,
+                b.empty() ? nullptr : reinterpret_cast<unsigned char *>(b.data()),
+                b.empty() ? 0 : static_cast<unsigned long>(b.size()),
+                &buffer_size,
+                flags));
+
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptExportKey failed");
+            }
+
+            b.resize(buffer_size);
+
+            return b;
+        }
+
+        hcrypt::buffer export_key(wchar_t const *blob_type,
+                                  key const &export_key_protector,
+                                  NCryptBufferDesc *parameter_list = nullptr,
+                                  unsigned long flags = 0) {
+            return export_key(blob_type, export_key_protector.get_handle());
+        }
+
+        [[nodiscard]] std::error_code try_key_derivation(char *key_buffer,
+                                                         size_t key_buffer_length,
+                                                         size_t *generated_key_length,
+                                                         NCryptBufferDesc *parameter_list,
+                                                         unsigned long flags = 0) noexcept {
+            ULONG generated_key_length_tmp{0};
+
+            std::error_code status{hcrypt::win32_error(NCryptKeyDerivation(
+                h_,
+                parameter_list,
+                reinterpret_cast<unsigned char *>(key_buffer),
+                static_cast<unsigned long>(key_buffer_length),
+                &generated_key_length_tmp,
+                flags))};
+
+            if (hcrypt::is_success(status)) {
+                *generated_key_length = generated_key_length_tmp;
+            }
+
+            return status;
+        }
+
+        [[nodiscard]] std::error_code try_key_derivation(size_t desired_key_size,
+                                                         NCryptBufferDesc *parameter_list,
+                                                         unsigned long flags,
+                                                         hcrypt::buffer *b) noexcept {
+            std::error_code status{ERROR_SUCCESS, std::system_category()};
+
+            size_t generated_key_size{0};
+            status = hcrypt::try_resize(b, desired_key_size);
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            status = try_key_derivation(b->empty() ? nullptr : b->data(),
+                                        b->empty() ? 0 : b->size(),
+                                        &generated_key_size,
+                                        parameter_list,
+                                        flags);
+
+            if (hcrypt::is_success(status)) {
+                status = hcrypt::try_resize(b, generated_key_size);
+                return status;
+            } else {
+                return status;
+            }
+
+            return status;
+        }
+
+        size_t key_derivation(char *key_buffer,
+                              size_t key_buffer_length,
+                              NCryptBufferDesc *parameter_list,
+                              unsigned long flags = 0) {
+            size_t generated_key_size{0};
+
+            std::error_code status{try_key_derivation(
+                key_buffer, key_buffer_length, &generated_key_size, parameter_list, flags)};
+
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptKeyDerivation failed");
+            }
+
+            return generated_key_size;
+        }
+
+        hcrypt::buffer key_derivation(size_t desired_key_size,
+                                      NCryptBufferDesc *parameter_list = nullptr,
+                                      unsigned long flags = 0) {
+            hcrypt::buffer b;
+            b.resize(desired_key_size);
+            size_t generated_key_size{0};
+
+            std::error_code status{try_key_derivation(b.empty() ? nullptr : b.data(),
+                                                      b.empty() ? 0 : b.size(),
+                                                      &generated_key_size,
+                                                      parameter_list,
+                                                      flags)};
+
+            if (hcrypt::is_success(status)) {
+                b.resize(generated_key_size);
+            } else {
+                throw std::system_error(status, "NCryptKeyDerivation failed");
+            }
+
+            return b;
+        }
+
+        [[nodiscard]] std::error_code try_sign_hash(char const *hash_value_to_sign,
+                                                    size_t hash_value_to_sign_size,
+                                                    void *padding_info,
+                                                    unsigned long flags,
+                                                    char *signature_buffer,
+                                                    size_t signature_buffer_length,
+                                                    size_t *required_size) noexcept {
+            ;
+            unsigned long buffer_size{0};
+
+            std::error_code status{hcrypt::win32_error(NCryptSignHash(
+                h_,
+                padding_info,
+                reinterpret_cast<unsigned char *>(const_cast<char *>(hash_value_to_sign)),
+                static_cast<unsigned long>(hash_value_to_sign_size),
+                reinterpret_cast<unsigned char *>(signature_buffer),
+                static_cast<unsigned long>(signature_buffer_length),
+                &buffer_size,
+                flags))};
+
+            if (hcrypt::is_success(status)) {
+                *required_size = buffer_size;
+            }
+
+            return status;
+        }
+
+        [[nodiscard]] std::error_code try_sign_hash(char const *hash_value_to_sign,
+                                                    size_t hash_value_to_sign_size,
+                                                    void *padding_info,
+                                                    unsigned long flags,
+                                                    hcrypt::buffer *b) noexcept {
+            std::error_code status{ERROR_SUCCESS, std::system_category()};
+
+            size_t buffer_size{0};
+
+            status = try_sign_hash(
+                hash_value_to_sign, hash_value_to_sign_size, padding_info, flags, nullptr, 0, &buffer_size);
+
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            status = hcrypt::try_resize(b, buffer_size);
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            status = try_sign_hash(hash_value_to_sign,
+                                   hash_value_to_sign_size,
+                                   padding_info,
+                                   flags,
+                                   b->empty() ? nullptr : b->data(),
+                                   b->empty() ? 0 : b->size(),
+                                   &buffer_size);
+
+            if (hcrypt::is_success(status)) {
+                status = hcrypt::try_resize(b, buffer_size);
+            }
+
+            return status;
+        }
+
+        hcrypt::buffer sign_hash(char const *hash_value_to_sign,
+                                 size_t hash_value_to_sign_size,
+                                 void *padding_info = nullptr,
+                                 unsigned long flags = 0) {
+            hcrypt::buffer b;
+            size_t buffer_size{0};
+
+            std::error_code status{try_sign_hash(
+                hash_value_to_sign, hash_value_to_sign_size, padding_info, flags, nullptr, 0, &buffer_size)};
+
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptSignHash failed");
+            }
+
+            b.resize(buffer_size);
+
+            status = try_sign_hash(hash_value_to_sign,
+                                   hash_value_to_sign_size,
+                                   padding_info,
+                                   flags,
+                                   b.empty() ? nullptr : b.data(),
+                                   b.empty() ? 0 : b.size(),
+                                   &buffer_size);
+
+            if (hcrypt::is_success(status)) {
+                b.resize(buffer_size);
+            } else {
+                throw std::system_error(status, "NCryptSignHash failed");
+            }
+            return b;
+        }
+
+        [[nodiscard]] std::error_code try_verify_signature(void const *padding_info,
+                                                           char *hash,
+                                                           size_t hash_size,
+                                                           char *signature,
+                                                           size_t signature_size,
+                                                           unsigned long flags = 0) noexcept {
+            return hcrypt::win32_error(NCryptVerifySignature(
+                h_,
+                const_cast<void *>(padding_info),
+                reinterpret_cast<unsigned char *>(const_cast<char *>(hash)),
+                static_cast<unsigned long>(hash_size),
+                reinterpret_cast<unsigned char *>(const_cast<char *>(signature)),
+                static_cast<unsigned long>(signature_size),
+                flags));
+        }
+
+        [[nodiscard]] bool verify_signature(void const *padding_info,
+                                            char *hash,
+                                            size_t hash_size,
+                                            char *signature,
+                                            size_t signature_size,
+                                            unsigned long flags = 0) {
+            std::error_code status = try_verify_signature(
+                padding_info, hash, hash_size, signature, signature_size, flags);
+
+            if (hcrypt::is_failure(status)) {
+                if (NTE_BAD_SIGNATURE == status.value()) {
+                    return false;
+                }
+
+                throw std::system_error(status, "NCryptVerifySignature failed");
+            }
+
+            return true;
+        }
+
+        [[nodiscard]] std::error_code try_encrypt(char const *input_buffer,
+                                                  size_t encrypt_buffer_length,
+                                                  void *padding_info,
+                                                  char *output,
+                                                  size_t output_length,
+                                                  size_t *output_expected_length,
+                                                  unsigned long flags = 0) {
+            unsigned long output_expected_length_tmp{0};
+            std::error_code status{hcrypt::win32_error(NCryptEncrypt(
+                h_,
+                reinterpret_cast<unsigned char *>(const_cast<char *>(input_buffer)),
+                static_cast<unsigned long>(encrypt_buffer_length),
+                padding_info,
+                reinterpret_cast<unsigned char *>(output),
+                static_cast<unsigned long>(output_length),
+                &output_expected_length_tmp,
+                flags))};
+
+            *output_expected_length = output_expected_length_tmp;
+
+            return status;
+        }
+
+        void encrypt(char const *input_buffer,
+                     size_t encrypt_buffer_length,
+                     void *padding_info,
+                     char *output,
+                     size_t output_length,
+                     size_t *output_expected_length,
+                     unsigned long flags = 0) {
+            std::error_code status{try_encrypt(
+                input_buffer, encrypt_buffer_length, padding_info, output, output_length, output_expected_length, flags)};
+
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptEncrypt failed");
+            }
+        }
+
+        [[nodiscard]] std::error_code try_decrypt(char const *input_buffer,
+                                                  size_t encrypt_buffer_length,
+                                                  void *padding_info,
+                                                  char *output,
+                                                  size_t output_length,
+                                                  size_t *output_expected_length,
+                                                  unsigned long flags = 0) {
+            unsigned long output_expected_length_tmp{0};
+            std::error_code status{hcrypt::win32_error(NCryptDecrypt(
+                h_,
+                reinterpret_cast<unsigned char *>(const_cast<char *>(input_buffer)),
+                static_cast<unsigned long>(encrypt_buffer_length),
+                padding_info,
+                reinterpret_cast<unsigned char *>(output),
+                static_cast<unsigned long>(output_length),
+                &output_expected_length_tmp,
+                flags))};
+
+            *output_expected_length = output_expected_length_tmp;
+
+            return status;
+        }
+
+        [[nodiscard]] bool decrypt(char const *input_buffer,
+                                   size_t encrypt_buffer_length,
+                                   void *padding_info,
+                                   char *output,
+                                   size_t output_length,
+                                   size_t *output_expected_length,
+                                   unsigned long flags = 0) {
+            std::error_code status{try_decrypt(
+                input_buffer, encrypt_buffer_length, padding_info, output, output_length, output_expected_length, flags)};
+
+            if (hcrypt::is_failure(status)) {
+                if (ERROR_CRC == status.value()) {
+                    return false;
+                }
+
+                throw std::system_error(status, "NCryptDecrypt failed");
+            }
+
+            return true;
+        }
 
     private:
         NCRYPT_KEY_HANDLE h_{0};
-    };
+    }; // namespace ncrypt
 
     inline void swap(key &l, key &r) noexcept {
         l.swap(r);
@@ -1225,7 +1763,7 @@ namespace ncrypt {
                                                            secret *s) noexcept {
         NCRYPT_SECRET_HANDLE h{0};
 
-        std::error_code status{static_cast<hcrypt::status>(
+        std::error_code status{hcrypt::win32_error(
             NCryptSecretAgreement(private_key, public_key, &h, 0))};
         if (hcrypt::is_success(status)) {
             s->attach(h);
@@ -1327,8 +1865,8 @@ namespace ncrypt {
 
         [[nodiscard]] std::error_code try_open(wchar_t const *provider) noexcept {
             close();
-            std::error_code status{hcrypt::nte_error_to_status(
-                NCryptOpenStorageProvider(&h_, provider, 0))};
+            std::error_code status{
+                hcrypt::win32_error(NCryptOpenStorageProvider(&h_, provider, 0))};
             return status;
         }
 
@@ -1341,7 +1879,7 @@ namespace ncrypt {
 
         void close() noexcept {
             if (is_valid()) {
-                std::error_code status{static_cast<hcrypt::status>(NCryptFreeObject(h_))};
+                std::error_code status{hcrypt::win32_error(NCryptFreeObject(h_))};
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
                 h_ = 0;
             }
@@ -1353,7 +1891,7 @@ namespace ncrypt {
             unsigned long flags = NCRYPT_SILENT_FLAG) noexcept {
             NCryptAlgorithmName *algorithms_buffer{nullptr};
             unsigned long algorithms_count{0};
-            hcrypt::status err{hcrypt::nte_error_to_status(NCryptEnumAlgorithms(
+            std::error_code err{hcrypt::win32_error(NCryptEnumAlgorithms(
                 h_, algorithm_operations, &algorithms_count, &algorithms_buffer, flags))};
 
             if (hcrypt::is_success(err)) {
@@ -1466,8 +2004,8 @@ namespace ncrypt {
         private:
             void close() {
                 if (enumirator_state_) {
-                    std::error_code status{static_cast<hcrypt::status>(
-                        NCryptFreeBuffer(enumirator_state_))};
+                    std::error_code status{
+                        hcrypt::win32_error(NCryptFreeBuffer(enumirator_state_))};
                     BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
                     enumirator_state_ = nullptr;
                 }
@@ -1486,8 +2024,7 @@ namespace ncrypt {
                 } else if (ERROR_SUCCESS == status) {
                     k_.attach(key_name);
                 } else {
-                    throw std::system_error(hcrypt::nte_error_to_status(status),
-                                            "NCryptEnumKeys failed");
+                    throw std::system_error(hcrypt::win32_error(status), "NCryptEnumKeys failed");
                 }
             }
 
@@ -1507,17 +2044,17 @@ namespace ncrypt {
 
         std::error_code try_is_algorithm_supported(wchar_t const *algorithm_id,
                                                    unsigned long flags) {
-            std::error_code status{hcrypt::nte_error_to_status(
-                NCryptIsAlgSupported(h_, algorithm_id, flags))};
+            std::error_code status{
+                hcrypt::win32_error(NCryptIsAlgSupported(h_, algorithm_id, flags))};
             return status;
         }
 
         bool is_algorithm_supported(wchar_t const *algorithm_id, unsigned long flags) {
             bool result{false};
             std::error_code status{try_is_algorithm_supported(algorithm_id, flags)};
-            if (status == hcrypt::status::success) {
+            if (hcrypt::is_success(status)) {
                 result = true;
-            } else if (status != hcrypt::status::not_supported) {
+            } else if (status.value() != ERROR_NOT_SUPPORTED) {
                 throw std::system_error(status, "NCryptIsAlgSupported failed");
             }
             return result;
@@ -1528,7 +2065,7 @@ namespace ncrypt {
                                      unsigned long flags,
                                      key *k) {
             NCRYPT_KEY_HANDLE new_key{0};
-            std::error_code status{hcrypt::nte_error_to_status(
+            std::error_code status{hcrypt::win32_error(
                 NCryptOpenKey(h_, &new_key, key_name, legacy_key_spec, flags))};
 
             if (hcrypt::is_failure(status)) {
@@ -1553,7 +2090,7 @@ namespace ncrypt {
                                        unsigned long flags,
                                        key *k) {
             NCRYPT_KEY_HANDLE new_key{0};
-            std::error_code status{hcrypt::nte_error_to_status(NCryptCreatePersistedKey(
+            std::error_code status{hcrypt::win32_error(NCryptCreatePersistedKey(
                 h_, &new_key, algorithm_id, key_name, legacy_key_spec, flags))};
 
             if (hcrypt::is_failure(status)) {
@@ -1576,7 +2113,94 @@ namespace ncrypt {
             return new_key;
         }
 
-        // todo: NCryptImportKey
+        [[nodiscard]] std::error_code try_import_key(wchar_t const *blob_type,
+                                                     NCryptBufferDesc *parameter_list,
+                                                     char const *key_object,
+                                                     size_t key_object_size,
+                                                     NCRYPT_KEY_HANDLE import_key,
+                                                     unsigned long flags,
+                                                     key *k) noexcept {
+            std::error_code status{ERROR_SUCCESS, std::system_category()};
+
+            NCRYPT_KEY_HANDLE new_key{0};
+
+            status = hcrypt::win32_error(NCryptImportKey(
+                h_,
+                import_key,
+                blob_type,
+                parameter_list,
+                &new_key,
+                reinterpret_cast<unsigned char *>(const_cast<char *>(key_object)),
+                static_cast<unsigned long>(key_object_size),
+                flags));
+
+            if (hcrypt::is_failure(status)) {
+                return status;
+            }
+
+            k->close();
+            k->h_ = new_key;
+
+            return status;
+        }
+
+        [[nodiscard]] std::error_code try_import_key(wchar_t const *blob_type,
+                                                     NCryptBufferDesc *parameter_list,
+                                                     char const *key_object,
+                                                     size_t key_object_size,
+                                                     key const &import_key,
+                                                     unsigned long flags,
+                                                     key *k) noexcept {
+            return try_import_key(blob_type,
+                                  parameter_list,
+                                  key_object,
+                                  key_object_size,
+                                  import_key.get_handle(),
+                                  flags,
+                                  k);
+        }
+
+        key import_key(wchar_t const *blob_type,
+                       NCryptBufferDesc *parameter_list,
+                       char const *key_object,
+                       size_t key_object_size,
+                       NCRYPT_KEY_HANDLE import_key = 0,
+                       unsigned long flags = 0) {
+            NCRYPT_KEY_HANDLE new_key{0};
+
+            std::error_code status{hcrypt::win32_error(NCryptImportKey(
+                h_,
+                import_key,
+                blob_type,
+                parameter_list,
+                &new_key,
+                reinterpret_cast<unsigned char *>(const_cast<char *>(key_object)),
+                static_cast<unsigned long>(key_object_size),
+                flags))};
+
+            if (hcrypt::is_failure(status)) {
+                throw std::system_error(status, "NCryptImportKey failed");
+            }
+
+            key k;
+            k.h_ = new_key;
+
+            return k;
+        }
+
+        key import_key(wchar_t const *blob_type,
+                       NCryptBufferDesc *parameter_list,
+                       char const *key_object,
+                       size_t key_object_size,
+                       key const &import_key,
+                       unsigned long flags = 0) {
+            return this->import_key(blob_type,
+                                    parameter_list,
+                                    key_object,
+                                    key_object_size,
+                                    import_key.get_handle(),
+                                    flags);
+        }
 
     private:
         NCRYPT_PROV_HANDLE h_{0};

@@ -289,6 +289,8 @@ namespace hcrypt {
         auth_tag_mismatch = static_cast<long>(0xC000A002L), // STATUS_AUTH_TAG_MISMATCH
     };
 
+    enum class win32_error : unsigned long {};
+
     constexpr inline bool is_success(status const s) {
         return s >= status::success;
     }
@@ -539,6 +541,10 @@ namespace std {
     //
     template<>
     struct is_error_code_enum<hcrypt::status>: public true_type {};
+
+    template<>
+    struct is_error_code_enum<hcrypt::win32_error>: public true_type {};
+
 } // namespace std
 
 namespace hcrypt {
@@ -590,6 +596,10 @@ namespace hcrypt {
 
     inline std::error_code make_error_code(long const s) noexcept {
         return make_error_code(static_cast<status>(s));
+    }
+
+    inline std::error_code make_error_code(win32_error const s) noexcept {
+        return {static_cast<int>(s), std::system_category()};
     }
 
     inline bool is_success(std::error_code const &err) {

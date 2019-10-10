@@ -3,7 +3,7 @@
 void test_err() {
     std::error_code e1{hcrypt::status::invalid_signature};
     std::error_condition ec1{e1.default_error_condition()};
-    std::error_code e2{NTE_BAD_SIGNATURE, std::system_category()};
+    std::error_code e2{hcrypt::win32_error(NTE_BAD_SIGNATURE)};
     std::error_condition ec2{e2.default_error_condition()};
 
     BCRYPT_CODDING_ERROR_IF(e1 == e2);
