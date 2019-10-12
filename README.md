@@ -31,3 +31,7 @@ In general, you'll want to use the following functions for the following operati
 * NCryptVerifySignature: Asymmetric key signature verification (RSA, DSA, ECDSA)
 * NCryptSecretAgreement: Asymmetric key secret sharing (DH, ECDH) 
 * Related: NCryptDeriveKey
+
+![Class Diagram; Classes only](/doc/bcrypt_short.png)
+
+![Class Diagram; Classes with Methods](/doc/bcrypt.png)
