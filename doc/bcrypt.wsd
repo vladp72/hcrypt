@@ -1,0 +1,231 @@
+@startuml
+
+hide empty members
+
+namespace hcrypt {
+}
+
+namespace bcrypt {
+
+    note "Utility functions:\n\ntry_generate_random\ngenerate_random\n\ntry_is_fips_complience_on\nis_fips_complience_on" as Note2
+
+    class buffer_ptr <T> {
+        ..noexcept..
+        <movable>
+        <move assignable>
+    }
+
+    class algorithm_provider {
+        BCRYPT_ALG_HANDLE h_
+        --methods--
+        +open()
+        +generate_symmetric_key()
+        +generate_empty_key_pair()
+        +import_symetric_key()
+        +import_key_pair()
+        +derive_key_PBKDF2()
+        +create_hash()
+        +create_multihash()
+        +hash_data()
+        +generate_random()
+        ..noexcept..
+        <movable>
+        <move assignable>
+        +close()
+        +swap()
+        +attach()
+        +detach()
+        +try_open()
+        +try_generate_symmetric_key()
+        +try_generate_empty_key_pair()
+        +try_import_symetric_key()
+        +try_import_key_pair()
+        +try_derive_key_PBKDF2()
+        +try_create_hash()
+        +try_create_multihash()
+        +try_hash_data()
+        +try_generate_random()
+    }
+
+    note "Use enumirators if you need to\ndicover algorithm providers:\n\ntry_enum_registered_providers\nenum_registered_providers\n\ntry_resolve_providers\nresolve_providers\n\ntry_enum_algorithms\nenum_algorithms\n\nEach numiration functioon returns\na typed buffer. You can use\nbcrypt::for_each and bcrypt::find_first\nhelper algorithms to enumirate elements" as Note1
+    Note1 .right. algorithm_provider
+
+    note "Free standing factory functions:\n\ntry_create_secret\ncreate_secret" as Note3
+    Note3 .up. secret
+
+    class secret {
+        BCRYPT_SECRET_HANDLE h_
+        --methods--
+        +derive_key()
+        ..noexcept..
+        <movable>
+        <move assignable>
+        +attach()
+        +detach()
+        +close()
+        +try_derive_key()
+    }
+
+    class key {
+        -BCRYPT_KEY_HANDLE h_
+        -hcrypt::buffer b_
+        --methods--
+        <copyable>
+        <copy assignable>
+        +duplicate()
+        +finalize_key_pair()
+        +export_key()
+        +key_derivation()
+        +sign_hash()
+        +verify_signature()
+        +encrypt()
+        +decrypt()
+        ..noexcept..
+        <movable>
+        <move assignable>
+        +close()
+        +swap()
+        +try_duplicate_to()
+        +try_finalize_key_pair()
+        +try_export_key()
+        +try_key_derivation()
+        +try_sign_hash()
+        +try_verify_signature()
+        +try_encrypt()
+        +try_decrypt()
+    }
+    
+    class hash {
+        -BCRYPT_HASH_HANDLE h_
+        -hcrypt::buffer b_
+        --methods--
+        <copyable>
+        <copy assignable>
+        +duplicate()
+        +hash_data()
+        +process_multiple_operations()
+        +finish()
+        ..noexcept..
+        <movable>
+        <move assignable>
+        +close()
+        +swap()
+        +try_duplicate_to()
+        +try_hash_data()
+        +try_process_multiple_operations()
+        +try_finish()
+    }
+
+    class property_impl <T> {
+        #get_property_as_buffer()
+        #get_property_as_string()
+        #get_property_as()
+        #get_property()
+        #set_property()
+        +get_name()
+        +get_block_length()
+        +get_chaining_mode()
+        +set_chaining_mode()
+        +get_block_size_list()
+        +get_dh_parameters()
+        +set_dh_parameters()
+        +get_dsa_parameters()
+        +set_dsa_parameters()
+        +get_effective_key_length()
+        +get_hash_block_length()
+        +get_oid_list()
+        +get_initialization_vector()
+        +get_key_length()
+        +get_auth_tag_lengts()
+        +get_key_lengts()
+        +get_key_object_length()
+        +get_key_strength()
+        +get_message_block_length()
+        +set_message_block_length()
+        +get_multi_object_length()
+        +get_object_length()
+        +get_padding_schemes()
+        +get_signature_length()
+        ..noexcept..
+        #try_get_property()
+        #try_set_property()
+        +try_get_name()
+        +try_get_block_length()
+        +try_get_chaining_mode()
+        +try_set_chaining_mode()
+        +try_get_block_size_list()
+        +try_get_dh_parameters()
+        +try_set_dh_parameters()
+        +try_get_dsa_parameters()
+        +try_set_dsa_parameters()
+        +try_get_effective_key_length()
+        +try_get_hash_block_length()
+        +try_get_hash_length()
+        +try_get_oid_list()
+        +try_get_initialization_vector()
+        +try_get_key_length()
+        +try_get_auth_tag_lengts()
+        +try_get_key_lengts()
+        +try_get_key_object_length()
+        +try_get_key_strength()
+        +try_get_message_block_length()
+        +try_set_message_block_length()
+        +try_get_multi_object_length()
+        +try_get_object_length()
+        +try_get_padding_schemes()
+        +try_get_signature_length()
+    }
+ 
+    algorithm_provider ..> key : <factory>
+    algorithm_provider ..> hash : <factory>
+
+    property_impl <|-- algorithm_provider : <CRTP>
+    property_impl <|-- key : <CRTP>
+    property_impl <|-- hash : <CRTP>
+    property_impl <|-- secret : <CRTP>
+}
+
+namespace ncrypt {
+
+    class buffer_ptr {
+    }
+
+    class storage_provider {
+        --methods--
+        ..noexcept..
+        <movable>
+        <move assignable>
+    }
+
+    class key {
+        --methods--
+        ..noexcept..
+        <movable>
+        <move assignable>
+    }
+
+    class secret {
+        --methods--
+        ..noexcept..
+        <movable>
+        <move assignable>
+    }
+
+    class property_impl {
+        ..noexcept..
+        <movable>
+        <move assignable>
+    }
+
+    storage_provider ..> key : factory
+    storage_provider ..> secret: factory
+
+    property_impl <|-- storage_provider : CRTP
+    property_impl <|-- key : CRTP
+    property_impl <|-- secret : CRTP
+}
+
+hcrypt +-- bcrypt
+hcrypt +-- ncrypt
+
+@enduml
