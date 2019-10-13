@@ -32,6 +32,22 @@ In general, you'll want to use the following functions for the following operati
 * NCryptSecretAgreement: Asymmetric key secret sharing (DH, ECDH) 
 * Related: NCryptDeriveKey
 
+Helper classes consists of several namespaces:
+
+1. **hcrypt** helper function and error category definitions. These helpers are shared between bcrypt and ncrypt.
+1. **bcrypt** helpers for functions in bcrypt.h
+   1. **algorith_provider** instance of algorithm provider
+   1. **key** implementation of shared/private/public key algorithm by a provider
+   1. **hash** particular implementation of hash algorithm by a provider
+   1. **secret** helper class for derivation of a key from a secret agreement.
+1. **ncrypt** helpers for functions in ncrypt.h
+   1. **storate_provider** instance of storage provider
+   1. **storage_provider::key_iterator** enumiration of keys in the storage
+   1. **key** implementation of shared/private/public key algorithm by a provider
+   1. **secret** helper class for derivation of a key from a secret agreement.
+
+*Note: CRTP in the diagrams stands for [Curiously recurring template pattern](https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)*
+
 ![Class Diagram; Classes only](/doc/bcrypt_short.png)
 
-![Class Diagram; Classes with Methods](/doc/bcrypt.png) 
+![Class Diagram; Classes with Methods](/doc/bcrypt.png)
