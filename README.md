@@ -48,6 +48,76 @@ Helper classes consists of several namespaces:
 
 *Note: ncrypt::property_impl and bcrypt::property_impl implement query/set property interfaces for all opbects in the namespace. Often times it is hard to tell from the MSDN documentation what property is applicable to what object type (key/hash/provide/sectret). A you cah [useprint_bcrypt_object_properties](https://github.com/vladp72/hcrypt/blob/master/test/hcrypt_test_helpers.hpp) and [print_ncrypt_object_properties](https://github.com/vladp72/hcrypt/blob/master/test/hcrypt_test_helpers.hpp) to create a test program that attempts to print every property for a passed object, and see what queries are supported for the given object.*
 
+For example following snippet
+```
+  bcrypt::algorithm_provider ap{BCRYPT_AES_ALGORITHM};
+  print_bcrypt_object_properties(2, ap, true);
+```
+
+  will print
+
+```
+      name: AES
+      block length: 16
+      chaining mode: ChainingModeCBC
+      block[00] size: 16
+      block[01] size: 4261281277
+      keys length: min 128, max 256, increment 64
+      key object length: 654
+      message block length: 16
+      object length: 654
+
+```
+
+After changing mode to CCM
+
+```
+  ap.set_chaining_mode(BCRYPT_CHAIN_MODE_CCM);
+  print_bcrypt_object_properties(2, ap, true);
+```
+
+  you will get
+
+```
+      name: AES
+      block length: 16
+      chaining mode: ChainingModeCCM
+      block[00] size: 16
+      block[01] size: 4261281277
+      keys length: min 128, max 256, increment 64
+      key object length: 654
+      auth tag length: min 4, max 16, increment 2
+      message block length: 1
+      object length: 654
+```
+
+  We can create kleys and print its properties
+  
+```
+   unsigned char const key[] = {
+        0x1b, 0x20, 0x5a, 0x9e, 0x2b, 0xe3, 0xfe, 0x85, 0x9c, 0x37, 0xf1,
+        0xaf, 0xfe, 0x81, 0x88, 0x92, 0x9c, 0x37, 0xf1, 0xaf, 0xfe, 0x81,
+        0x88, 0x92, 0x9c, 0x37, 0xf1, 0xaf, 0xfe, 0x81, 0x88, 0x92,
+    };
+    
+  bcrypt::key k{ap.generate_symmetric_key(
+  reinterpret_cast<char const *>(key), 32)};
+  print_bcrypt_object_properties(2, k, true);
+```
+
+  output will be
+
+```
+      name: AES
+      block length: 16
+      chaining mode: ChainingModeCCM
+      initialization vector: 00000000000000000000000000000000
+      key length: 256
+      key strength: 256
+      message block length: 1
+```
+**Following class diagrams provide a quick summary of what objects and helpers you can find in the libarary**
+
 *Note: CRTP in the diagrams stands for [Curiously recurring template pattern](https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)*
 
 ![Class Diagram; Classes only](/doc/bcrypt_short.png)
