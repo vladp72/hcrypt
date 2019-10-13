@@ -34,4 +34,4 @@ In general, you'll want to use the following functions for the following operati
 
 ![Class Diagram; Classes only](/doc/bcrypt_short.png)
 
-![Class Diagram; Classes with Methods](/doc/bcrypt.png)
+![Class Diagram; Classes with Methods](/doc/bcrypt.png) 
