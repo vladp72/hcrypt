@@ -45,8 +45,8 @@ Helper classes consists of several namespaces:
       1. **a_to_u** Converts multibype string to Unicode string
       1. **u_to_a** Converts  Unicode string to multibype string
    1. Error handling helpers for NTSTATUS and WIn32 error
-      1. **enum class status : long** Enumiration type used for NTSTATUS
-      1. **enum class win32_error : long** Enumiration type used for WIN32 erors domain
+      1. **enum class status : long** Enumeration type used for NTSTATUS
+      1. **enum class win32_error : unsigned long** Enumeration type used for WIN32 erors domain
       1. **is_success** Family of functions that return true if error code is success
       1. **is_failure** Family of functions that return true if error code is a failure
       1. **error_category_t** error category for NTSTATUS
@@ -76,15 +76,15 @@ Helper classes consists of several namespaces:
    1. Other
       1. **round_to_block** rounds up size to number of blocks of specified size.         
 1. **bcrypt** helpers for functions in bcrypt.h
-   1. **algorith_provider** instance of algorithm provider
+   1. **algorith_provider** instance of algorithm provider. You can enumerate providers using **try_enum_registered_providers**, **enum_registered_providers**, **try_resolve_providers**, **resolve_providers**, **try_enum_algorithms** or **enum_algorithms**. To navigate result of enumeration prefer to use bcrypt::for_each or bcrypt::find_first family of functions.
    1. **key** implementation of shared/private/public key algorithm by a provider
    1. **hash** particular implementation of hash algorithm by a provider
-   1. **secret** helper class for derivation of a key from a secret agreement.
+   1. **secret** helper class for derivation of a key from a secret agreement. To create secret you can use *bcrypt::create_secret* helper function
 1. **ncrypt** helpers for functions in ncrypt.h
-   1. **storate_provider** instance of storage provider
-   1. **storage_provider::key_iterator** enumiration of keys in the storage
+   1. **storate_provider** instance of storage provider. You can enumerate providers using **try_enum_providers** or **enum_providers**. To navigate result of enumeration prefer to use ncrypt::for_each or ncrypt::find_first family of functions.
+   1. **storage_provider::key_iterator** enumeration of keys in the storage
    1. **key** implementation of shared/private/public key algorithm by a provider
-   1. **secret** helper class for derivation of a key from a secret agreement.
+   1. **secret** helper class for derivation of a key from a secret agreement. To create secret you can use *ncrypt::create_secret* helper function
 
 *Note: ncrypt::property_impl and bcrypt::property_impl implement query/set property interfaces for all opbects in the namespace. Often times it is hard to tell from the MSDN documentation what property is applicable to what object type (key/hash/provide/sectret). A you cah [useprint_bcrypt_object_properties](https://github.com/vladp72/hcrypt/blob/master/test/hcrypt_test_helpers.hpp) and [print_ncrypt_object_properties](https://github.com/vladp72/hcrypt/blob/master/test/hcrypt_test_helpers.hpp) to create a test program that attempts to print every property for a passed object, and see what queries are supported for the given object.*
 
