@@ -3,21 +3,34 @@
 hide empty members
 'hide members
 
-namespace hcrypt {
-}
-
 namespace bcrypt {
 
-    note "Utility functions:\n\ntry_generate_random\ngenerate_random\n\ntry_is_fips_complience_on\nis_fips_complience_on" as Note2
+    note as Note2
+        Utility functions:
+        
+        try_generate_random
+        generate_random
+        
+        try_is_fips_complience_on
+        is_fips_complience_on
+    end note
 
     class buffer_ptr <T> {
+        -T *ptr_
         ..noexcept..
         <movable>
         <move assignable>
+        +get()
+        +attach()
+        +detach()
+        +free()
+        +swap()
+        +operator*()
+        +operator->()
     }
 
     class algorithm_provider {
-        BCRYPT_ALG_HANDLE h_
+        -BCRYPT_ALG_HANDLE h_
         --methods--
         +open()
         +generate_symmetric_key()
@@ -48,14 +61,38 @@ namespace bcrypt {
         +try_generate_random()
     }
 
-    note "Use enumirators if you need to\ndicover algorithm providers:\n\ntry_enum_registered_providers\nenum_registered_providers\n\ntry_resolve_providers\nresolve_providers\n\ntry_enum_algorithms\nenum_algorithms\n\nEach numiration functioon returns\na typed buffer. You can use\nbcrypt::for_each and bcrypt::find_first\nhelper algorithms to enumirate elements" as Note1
+    note as Note1 
+        Use enumirators if you need to
+        discover algorithm providers:
+        
+        try_enum_registered_providers
+        enum_registered_providers
+        
+        try_resolve_providers
+        resolve_providers
+        
+        try_enum_algorithms
+        enum_algorithms
+        
+        Each numiration function returns
+        a typed buffer. You can use
+        bcrypt::for_each and bcrypt::find_first
+        helper algorithms to enumirate elements
+    end note
     Note1 .right. algorithm_provider
 
-    note "Free standing factory functions:\n\ntry_create_secret\ncreate_secret" as Note3
+    note as Note3
+        Constructed using free standing
+        factory functions:
+        
+        try_create_secret
+        create_secret
+    end note
+
     Note3 .up. secret
 
     class secret {
-        BCRYPT_SECRET_HANDLE h_
+        -BCRYPT_SECRET_HANDLE h_
         --methods--
         +derive_key()
         ..noexcept..
@@ -188,45 +225,329 @@ namespace bcrypt {
 
 namespace ncrypt {
 
-    class buffer_ptr {
+    note as Note2
+        Utility functions:
+        
+        is_key_handle
+    end note
+
+    class buffer_ptr <T>{
+        -T *ptr_
+        ..noexcept..
+        <movable>
+        <move assignable>
+        +get()
+        +attach()
+        +detach()
+        +free()
+        +swap()
+        +operator*()
+        +operator->()
     }
 
     class storage_provider {
+        -NCRYPT_PROV_HANDLE h_
         --methods--
+        +open()
+        +enum_algorithms()
+        +key_begin()
+        +key_end()
+        +is_algorithm_supported()
+        +open_key()
+        +create_key()
+        +import_key()
         ..noexcept..
         <movable>
         <move assignable>
+        +close()
+        +swap()
+        +attach()
+        +detach()
+        +try_open()
+        +try_enum_algorithms()
+        +try_is_algorithm_supported()
+        +try_open_key()
+        +try_create_key()
+        +try_import_key()
     }
 
+    note as Note6
+        Use enumirators if you need to
+        discover algorithm providers:
+        
+        try_enum_providers
+        enum_providers
+        
+        Each numiration function returns
+        a typed buffer. You can use
+        bcrypt::for_each and bcrypt::find_first
+        helper algorithms to enumirate elements
+    end note
+    Note6 .left. storage_provider
+
+    class storage_provider::key_iterator {
+        -storage_provider *p_;
+        -void *enumirator_state_;
+        -unsigned long flags_;
+        -key_name_cptr k_;
+        ..noexcept..
+        <forward_iterator>
+        <movable>
+        <move assignable>
+        +swap()
+        +operator==()
+        +operator!=()
+        +operator++()
+        +operator*()
+        +operator->()
+    }
+
+    storage_provider::key_iterator <.left. storage_provider : <factory>
+    note on link: key_begin()\nkey_end()
+
     class key {
+        -NCRYPT_KEY_HANDLE h_
         --methods--
+        +delete()
+        +create_claim()
+        +verify_claim()
+        +finalize_key()
+        +export_key()
+        +key_derivation()
+        +sign_hash()
+        +verify_signature()
+        +encrypt()
+        +decrypt()
         ..noexcept..
         <movable>
         <move assignable>
+        +close()
+        +swap()
+        +detach()
+        +attach()
+        +try_delete()
+        +try_create_claim()
+        +try_verify_claim()
+        +try_finalize_key()
+        +try_export_key()
+        +try_key_derivation()
+        +try_sign_hash()
+        +try_verify_signature()
+        +try_encrypt()
+        +try_decrypt()
+
     }
 
     class secret {
+        -NCRYPT_SECRET_HANDLE h_
         --methods--
+        +derive_key()
         ..noexcept..
         <movable>
         <move assignable>
+        +attach()
+        +detach()
+        +close()
+        +try_derive_key()
     }
 
-    class property_impl {
+    note as Note5 
+        Constructed using free standing
+        factory functions:
+        
+        try_create_secret
+        create_secret
+    end note
+    Note5 .up. secret
+
+    class property_impl <T> {
+        #get_property_as_buffer()
+        #get_property_as_string()
+        #get_property_as()
+        #get_property()
+        #set_property()
+        +get_algorithm_name()
+        +get_associated_ecdh_name()
+        +get_block_length()
+        +get_certificate()
+        +get_dh_parameters()
+        +set_dh_parameters()
+        +get_export_policy()
+        +get_implementation_flags()
+        +get_key_type()
+        +get_key_usage()
+        +get_last_modified()
+        +get_length()
+        +get_supported_lengths()
+        +get_max_name_length()
+        +get_name()
+        +set_pin_property()
+        +set_reader()
+        +get_storage_provider()
+        +get_pin_id()
+        +get_pin_info()
+        +get_root_certificate_store()
+        +set_secure_pin()
+        +get_security_descriptor()
+        +set_security_descriptor()
+        +get_security_descriptor_supported()
+        +get_smartcard_guid()
+        +get_ui_policy()
+        +set_ui_policy()
+        +get_uniqie_name()
+        +get_use_context()
+        +set_use_context()
+        +get_use_count_enabled()
+        +get_use_count()
+        +get_user_certificate_store()
+        +get_version()
+        +get_hwnd()
+        +set_hwnd()
         ..noexcept..
-        <movable>
-        <move assignable>
+        #try_get_property()
+        #try_set_property()
+        +try_get_algorithm_name()
+        +try_get_associated_ecdh_name()
+        +try_get_block_length()
+        +try_get_certificate()
+        +try_get_dh_parameters()
+        +try_set_dh_parameters()
+        +try_get_export_policy()
+        +try_get_implementation_flags()
+        +try_get_key_type()
+        +try_get_key_usage()
+        +try_get_last_modified()
+        +try_get_length()
+        +try_get_supported_lengths()
+        +try_get_max_name_length()
+        +try_get_name()
+        +try_set_pin_property()
+        +try_set_reader()
+        +try_get_storage_provider()
+        +try_get_pin_id()
+        +try_get_pin_info()
+        +try_get_root_certificate_store()
+        +try_set_secure_pin()
+        +try_get_security_descriptor()
+        +try_set_security_descriptor()
+        +try_get_security_descriptor_supported()
+        +try_get_smartcard_guid()
+        +try_get_ui_policy()
+        +try_set_ui_policy()
+        +try_get_uniqie_name()
+        +try_get_use_context()
+        +try_set_use_context()
+        +try_get_use_count_enabled()
+        +try_get_use_count()
+        +try_get_user_certificate_store()
+        +try_get_version()
+        +try_get_hwnd()
+        +try_set_hwnd()
     }
 
     storage_provider ..> key : factory
-    storage_provider ..> secret: factory
 
     property_impl <|-- storage_provider : CRTP
     property_impl <|-- key : CRTP
     property_impl <|-- secret : CRTP
 }
 
-hcrypt +-- bcrypt
-hcrypt +-- ncrypt
+namespace hcrypt {
+    note  as hcrypt_Note1
+        String formatting:
+        
+            v_make_string
+            make_string
+            v_make_wstring
+            make_wstring
+    end note
+
+    note  as hcrypt_Note2
+        Noexcept vetor and string resize helpers:
+
+            try_resize()
+    end note
+
+    note  as hcrypt_Note3
+        Conversion between character encodings:
+
+            a_to_u()
+            u_to_a()
+    end note
+
+    note  as hcrypt_Note4
+        Error condition for NTSTATUS and win32 errors:
+
+            enum class status : long
+            enum class win32_error : unsigned long
+
+            is_success()
+            is_failure()
+
+            try_status_to_string()
+            status_to_string()
+            status_to_win32_error()
+            nte_error_to_status()
+            status_to_nte_error()
+            nt_status_to_win32_error_ex()
+            
+            class error_category_t
+
+            get_error_category()
+            make_error_code()
+    end note
+
+    note  as hcrypt_Note5
+        Bitflags helpers:
+
+            set_flag()
+            is_flag_on()
+            clear_flag()
+            consume_flag()
+    end note
+
+    note  as hcrypt_Note6
+        Conversion between buffer and hex string:
+
+            to_hex()
+            from_hex()
+    end note
+
+    note  as hcrypt_Note7
+        Conversion between buffer and base64 string:
+        
+            get_base64_length()
+            to_base64()
+            from_base64()
+    end note
+
+    note  as hcrypt_Note8
+        Time:
+
+            systemtime_to_filetime()
+            filetime_to_systemtime()
+            systemtime_to_string()
+            systemtime_to_wstring()
+            filetime_to_string()
+            filetime_to_wstring()
+    end note
+
+    note  as hcrypt_Note9
+        GUID:
+
+            guid_to_string()
+            guid_to_wstring()
+    end note
+
+    note  as hcrypt_Note10
+        Other:
+
+            round_to_block()
+    end note
+}
+
+
+hcrypt +-left- bcrypt
+hcrypt +-left- ncrypt
 
 @enduml
