@@ -1,5 +1,7 @@
 # C++ Helper Classes for Windows CNG BCRYPT and NCRYPT APIs.
 
+This is a header only library for Windows CNG API that includes functions from ncrypt.h and bcrypt.h.
+
 [MSDN Documentation for bcrypt.h](https://docs.microsoft.com/en-us/windows/win32/api/bcrypt/)
 
 [MSDN Documentation for ncrypt.h](https://docs.microsoft.com/en-us/windows/win32/api/ncrypt/)
