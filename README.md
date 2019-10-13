@@ -35,6 +35,46 @@ In general, you'll want to use the following functions for the following operati
 Helper classes consists of several namespaces:
 
 1. **hcrypt** helper function and error category definitions. These helpers are shared between bcrypt and ncrypt.
+   1. String Formatting
+      1. **v_make_string** estimates string size using _vscprintf, resizes buffer and  prints string using _vsnprintf_s
+      1. **make_string** calls v_make_string
+      1. **v_make_wstring** estimates string size using _vscwprintf, resizes buffer and  prints string using _vsnwprintf_s
+      1. **make_wstring** calls v_make_wstring
+   1. **try_resize** family of functions that can be used in noexcept context to convert std::bad_alloc to an error code
+   1. Convertion between character encodings
+      1. **a_to_u** Converts multibype string to Unicode string
+      1. **u_to_a** Converts  Unicode string to multibype string
+   1. Error handling helpers for NTSTATUS and WIn32 error
+      1. **enum class status : long** Enumiration type used for NTSTATUS
+      1. **enum class win32_error : long** Enumiration type used for WIN32 erors domain
+      1. **is_success** Family of functions that return true if error code is success
+      1. **is_failure** Family of functions that return true if error code is a failure
+      1. **error_category_t** error category for NTSTATUS
+      1. **get_error_category** returns instance of errror_category_t
+      1. **make_error_code** creates error_code with matching error category for the given enumeration type.
+   1. Bitfield anumeration
+      1. **set_flag** Sets bits
+      1. **is_flag_on** Checks if bits are set
+      1. **clear_flag** Clears bits
+      1. **consume_flag** Clears bits and returns if they were set
+   1. Conversion between bag of bytes and hexidecimal string
+      1. **to_hex**
+      1. **from_hex**
+   1. Conversion between bag of bytes and base64 encoding string
+      1. **to_base64**
+      1. **from_base64**
+   1. Time helper function
+      1. **systemtime_to_filetime**
+      1. **filetime_to_systemtime**
+      1. **systemtime_to_string**
+      1. **systemtime_to_wstring**
+      1. **filetime_to_string**
+      1. **filetime_to_wstring**
+   1. GUID helper function
+      1. **guid_to_string**
+      1. **guid_to_wstring**
+   1. Other
+      1. **round_to_block** rounds up size to number of blocks of specified size.         
 1. **bcrypt** helpers for functions in bcrypt.h
    1. **algorith_provider** instance of algorithm provider
    1. **key** implementation of shared/private/public key algorithm by a provider
