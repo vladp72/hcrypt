@@ -90,7 +90,7 @@ Helper classes consists of several namespaces:
    1. **key** implementation of shared/private/public key algorithm by a provider
    1. **secret** helper class for derivation of a key from a secret agreement. To create secret you can use *ncrypt::create_secret* helper function
 
-*Note: ncrypt::property_impl and bcrypt::property_impl implement query/set property interfaces for all opbects in the namespace. Often times it is hard to tell from the MSDN documentation what property is applicable to what object type (key/hash/provide/sectret). A you cah [useprint_bcrypt_object_properties](https://github.com/vladp72/hcrypt/blob/master/test/hcrypt_test_helpers.hpp) and [print_ncrypt_object_properties](https://github.com/vladp72/hcrypt/blob/master/test/hcrypt_test_helpers.hpp) to create a test program that attempts to print every property for a passed object, and see what queries are supported for the given object.*
+*Note: ncrypt::property_impl and bcrypt::property_impl implement query/set property interfaces for all obects in each namespace. Often times it is hard to tell from the MSDN documentation what property is applicable to what object type (key/hash/particular provide/secret). You can use [useprint_bcrypt_object_properties](https://github.com/vladp72/hcrypt/blob/master/test/hcrypt_test_helpers.hpp) and [print_ncrypt_object_properties](https://github.com/vladp72/hcrypt/blob/master/test/hcrypt_test_helpers.hpp) to create a test program that attempts to print every property for a passed object, and see what queries are supported for the given object.*
 
 For example following snippet
 ```
