@@ -174,8 +174,7 @@ After changing mode to CCM
         0x88, 0x92, 0x9c, 0x37, 0xf1, 0xaf, 0xfe, 0x81, 0x88, 0x92,
     };
     
-  bcrypt::key k{ap.generate_symmetric_key(
-  reinterpret_cast<char const *>(key), 32)};
+  bcrypt::key k{ap.generate_symmetric_key(reinterpret_cast<char const *>(key), 32)};
   print_bcrypt_object_properties(2, k, true);
 ```
 
