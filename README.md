@@ -14,6 +14,8 @@ This is a header only library for Windows CNG API that includes functions from n
 
 [MSDN CNG samples](https://docs.microsoft.com/en-us/windows/win32/seccng/typical-cng-programming?redirectedfrom=MSDN)
 
+[MSDN classic samples](https://github.com/microsoft/Windows-classic-samples/tree/master/Samples/Security)
+
 [StackOverflow threads with cng tag](https://stackoverflow.com/questions/tagged/cng)
 
 *Note: CNG bcrypt does not implement Blowfish algorithm. CNG bcrypt originated from BestCrypt. [For more details see](https://stackoverflow.com/questions/9711568/does-winapis-bcrypt-h-actually-support-bcrypt-hashing)*
