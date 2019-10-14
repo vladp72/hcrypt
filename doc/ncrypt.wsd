@@ -1,0 +1,243 @@
+@startuml
+
+hide empty members
+'hide members
+
+namespace ncrypt {
+
+!if $inclide_notes == "y"
+    note as Note2
+        Utility functions:
+        
+        is_key_handle
+    end note
+!endif
+
+    class buffer_ptr <T>{
+        -T *ptr_
+        ..noexcept..
+        <movable>
+        <move assignable>
+        +get()
+        +attach()
+        +detach()
+        +free()
+        +swap()
+        +operator*()
+        +operator->()
+    }
+
+    class storage_provider {
+        -NCRYPT_PROV_HANDLE h_
+        --methods--
+        +open()
+        +enum_algorithms()
+        +key_begin()
+        +key_end()
+        +is_algorithm_supported()
+        +open_key()
+        +create_key()
+        +import_key()
+        ..noexcept..
+        <movable>
+        <move assignable>
+        +close()
+        +swap()
+        +attach()
+        +detach()
+        +try_open()
+        +try_enum_algorithms()
+        +try_is_algorithm_supported()
+        +try_open_key()
+        +try_create_key()
+        +try_import_key()
+    }
+
+!if $inclide_notes == "y"
+    note as Note6
+        Use enumirators if you need to
+        discover algorithm providers:
+        
+        try_enum_providers
+        enum_providers
+        
+        Each numiration function returns
+        a typed buffer. You can use
+        bcrypt::for_each and bcrypt::find_first
+        helper algorithms to enumirate elements
+    end note
+    Note6 .left. storage_provider
+!endif
+
+    class storage_provider::key_iterator {
+        -storage_provider *p_;
+        -void *enumirator_state_;
+        -unsigned long flags_;
+        -key_name_cptr k_;
+        ..noexcept..
+        <forward_iterator>
+        <movable>
+        <move assignable>
+        +swap()
+        +operator==()
+        +operator!=()
+        +operator++()
+        +operator*()
+        +operator->()
+    }
+
+    storage_provider::key_iterator <.left. storage_provider : <factory>
+!if $inclide_notes == "y"
+    note on link: key_begin()\nkey_end()
+!endif
+
+    class key {
+        -NCRYPT_KEY_HANDLE h_
+        --methods--
+        +delete()
+        +create_claim()
+        +verify_claim()
+        +finalize_key()
+        +export_key()
+        +key_derivation()
+        +sign_hash()
+        +verify_signature()
+        +encrypt()
+        +decrypt()
+        ..noexcept..
+        <movable>
+        <move assignable>
+        +close()
+        +swap()
+        +detach()
+        +attach()
+        +try_delete()
+        +try_create_claim()
+        +try_verify_claim()
+        +try_finalize_key()
+        +try_export_key()
+        +try_key_derivation()
+        +try_sign_hash()
+        +try_verify_signature()
+        +try_encrypt()
+        +try_decrypt()
+
+    }
+
+    class secret {
+        -NCRYPT_SECRET_HANDLE h_
+        --methods--
+        +derive_key()
+        ..noexcept..
+        <movable>
+        <move assignable>
+        +attach()
+        +detach()
+        +close()
+        +try_derive_key()
+    }
+
+!if $inclide_notes == "y"
+    note as Note5 
+        Constructed using free standing
+        factory functions:
+        
+        try_create_secret
+        create_secret
+    end note
+    Note5 .up. secret
+!endif
+
+    class property_impl <T> {
+        #get_property_as_buffer()
+        #get_property_as_string()
+        #get_property_as()
+        #get_property()
+        #set_property()
+        +get_algorithm_name()
+        +get_associated_ecdh_name()
+        +get_block_length()
+        +get_certificate()
+        +get_dh_parameters()
+        +set_dh_parameters()
+        +get_export_policy()
+        +get_implementation_flags()
+        +get_key_type()
+        +get_key_usage()
+        +get_last_modified()
+        +get_length()
+        +get_supported_lengths()
+        +get_max_name_length()
+        +get_name()
+        +set_pin_property()
+        +set_reader()
+        +get_storage_provider()
+        +get_pin_id()
+        +get_pin_info()
+        +get_root_certificate_store()
+        +set_secure_pin()
+        +get_security_descriptor()
+        +set_security_descriptor()
+        +get_security_descriptor_supported()
+        +get_smartcard_guid()
+        +get_ui_policy()
+        +set_ui_policy()
+        +get_uniqie_name()
+        +get_use_context()
+        +set_use_context()
+        +get_use_count_enabled()
+        +get_use_count()
+        +get_user_certificate_store()
+        +get_version()
+        +get_hwnd()
+        +set_hwnd()
+        ..noexcept..
+        #try_get_property()
+        #try_set_property()
+        +try_get_algorithm_name()
+        +try_get_associated_ecdh_name()
+        +try_get_block_length()
+        +try_get_certificate()
+        +try_get_dh_parameters()
+        +try_set_dh_parameters()
+        +try_get_export_policy()
+        +try_get_implementation_flags()
+        +try_get_key_type()
+        +try_get_key_usage()
+        +try_get_last_modified()
+        +try_get_length()
+        +try_get_supported_lengths()
+        +try_get_max_name_length()
+        +try_get_name()
+        +try_set_pin_property()
+        +try_set_reader()
+        +try_get_storage_provider()
+        +try_get_pin_id()
+        +try_get_pin_info()
+        +try_get_root_certificate_store()
+        +try_set_secure_pin()
+        +try_get_security_descriptor()
+        +try_set_security_descriptor()
+        +try_get_security_descriptor_supported()
+        +try_get_smartcard_guid()
+        +try_get_ui_policy()
+        +try_set_ui_policy()
+        +try_get_uniqie_name()
+        +try_get_use_context()
+        +try_set_use_context()
+        +try_get_use_count_enabled()
+        +try_get_use_count()
+        +try_get_user_certificate_store()
+        +try_get_version()
+        +try_get_hwnd()
+        +try_set_hwnd()
+    }
+
+    storage_provider ..> key : factory
+
+    property_impl <|-- storage_provider : CRTP
+    property_impl <|-- key : CRTP
+    property_impl <|-- secret : CRTP
+}
+
+@enduml

@@ -1,0 +1,104 @@
+@startuml
+
+hide empty members
+
+namespace hcrypt {
+
+!if $inclide_notes == "y"
+
+    note  as hcrypt_Note1
+        String formatting:
+        
+            v_make_string
+            make_string
+            v_make_wstring
+            make_wstring
+    end note
+
+    note  as hcrypt_Note2
+        Noexcept vetor and string resize helpers:
+
+            try_resize()
+    end note
+
+    note  as hcrypt_Note3
+        Conversion between character encodings:
+
+            a_to_u()
+            u_to_a()
+    end note
+
+    note  as hcrypt_Note4
+        Error condition for NTSTATUS and win32 errors:
+
+            enum class status : long
+            enum class win32_error : unsigned long
+
+            is_success()
+            is_failure()
+
+            try_status_to_string()
+            status_to_string()
+            status_to_win32_error()
+            nte_error_to_status()
+            status_to_nte_error()
+            nt_status_to_win32_error_ex()
+            
+            class error_category_t
+
+            get_error_category()
+            make_error_code()
+    end note
+
+    note  as hcrypt_Note5
+        Bitflags helpers:
+
+            set_flag()
+            is_flag_on()
+            clear_flag()
+            consume_flag()
+    end note
+
+    note  as hcrypt_Note6
+        Conversion between buffer and hex string:
+
+            to_hex()
+            from_hex()
+    end note
+
+    note  as hcrypt_Note7
+        Conversion between buffer and base64 string:
+        
+            get_base64_length()
+            to_base64()
+            from_base64()
+    end note
+
+    note  as hcrypt_Note8
+        Time:
+
+            systemtime_to_filetime()
+            filetime_to_systemtime()
+            systemtime_to_string()
+            systemtime_to_wstring()
+            filetime_to_string()
+            filetime_to_wstring()
+    end note
+
+    note  as hcrypt_Note9
+        GUID:
+
+            guid_to_string()
+            guid_to_wstring()
+    end note
+
+    note  as hcrypt_Note10
+        Other:
+
+            round_to_block()
+    end note
+!endif
+
+}
+
+@enduml

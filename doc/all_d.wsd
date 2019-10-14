@@ -1,0 +1,15 @@
+@startuml
+
+hide empty members
+hide members
+
+!global $inclide_notes = "n"
+
+!include hcrypt.wsd
+!include bcrypt.wsd
+!include ncrypt.wsd
+
+hcrypt +-left- bcrypt
+hcrypt +-left- ncrypt
+
+@enduml
