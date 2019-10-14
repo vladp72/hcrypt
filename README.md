@@ -18,7 +18,7 @@ This is a header only library for Windows CNG API that includes functions from n
 
 [StackOverflow threads with cng tag](https://stackoverflow.com/questions/tagged/cng)
 
-*Note: CNG bcrypt does not implement Blowfish algorithm. CNG bcrypt originated from BestCrypt. [For more details see](https://stackoverflow.com/questions/9711568/does-winapis-bcrypt-h-actually-support-bcrypt-hashing)*
+*Note: CNG bcrypt does not implement Blowfish algorithm. CNG bcrypt originated from BestCrypt. [See this discussion for more details](https://stackoverflow.com/questions/9711568/does-winapis-bcrypt-h-actually-support-bcrypt-hashing)*
 
 [Also check test and samples that come with this library](https://github.com/vladp72/hcrypt/tree/master/test)
 
