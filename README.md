@@ -160,10 +160,19 @@ After changing mode to CCM
       key strength: 256
       message block length: 1
 ```
-**Following class diagrams provide a quick summary of what objects and helpers you can find in the libarary**
+## Class Diagrams
 
 *Note: CRTP in the diagrams stands for [Curiously recurring template pattern](https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)*
 
-![Class Diagram; Classes only](/doc/bcrypt_short.png)
+### All Modules
+![Class Diagram; All together](/doc/all_d.png)
 
-![Class Diagram; Classes with Methods](/doc/bcrypt.png)
+### bcrypt.h
+![Class Diagram; bcrypt only](/doc/bcrypt_d.png)
+
+### ncrypt.h
+![Class Diagram; ncrypt only](/doc/ncrypt_d.png)
+
+### hcrypt.h
+![Class Diagram; hcrypt only](/doc/hcrypt_d.png)
+
