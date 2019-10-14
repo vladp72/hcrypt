@@ -38,6 +38,24 @@ In general, you'll want to use the following functions for the following operati
 
 Helper classes consists of several namespaces:
 
+*Note: In all classes you will find each crypto function wrapperd twice. One wrapper will have "try_" prefix and will be noexcept. It will communicate failure by returning std::error_code. The other wrapper will not have 'try' prefix and will communicate most failures using an exception. For example:*
+ 
+ ```
+ class storage_provider {
+ public:
+   //
+   // This wrapped would not throw exception.
+   // It communicates failure using std::error_code
+   //
+   [[nodiscard]] std::error_code try_open(wchar_t const *provider) noexcept;
+   //
+   // This wrapper communicates failures using exception
+   //
+   void open(wchar_t const *provider)
+ };
+ ```
+*Use try_ wrappers in the performance critical code when failures are expected to happen often and can affect performance. It is also a good fit when you need to use wrappers in an exception unsafe code base.*
+
 1. **hcrypt** helper function and error category definitions. These helpers are shared between bcrypt and ncrypt.
    1. String Formatting
       1. **v_make_string** estimates string size using _vscprintf, resizes buffer and  prints string using _vsnprintf_s
