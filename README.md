@@ -8,6 +8,8 @@ This is a header only library for Windows CNG API that includes functions from n
 
 [MSDN CNG Samples](https://docs.microsoft.com/en-us/windows/win32/seccng/typical-cng-programming?redirectedfrom=MSDN)
 
+[StackOverflow threads with cng tag](https://stackoverflow.com/questions/tagged/cng)
+
 [Also check test and samples that come with this library](https://github.com/vladp72/hcrypt/tree/master/test)
 
 [This post](https://stackoverflow.com/questions/40596395/cng-when-to-use-bcrypt-vs-ncrypt-family-of-functions) by dbush provides a good summary when to use NCrypt API versus BCrypt API.
