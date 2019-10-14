@@ -1,4 +1,4 @@
-# C++ Helper Classes for Windows Cryptography API Next Generation (CNG) BCRYPT and NCRYPT APIs.
+# C++ Helper Classes for Windows Cryptography API Next Generation (CNG), that includes BCRYPT and NCRYPT.
 
 This is a header only library for Windows CNG API that includes functions from ncrypt.h and bcrypt.h.
 
