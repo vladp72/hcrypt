@@ -196,10 +196,10 @@ After changing mode to CCM
 ### All Modules
 ![Class Diagram; All together](/doc/all_d.png)
 
-### bcrypt.h
+### hbcrypt.h
 ![Class Diagram; bcrypt only](/doc/bcrypt_d.png)
 
-### ncrypt.h
+### hncrypt.h
 ![Class Diagram; ncrypt only](/doc/ncrypt_d.png)
 
 ### hcrypt.h
