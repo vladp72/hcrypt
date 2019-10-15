@@ -1191,6 +1191,8 @@ namespace ncrypt {
 
         std::error_code try_delete_key(unsigned long flags = NCRYPT_SILENT_FLAG) noexcept {
             std::error_code status{hcrypt::win32_error(NCryptDeleteKey(h_, flags))};
+            BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
+            h_ = 0;
             return status;
         }
 
@@ -2102,8 +2104,8 @@ namespace ncrypt {
 
         key create_key(wchar_t const *algorithm_id,
                        wchar_t const *key_name,
-                       unsigned long legacy_key_spec,
-                       unsigned long flags) {
+                       unsigned long legacy_key_spec = 0,
+                       unsigned long flags = 0) {
             key new_key;
             std::error_code status{try_create_key(
                 algorithm_id, key_name, legacy_key_spec, flags, &new_key)};

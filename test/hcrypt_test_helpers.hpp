@@ -418,9 +418,9 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
 
     status = obj.try_get_security_descriptor_supported(&dword_value);
     if (hcrypt::is_success(status)) {
-        printf("%*csecurity descriptod supported: %lu\n", offset, ' ', dword_value);
+        printf("%*csecurity descriptor supported: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*csecurity descriptod supported: error code = %x\n",
+        printf("%*csecurity descriptor supported: error code = %x\n",
                offset,
                ' ',
                status.value());

@@ -18,9 +18,7 @@
 #include "hbcrypt_test_AES_CBC.hpp"
 #include "hncrypt_test_providers.hpp"
 #include "hncrypt_test_enum_keys.hpp"
-//
-// https://github.com/microsoft/Windows-classic-samples/tree/master/Samples/Security
-//
+#include "hncrypt_test_ECDSA256.hpp"
 
 int main() {
     try {
@@ -61,6 +59,8 @@ int main() {
         test_ncrypt_providers();
 
         test_ncrypt_enum_keys();
+
+        test_ecdsa();
 
     } catch (std::system_error const &ex) {
         printf("Error code = 0x%x, %s, %s\n",
