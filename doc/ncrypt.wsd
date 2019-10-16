@@ -2,6 +2,7 @@
 
 hide empty members
 'hide members
+'!global $inclide_notes = "y"
 
 namespace ncrypt {
 
@@ -38,6 +39,7 @@ namespace ncrypt {
         +open_key()
         +create_key()
         +import_key()
+        +delete_key()
         ..noexcept..
         <movable>
         <move assignable>
@@ -51,6 +53,7 @@ namespace ncrypt {
         +try_open_key()
         +try_create_key()
         +try_import_key()
+        +try_delete_key()
     }
 
 !if $inclide_notes == "y"

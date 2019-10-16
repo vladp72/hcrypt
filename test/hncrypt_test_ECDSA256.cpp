@@ -11,20 +11,31 @@ namespace {
     wchar_t const persistent_key_name[] =
         L"ncrypt_library_test_key_ecdsa_F3686E9E-A097-4959-A014-D8D2B2D9F42F";
 
-    wchar_t const *algorithms[] = {
+    wchar_t const *hash_algorithms[] = {
         BCRYPT_SHA1_ALGORITHM,
         BCRYPT_SHA256_ALGORITHM,
         BCRYPT_SHA384_ALGORITHM,
         BCRYPT_SHA512_ALGORITHM,
     };
 
-    void test_ecdsa(int offset, wchar_t const *hashing_algorithm) {
+    wchar_t const *ecdsa_algorithms[] = {
+        NCRYPT_ECDSA_P256_ALGORITHM,
+        NCRYPT_ECDSA_P384_ALGORITHM,
+        NCRYPT_ECDSA_P521_ALGORITHM,
+    };
+
+    void test_ecdsa(int offset, wchar_t const *hashing_algorithm, wchar_t const *ecdsa_algorithm) {
         try {
-            printf("\n%*cCreating hashing algorithm provider %S\n", offset, ' ', hashing_algorithm);
+            printf("\n%*cCreating hashing algorithm %S, ECDSA algorithm %S\n",
+                   offset,
+                   ' ',
+                   hashing_algorithm,
+                   ecdsa_algorithm);
+
+            offset += 2;
+
             bcrypt::algorithm_provider hash_ap{hashing_algorithm};
             print_bcrypt_object_properties(offset + 2, hash_ap, true);
-
-            // offset += 2;
 
             printf("%*cCreating hash\n", offset, ' ');
             bcrypt::hash h{hash_ap.create_hash()};
@@ -47,27 +58,22 @@ namespace {
             ncrypt::storage_provider sp{MS_KEY_STORAGE_PROVIDER};
             print_ncrypt_object_properties(offset + 2, sp, true);
 
-            printf("%*cCreating or openning key algorithm %S, name %S\n",
-                   offset,
-                   ' ',
-                   NCRYPT_ECDSA_P256_ALGORITHM,
-                   persistent_key_name);
-            
-            ncrypt::key k;
-
-            std::error_code error{sp.try_open_key(persistent_key_name, 0, 0, &k)};
-            if (error != hcrypt::win32_error(ERROR_SUCCESS)) {
-                printf("%*cOpen failed with errorerror code = 0x%x, %s. Trying "
-                       "to create.\n",
-                       offset,
-                       ' ',
-                       error.value(),
-                       error.message().c_str());
-                k = sp.create_key(NCRYPT_ECDSA_P256_ALGORITHM, persistent_key_name);
-                k.finalize_key();
-            } else {
-                printf("%*cOpened existing key\n", offset, ' ');
+            if (sp.delete_key(persistent_key_name)) {
+                printf("%*cFound and deleted key %S\n", offset, ' ', persistent_key_name);
             }
+
+            printf("%*cCreating key algorithm %S, name %S\n", offset, ' ', ecdsa_algorithm, persistent_key_name);
+
+            ncrypt::key k{sp.create_key(ecdsa_algorithm, persistent_key_name)};
+            k.finalize_key();
+
+            hcrypt::scope_guard delete_k{[&k, offset] {
+                if (k) {
+                    printf("%*cDeleting key %S\n", offset, ' ', persistent_key_name);
+                    k.delete_key();
+                    printf("%*cKey deleted\n", offset, ' ');
+                }
+            }};
 
             print_ncrypt_object_properties(offset + 2, k, true);
 
@@ -96,17 +102,54 @@ namespace {
             print_bcrypt_object_properties(offset + 2, public_key, true);
 
             printf("%*cVerifying signature\n", offset, ' ');
-            if (public_key.verify_signature(nullptr,
+            BCRYPT_CODDING_ERROR_IF_NOT(
+                public_key.verify_signature(nullptr,
                                             data_hash.data(),
                                             data_hash.size(),
                                             hash_signature.data(),
-                                            hash_signature.size())) {
-                printf("%*cVerification succeeded\n", offset, ' ');
-            } else {
-                printf("%*cVerification failed\n", offset, ' ');
-            }
+                                            hash_signature.size()));
 
-            k.delete_key();
+            printf("%*cVerification succeeded\n", offset, ' ');
+            //
+            // Mess with hash
+            //
+            hcrypt::buffer broken_data_hash{data_hash};
+            broken_data_hash[1] += 1;
+
+            printf("%*cVerifying signature for broken hash %S\n",
+                   offset,
+                   ' ',
+                   hcrypt::to_hex(broken_data_hash).c_str());
+
+            BCRYPT_CODDING_ERROR_IF(
+                public_key.verify_signature(nullptr,
+                                            broken_data_hash.data(),
+                                            broken_data_hash.size(),
+                                            hash_signature.data(),
+                                            hash_signature.size()));
+
+            printf("%*cVerification failed as expected\n", offset, ' ');
+
+            //
+            // Mess with signature
+            //
+
+            hcrypt::buffer broken_hash_signature{hash_signature};
+            broken_hash_signature[1] += 1;
+
+            printf("%*cVerifying signature for broken signature %S\n",
+                   offset,
+                   ' ',
+                   hcrypt::to_hex(broken_hash_signature).c_str());
+
+            BCRYPT_CODDING_ERROR_IF(
+                public_key.verify_signature(nullptr,
+                                            data_hash.data(),
+                                            data_hash.size(),
+                                            broken_hash_signature.data(),
+                                            broken_hash_signature.size()));
+
+            printf("%*cVerification failed as expected\n", offset, ' ');
 
         } catch (std::system_error const &ex) {
             printf("%*ctest_ecdsa, error code = 0x%x, %s, %s\n",
@@ -127,10 +170,16 @@ void test_ecdsa() {
 
         printf("---ECDSA---------------\n");
 
-        std::for_each(std::begin(algorithms), std::end(algorithms), [offset](wchar_t const *algorithm) {
-            test_ecdsa(offset + 2, algorithm);
-        });
-
+        std::for_each(std::begin(hash_algorithms),
+                      std::end(hash_algorithms),
+                      [offset](wchar_t const *hash_algorithm) {
+                          std::for_each(
+                              std::begin(ecdsa_algorithms),
+                              std::end(ecdsa_algorithms),
+                              [offset, hash_algorithm](wchar_t const *ecdsa_algorithm) {
+                                  test_ecdsa(offset + 2, hash_algorithm, ecdsa_algorithm);
+                              });
+                      });
     } catch (std::system_error const &ex) {
         printf("test_ecdsa, error code = 0x%x, %s, %s\n",
                ex.code().value(),

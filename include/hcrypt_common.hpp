@@ -57,6 +57,65 @@
 
 namespace hcrypt {
 
+    template<typename G>
+    class scope_guard: private G {
+    public:
+
+        explicit constexpr scope_guard(G const &g)
+            : G{g} {
+        }
+
+        explicit constexpr scope_guard(G &&g)
+            : G{std::move(g)} {
+        }
+
+        constexpr scope_guard(scope_guard &&) = default;
+
+        constexpr scope_guard &operator=(scope_guard &&) = default;
+
+        constexpr scope_guard(scope_guard &) = delete;
+
+        constexpr scope_guard &operator=(scope_guard &) = delete;
+
+        ~scope_guard() noexcept {
+            discharge();
+        }
+
+        void discharge() noexcept {
+            if (armed_) {
+                this->G::operator()();
+                armed_ = false;
+            }
+        }
+
+        constexpr void disarm() noexcept {
+            armed_ = false;
+        }
+
+        constexpr void arm() noexcept {
+            armed_ = true;
+        }
+
+        constexpr bool is_armed() const noexcept {
+            return armed_;
+        }
+
+        constexpr explicit operator bool() const noexcept {
+            return is_armed();
+        }
+
+    private:
+        bool armed_{true};
+    };
+
+    //
+    // With CTAD we do not need this
+    //
+    template<typename G>
+    inline constexpr auto make_scope_guard(G &&g) {
+        return scope_guard<G>{std::forward<G>(g)};
+    }
+
     inline void erase_tail_zeroes(std::string &str) {
         if (str.empty()) {
             return;

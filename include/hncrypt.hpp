@@ -2077,6 +2077,19 @@ namespace ncrypt {
             return status;
         }
 
+        bool open_key(wchar_t const *key_name, unsigned long legacy_key_spec, unsigned long flags, key *k) {
+            bool result{true};
+            std::error_code status{try_open_key(key_name, legacy_key_spec, flags, k)};
+            if (status == hcrypt::win32_error(ERROR_SUCCESS)) {
+            } else if (status == hcrypt::win32_error(NTE_BAD_KEYSET)) {
+                k->close();
+                result = false;
+            } else {
+                throw std::system_error(status, "NCryptOpenKey failed");
+            }
+            return result;
+        }
+
         key open_key(wchar_t const *key_name, unsigned long legacy_key_spec, unsigned long flags) {
             key new_key;
             std::error_code status{try_open_key(key_name, legacy_key_spec, flags, &new_key)};
@@ -2202,6 +2215,27 @@ namespace ncrypt {
                                     key_object_size,
                                     import_key.get_handle(),
                                     flags);
+        }
+
+        std::error_code try_delete_key(wchar_t const *key_name,
+                                       unsigned long flags = NCRYPT_SILENT_FLAG) {
+
+            ncrypt::key k;
+            std::error_code error{try_open_key(key_name, 0, 0, &k)};
+            if (error == hcrypt::win32_error(ERROR_SUCCESS)) {
+                error = k.try_delete_key(flags);
+            }
+            return error;
+        }
+
+        bool delete_key(wchar_t const *key_name,
+                        unsigned long flags = NCRYPT_SILENT_FLAG) {
+            ncrypt::key k;
+            bool result{open_key(key_name, 0, 0, &k)};
+            if (result) {
+                k.delete_key(flags);
+            } 
+            return result;
         }
 
     private:

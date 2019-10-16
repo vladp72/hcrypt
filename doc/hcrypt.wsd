@@ -1,6 +1,7 @@
 @startuml
 
 hide empty members
+'!global $inclide_notes = "y"
 
 namespace hcrypt {
 
@@ -96,6 +97,9 @@ namespace hcrypt {
         Other:
 
             round_to_block()
+
+            class scope_guard
+            make_scope_guad()
     end note
 !endif
 

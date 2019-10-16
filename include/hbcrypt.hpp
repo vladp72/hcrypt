@@ -15,6 +15,7 @@ namespace bcrypt {
         using mutable_value_type = std::remove_const_t<T>;
         constexpr static bool is_void{std::is_void_v<std::remove_cv_t<T>>};
         using reference_type =
+
             std::conditional_t<is_void, void, std::add_lvalue_reference_t<T>>;
         using pointer_type = T *;
         using mutable_pointer_type = mutable_value_type *;
