@@ -354,8 +354,7 @@ After changing mode to CCM
        //
        // Sign hash
        //       
-       hcrypt::buffer hash_signature{
-           k.sign_hash(data_hash.data(), data_hash.size())};
+       hcrypt::buffer hash_signature{k.sign_hash(data_hash.data(), data_hash.size())};
        //
        // Export public key
        //                  
@@ -364,19 +363,17 @@ After changing mode to CCM
        // Import public key
        //              
        bcrypt::algorithm_provider signing_ap{BCRYPT_ECDSA_P256_ALGORITHM};
-       bcrypt::key public_key{
-           signing_ap.import_key_pair(BCRYPT_ECCPUBLIC_BLOB,
-                                      exported_public_key.data(),
-                                      exported_public_key.size())};
+       bcrypt::key public_key{signing_ap.import_key_pair(BCRYPT_ECCPUBLIC_BLOB,
+                                                         exported_public_key.data(),
+                                                         exported_public_key.size())};
        //
        // Verify signature signing
        //       
-       BCRYPT_CODDING_ERROR_IF_NOT(
-           public_key.verify_signature(nullptr,
-                                       data_hash.data(),
-                                       data_hash.size(),
-                                       hash_signature.data(),
-                                       hash_signature.size()));
+       BCRYPT_CODDING_ERROR_IF_NOT(public_key.verify_signature(nullptr,
+                                                               data_hash.data(),
+                                                               data_hash.size(),
+                                                               hash_signature.data(),
+                                                               hash_signature.size()));
    } catch (std::system_error const &ex) {
        <handle failure>
    }
