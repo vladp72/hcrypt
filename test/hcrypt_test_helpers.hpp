@@ -35,21 +35,21 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
     if (hcrypt::is_success(status)) {
         printf("%*cname: %ws\n", offset, ' ', string_value.c_str());
     } else if (!hide_errors) {
-        printf("%*cname: error code = %x\n", offset, ' ', status.value());
+        printf("%*cname: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_block_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*cblock length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*cblock length: error code = %x\n", offset, ' ', status.value());
+        printf("%*cblock length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_chaining_mode(&string_value);
     if (hcrypt::is_success(status)) {
         printf("%*cchaining mode: %ws\n", offset, ' ', string_value.c_str());
     } else if (!hide_errors) {
-        printf("%*cchaining mode: error code = %x\n", offset, ' ', status.value());
+        printf("%*cchaining mode: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_block_size_list(&buffer_value);
@@ -61,7 +61,7 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
             printf("%*cblock[%02u] size: %lu\n", offset, ' ', idx, *block_size_cur);
         };
     } else if (!hide_errors) {
-        printf("%*cchaining mode: error code = %x\n", offset, ' ', status.value());
+        printf("%*cchaining mode: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_dh_parameters(&buffer_value);
@@ -87,7 +87,7 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
         }
 
     } else if (!hide_errors) {
-        printf("%*cDH parameter header: error code = %x\n", offset, ' ', status.value());
+        printf("%*cDH parameter header: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     BCRYPT_DSA_PARAMETER_HEADER_V2 dsa_parameter_header{};
@@ -110,28 +110,28 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
                static_cast<int>(dsa_parameter_header.Count[2]),
                static_cast<int>(dsa_parameter_header.Count[3]));
     } else if (!hide_errors) {
-        printf("%*cDSA parameter header: error code = %x\n", offset, ' ', status.value());
+        printf("%*cDSA parameter header: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_effective_key_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*ceffective key length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*ceffective key length: error code = %x\n", offset, ' ', status.value());
+        printf("%*ceffective key length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_hash_block_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*chash block length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*chash block length: error code = %x\n", offset, ' ', status.value());
+        printf("%*chash block length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_hash_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*chash length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*chash length: error code = %x\n", offset, ' ', status.value());
+        printf("%*chash length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_oid_list(&buffer_value);
@@ -156,7 +156,7 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
             ;
         }
     } else if (!hide_errors) {
-        printf("%*coid list: error code = %x\n", offset, ' ', status.value());
+        printf("%*coid list: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_initialization_vector(&buffer_value);
@@ -175,7 +175,7 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
     if (hcrypt::is_success(status)) {
         printf("%*ckey length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*ckey length: error code = %x\n", offset, ' ', status.value());
+        printf("%*ckey length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     BCRYPT_KEY_LENGTHS_STRUCT keys_length{};
@@ -188,21 +188,21 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
                keys_length.dwMaxLength,
                keys_length.dwIncrement);
     } else if (!hide_errors) {
-        printf("%*ckeys length: error code = %x\n", offset, ' ', status.value());
+        printf("%*ckeys length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_key_object_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*ckey object length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*ckey object length: error code = %x\n", offset, ' ', status.value());
+        printf("%*ckey object length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_key_strength(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*ckey strength: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*ckey strength: error code = %x\n", offset, ' ', status.value());
+        printf("%*ckey strength: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_auth_tag_lengts(&keys_length);
@@ -214,14 +214,14 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
                keys_length.dwMaxLength,
                keys_length.dwIncrement);
     } else if (!hide_errors) {
-        printf("%*cauth tag length: error code = %x\n", offset, ' ', status.value());
+        printf("%*cauth tag length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_message_block_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*cmessage block length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*cmessage block length: error code = %x\n", offset, ' ', status.value());
+        printf("%*cmessage block length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_multi_object_length(&buffer_value);
@@ -240,7 +240,7 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
             hcrypt::to_hex(buffer_value).c_str());
 
     } else if (!hide_errors) {
-        printf("%*cmulti object length: error code = %x\n", offset, ' ', status.value());
+        printf("%*cmulti object length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_dh_parameters(&buffer_value);
@@ -266,28 +266,28 @@ inline void print_bcrypt_object_properties(int offset, T &obj, bool hide_errors 
         }
 
     } else if (!hide_errors) {
-        printf("%*cDH parameter header: error code = %x\n", offset, ' ', status.value());
+        printf("%*cDH parameter header: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_object_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*cobject length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*cobject length: error code = %x\n", offset, ' ', status.value());
+        printf("%*cobject length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_padding_schemes(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*cpadding schemes: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*cpadding schemes: error code = %x\n", offset, ' ', status.value());
+        printf("%*cpadding schemes: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_signature_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*csignature length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*csignature length: error code = %x\n", offset, ' ', status.value());
+        printf("%*csignature length: error code = 0x%x\n", offset, ' ', status.value());
     }
 }
 
@@ -305,21 +305,21 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
     if (hcrypt::is_success(status)) {
         printf("%*calgorithm name: %ws\n", offset, ' ', string_value.c_str());
     } else if (!hide_errors) {
-        printf("%*calgorithm name: error code = %x\n", offset, ' ', status.value());
+        printf("%*calgorithm name: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_associated_ecdh_name(&string_value);
     if (hcrypt::is_success(status)) {
         printf("%*cecdh name: %ws\n", offset, ' ', string_value.c_str());
     } else if (!hide_errors) {
-        printf("%*cecdh name: error code = %x\n", offset, ' ', status.value());
+        printf("%*cecdh name: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_block_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*cblock length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*cblock length: error code = %x\n", offset, ' ', status.value());
+        printf("%*cblock length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_certificate(&buffer_value);
@@ -330,7 +330,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
                hcrypt::to_base64(buffer_value.data(), buffer_value.size()).c_str());
 
     } else if (!hide_errors) {
-        printf("%*ccertificate: error code = %x\n", offset, ' ', status.value());
+        printf("%*ccertificate: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_export_policy(&dword_value);
@@ -341,7 +341,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
                dword_value,
                ncrypt::export_policy_flags_to_string(dword_value).c_str());
     } else if (!hide_errors) {
-        printf("%*cexport policy: error code = %x\n", offset, ' ', status.value());
+        printf("%*cexport policy: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_implementation_flags(&dword_value);
@@ -352,7 +352,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
                dword_value,
                ncrypt::implementation_flags_to_string(dword_value).c_str());
     } else if (!hide_errors) {
-        printf("%*cimplementation flags: error code = %x\n", offset, ' ', status.value());
+        printf("%*cimplementation flags: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_key_type(&dword_value);
@@ -363,7 +363,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
                dword_value,
                ncrypt::key_type_flags_to_string(dword_value).c_str());
     } else if (!hide_errors) {
-        printf("%*ckey type: error code = %x\n", offset, ' ', status.value());
+        printf("%*ckey type: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_key_usage(&dword_value);
@@ -374,7 +374,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
                dword_value,
                ncrypt::key_usage_flags_to_string(dword_value).c_str());
     } else if (!hide_errors) {
-        printf("%*ckey usage: error code = %x\n", offset, ' ', status.value());
+        printf("%*ckey usage: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_last_modified(&ft);
@@ -384,14 +384,14 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
                ' ',
                hcrypt::filetime_to_string(ft).c_str());
     } else if (!hide_errors) {
-        printf("%*clast modified: error code = %x\n", offset, ' ', status.value());
+        printf("%*clast modified: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*clength: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*clength: error code = %x\n", offset, ' ', status.value());
+        printf("%*clength: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     NCRYPT_SUPPORTED_LENGTHS supported_lengths;
@@ -399,28 +399,28 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
     if (hcrypt::is_success(status)) {
         print(offset, supported_lengths);
     } else if (!hide_errors) {
-        printf("%*csupported length: error code = %x\n", offset, ' ', status.value());
+        printf("%*csupported length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_max_name_length(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*cmax name length: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*cmax name length: error code = %x\n", offset, ' ', status.value());
+        printf("%*cmax name length: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_name(&string_value);
     if (hcrypt::is_success(status)) {
         printf("%*cname: %ws\n", offset, ' ', string_value.c_str());
     } else if (!hide_errors) {
-        printf("%*cname: error code = %x\n", offset, ' ', status.value());
+        printf("%*cname: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_security_descriptor_supported(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*csecurity descriptor supported: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*csecurity descriptor supported: error code = %x\n",
+        printf("%*csecurity descriptor supported: error code = 0x%x\n",
                offset,
                ' ',
                status.value());
@@ -434,7 +434,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
                hcrypt::to_hex(buffer_value).c_str());
 
     } else if (!hide_errors) {
-        printf("%*ccertificate: error code = %x\n", offset, ' ', status.value());
+        printf("%*ccertificate: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_ui_policy(&buffer_value);
@@ -453,42 +453,42 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
             ui_policy->pszFriendlyName,
             ui_policy->pszDescription);
     } else if (!hide_errors) {
-        printf("%*cUI Policy: error code = %x\n", offset, ' ', status.value());
+        printf("%*cUI Policy: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_uniqie_name(&string_value);
     if (hcrypt::is_success(status)) {
         printf("%*cunique name: %ws\n", offset, ' ', string_value.c_str());
     } else if (!hide_errors) {
-        printf("%*cunique name: error code = %x\n", offset, ' ', status.value());
+        printf("%*cunique name: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_use_context(&string_value);
     if (hcrypt::is_success(status)) {
         printf("%*cuse context: %ws\n", offset, ' ', string_value.c_str());
     } else if (!hide_errors) {
-        printf("%*cuse context: error code = %x\n", offset, ' ', status.value());
+        printf("%*cuse context: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_use_count_enabled(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*cuse count enabled: %lu\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*cuse count enabled: error code = %x\n", offset, ' ', status.value());
+        printf("%*cuse count enabled: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_use_count(&ull_value);
     if (hcrypt::is_success(status)) {
         printf("%*cuse count: %llu\n", offset, ' ', ull_value);
     } else if (!hide_errors) {
-        printf("%*cuse count: error code = %x\n", offset, ' ', status.value());
+        printf("%*cuse count: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_version(&dword_value);
     if (hcrypt::is_success(status)) {
         printf("%*cversion: %lu, 0x%lx\n", offset, ' ', dword_value, dword_value);
     } else if (!hide_errors) {
-        printf("%*cversion: error code = %x\n", offset, ' ', status.value());
+        printf("%*cversion: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     HWND wnd{nullptr};
@@ -496,7 +496,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
     if (hcrypt::is_success(status)) {
         printf("%*cHWND: %lx\n", offset, ' ', dword_value);
     } else if (!hide_errors) {
-        printf("%*cHWND: error code = %x\n", offset, ' ', status.value());
+        printf("%*cHWND: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     ncrypt::storage_provider provider;
@@ -504,7 +504,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
     if (hcrypt::is_success(status)) {
         printf("%*cprovider handle: %zx\n", offset, ' ', provider.get_handle());
     } else if (!hide_errors) {
-        printf("%*cprovider handle: error code = %x\n", offset, ' ', status.value());
+        printf("%*cprovider handle: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     ncrypt::pin_id pin_id{0};
@@ -512,7 +512,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
     if (hcrypt::is_success(status)) {
         printf("%*cpin id: %lx\n", offset, ' ', pin_id);
     } else if (!hide_errors) {
-        printf("%*cpin id: error code = %x\n", offset, ' ', status.value());
+        printf("%*cpin id: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     PIN_INFO pin_info{};
@@ -531,7 +531,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
                pin_info.PinCachePolicy.dwPinCachePolicyInfo,
                ncrypt::pin_cache_policy_type_to_string(pin_info.PinCachePolicy.PinCachePolicyType));
     } else if (!hide_errors) {
-        printf("%*cpin info: error code = %x\n", offset, ' ', status.value());
+        printf("%*cpin info: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     HCERTSTORE cert_store{nullptr};
@@ -540,7 +540,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
         BCRYPT_CODDING_ERROR_IF_NOT(CertCloseStore(cert_store, 0));
         printf("%*croot cert store: %p\n", offset, ' ', cert_store);
     } else if (!hide_errors) {
-        printf("%*croot cert store: error code = %x\n", offset, ' ', status.value());
+        printf("%*croot cert store: error code = 0x%x\n", offset, ' ', status.value());
     }
 
     status = obj.try_get_user_certificate_store(&cert_store);
@@ -548,7 +548,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
         BCRYPT_CODDING_ERROR_IF_NOT(CertCloseStore(cert_store, 0));
         printf("%*cuser cert store: %p\n", offset, ' ', cert_store);
     } else if (!hide_errors) {
-        printf("%*cuser cert store: error code = %x\n", offset, ' ', status.value());    
+        printf("%*cuser cert store: error code = 0x%x\n", offset, ' ', status.value());    
     }
 
    GUID guid{};
@@ -556,6 +556,6 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
     if (hcrypt::is_success(status)) {
         printf("%*csmartcard GUID: {%s}\n", offset, ' ', hcrypt::guid_to_string(guid).c_str());
     } else if (!hide_errors) {
-        printf("%*csmartcard GUID: error code = %x\n", offset, ' ', status.value());
+        printf("%*csmartcard GUID: error code = 0x%x\n", offset, ' ', status.value());
     }
 }
