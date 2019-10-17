@@ -189,6 +189,85 @@ After changing mode to CCM
       key strength: 256
       message block length: 1
 ```
+## Hashing Data Sample
+
+```
+   try {
+       hcrypt::buffer data_to_hash;
+       data_to_hash.resize(150);
+       bcrypt::generate_random(data_to_hash.data(), data_to_hash.size());
+   
+       bcrypt::algorithm_provider provider{BCRYPT_SHA256_ALGORITHM};
+       bcrypt::hash h{provider.create_hash()};
+       h.hash_data(data_to_hash.data(), data_to_hash.size());
+       hcrypt::buffer hash_value{h.finish()};
+       printf("%*chash: %ws\n", offset + 2, ' ', hcrypt::to_hex(hash_value).c_str());
+   } catch (std::system_error const &ex) {
+       <handle failure>
+   }
+```
+
+## Encrypting Data Sample
+
+```
+
+```
+
+## Signing Data Sample
+
+```
+   unsigned char const msg[] = {
+       0x04, 0x87, 0xec, 0x66, 0xa8, 0xbf, 0x17, 0xa6, 0xe3, 0x62, 0x6f, 0x1a,
+       0x55, 0xe2, 0xaf, 0x5e, 0xbc, 0x54, 0xa4, 0xdc, 0x68, 0x19, 0x3e, 0x94,
+   };
+
+   try {
+       bcrypt::algorithm_provider hash_ap{hashing_algorithm};
+       //
+       // Hash message
+       //       
+       bcrypt::hash h{hash_ap.create_hash()};
+       h.hash_data(reinterpret_cast<char const *>(msg), sizeof(msg));
+       hcrypt::buffer data_hash{h.finish()};
+       //
+       // Generate persistent keys for signing
+       //       
+       ncrypt::storage_provider sp{MS_KEY_STORAGE_PROVIDER};
+       ncrypt::key k{sp.create_key(ecdsa_algorithm, persistent_key_name)};
+       k.finalize_key();
+       //
+       // Sign hash
+       //       
+       hcrypt::buffer hash_signature{
+           k.sign_hash(data_hash.data(), data_hash.size())};
+       //
+       // Export public key
+       //                  
+       hcrypt::buffer exported_public_key{k.export_key(BCRYPT_ECCPUBLIC_BLOB)};
+       //
+       // Import public key
+       //              
+       bcrypt::algorithm_provider signing_ap{BCRYPT_ECDSA_P256_ALGORITHM};
+       bcrypt::key public_key{
+           signing_ap.import_key_pair(BCRYPT_ECCPUBLIC_BLOB,
+                                      exported_public_key.data(),
+                                      exported_public_key.size())};
+       //
+       // Verify signature signing
+       //       
+       BCRYPT_CODDING_ERROR_IF_NOT(
+           public_key.verify_signature(nullptr,
+                                       data_hash.data(),
+                                       data_hash.size(),
+                                       hash_signature.data(),
+                                       hash_signature.size()));
+
+
+   } catch (std::system_error const &ex) {
+       <handle failure>
+   }
+```
+
 ## Class Diagrams
 
 *Note: CRTP in the diagrams stands for [Curiously recurring template pattern](https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)*
