@@ -189,7 +189,7 @@ After changing mode to CCM
       key strength: 256
       message block length: 1
 ```
-## Hashing Data Sample
+## Hashing Data
 
 ```
    try {
@@ -207,13 +207,128 @@ After changing mode to CCM
    }
 ```
 
-## Encrypting Data Sample
+## Signing Data Using Symmetric Key
+
+```
+    unsigned char const key[] = {
+        0x1b, 0x20, 0x5a, 0x9e, 0x2b, 0xe3, 0xfe, 0x85, 0x9c, 0x37, 0xf1,
+        0xaf, 0xfe, 0x81, 0x88, 0x92, 0x9c, 0x37, 0xf1, 0xaf, 0xfe, 0x81,
+        0x88, 0x92, 0x9c, 0x37, 0xf1, 0xaf, 0xfe, 0x81, 0x88, 0x92,
+    };
+
+    try {
+        bcrypt::algorithm_provider ap{BCRYPT_AES_ALGORITHM};
+        ap.set_chaining_mode(BCRYPT_CHAIN_MODE_CCM);
+
+        bcrypt::key k{ap.generate_symmetric_key(
+                      reinterpret_cast<char const *>(key), 
+                      32)};
+  
+        // The data to be GMAC'd. It is not encrypted.
+        std::string_view aad(
+            "Not so secret additionally authenticated data");
+
+        UCHAR iv[12] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc};
+        UCHAR tag[16] = {0};
+
+        BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO aadInfo;
+        BCRYPT_INIT_AUTH_MODE_INFO(aadInfo);
+        aadInfo.pbNonce = iv;
+        aadInfo.cbNonce = sizeof(iv);
+        aadInfo.pbAuthData = reinterpret_cast<UCHAR *>(const_cast<char *>(&aad[0]));
+        aadInfo.cbAuthData = static_cast<ULONG>(aad.size());
+        aadInfo.cbAAD = static_cast<ULONG>(aad.size());
+        aadInfo.pbTag = tag;
+        aadInfo.cbTag = sizeof(tag);
+
+        size_t bytes_written{0};
+        k.encrypt(nullptr, 0, &aadInfo, nullptr, 0, nullptr, 0, &bytes_written);
+
+        printf("Hash %S\n", hcrypt::to_hex(std::begin(tag), std::end(tag)).c_str());        
+
+    } catch (std::system_error const &ex) {
+        <handle error>
+    }
 
 ```
 
+## Encrypting and Signing Using Symmetric Key
+
+```
+    unsigned char const plain_text[] = "Text1 to encrypt";
+
+    unsigned char const iv[] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+
+    unsigned char const key128[] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+
+     try {
+         bcrypt::algorithm_provider ap{BCRYPT_AES_ALGORITHM};
+         ap.set_chaining_mode(BCRYPT_CHAIN_MODE_CBC);
+
+         size_t block_length{ap.get_block_length()};
+
+         hcrypt::buffer iv_buffer{std::begin(iv), std::begin(iv) + block_length};
+
+         bcrypt::key k_a{ap.generate_symmetric_key(reinterpret_cast<char const *>(key128), 16)};
+         
+         hcrypt::buffer exported_key{k_a.export_key(BCRYPT_OPAQUE_KEY_BLOB)};
+
+         size_t data_size{sizeof(plain_text)};
+         size_t block_size{ap.get_block_length()};
+         size_t padded_size{hcrypt::round_to_block(data_size, block_size)};
+         hcrypt::buffer data_buffer(padded_size);
+         std::copy(std::begin(plain_text), std::end(plain_text), std::begin(data_buffer));
+
+         size_t bytes_encrypted{0};
+
+         //
+         // AES is a block algorithm, and BCRYPT_BLOCK_PADDING
+         // tells it that this is last block that might not be
+         // block alligned, and have to be padded
+         //
+
+         k_a.encrypt(data_buffer.data(),
+                     data_size,
+                     nullptr,
+                     is_ecb_mode ? nullptr : iv_buffer.data(),
+                     is_ecb_mode ? 0 : iv_buffer.size(),
+                     data_buffer.data(),
+                     data_buffer.size(),
+                     &bytes_encrypted,
+                     BCRYPT_BLOCK_PADDING);
+
+         bcrypt::key k_b{ap.import_symetric_key(nullptr,
+                                                BCRYPT_OPAQUE_KEY_BLOB,
+                                                exported_key.data(),
+                                                exported_key.size())};
+
+         iv_buffer.assign(std::begin(iv), std::begin(iv) + block_length);
+
+         size_t bytes_decrypted{0};
+
+         if (k_b.decrypt(data_buffer.data(),
+                         data_buffer.size(),
+                         nullptr,
+                         iv_buffer.data(),
+                         iv_buffer.size(),
+                         data_buffer.data(),
+                         data_buffer.size(),
+                         &bytes_decrypted,
+                         BCRYPT_BLOCK_PADDING)) {
+              
+             <decryption succeeded>
+         } else {
+             <decryption failed>
+         }
+
+     } catch (std::system_error const &ex) {
+         <handle error>;
+     }
 ```
 
-## Signing Data Sample
+## Signing Using Persistent Assymetric Sample
 
 ```
    unsigned char const msg[] = {
