@@ -165,7 +165,7 @@ After changing mode to CCM
       object length: 654
 ```
 
-  We can create kleys and print its properties
+  Create keys and print its properties
   
 ```
    unsigned char const key[] = {
