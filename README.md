@@ -6,11 +6,15 @@ This is a header only library for Windows CNG API that includes functions from n
 
 [CNG Bcrypt algorithm providers](https://docs.microsoft.com/en-us/windows/win32/seccertenroll/cng-cryptographic-algorithm-providers)
 
+[CNG Bcrypt cryptography primitive property identifiers](https://docs.microsoft.com/en-us/windows/win32/seccng/cng-property-identifiers)
+
 [CNG algorithm identifiers](https://docs.microsoft.com/en-us/windows/win32/seccng/cng-algorithm-identifiers) 
 
 [MSDN documentation for ncrypt.h](https://docs.microsoft.com/en-us/windows/win32/api/ncrypt/)
 
 [CNG Ncrypt storage providers](https://docs.microsoft.com/en-us/windows/win32/seccertenroll/cng-key-storage-providers) 
+
+[CNG Ncrypt storage property identifiers](https://docs.microsoft.com/en-us/windows/win32/seccng/key-storage-property-identifiers)
 
 [MSDN CNG samples](https://docs.microsoft.com/en-us/windows/win32/seccng/typical-cng-programming?redirectedfrom=MSDN)
 
