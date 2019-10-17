@@ -8,10 +8,7 @@ void print_is_fips_complience_on() {
 
         printf("FIPS  complience on = %s\n", fips_complience_on ? "Yes" : "No");
     } catch (std::system_error const &ex) {
-        printf("is_fips_complience_on, error code = 0x%x, %s, %s\n",
-               ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
-               ex.what());
+        printf("is_fips_complience_on, error code = 0x%x, %s\n", ex.code().value(), ex.what());
     }
     printf("----------------\n");
 }

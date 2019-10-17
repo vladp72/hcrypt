@@ -32,11 +32,10 @@ namespace {
 
                                 } catch (std::system_error const &ex) {
                                     printf("%*cenum_crypto_context_function, "
-                                           "error code = 0x%x, %s, %s\n",
+                                           "error code = 0x%x, %s\n",
                                            offset,
                                            ' ',
                                            ex.code().value(),
-                                           hcrypt::status_to_string(ex.code().value()),
                                            ex.what());
                                 }
 
@@ -45,11 +44,10 @@ namespace {
 
                     } catch (std::system_error const &ex) {
                         printf("%*cenum_crypto_context_function, error code = "
-                               "0x%x, %s, %s\n",
+                               "0x%x, %s\n",
                                offset,
                                ' ',
                                ex.code().value(),
-                               hcrypt::status_to_string(ex.code().value()),
                                ex.what());
                     }
                     return true;
@@ -69,10 +67,7 @@ void print_crypto_contexts() {
         print_crypto_context(offset + 2, CRYPT_DOMAIN);
 
     } catch (std::system_error const &ex) {
-        printf("print_crypto_contexts, error code = 0x%x, %s, %s\n",
-               ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
-               ex.what());
+        printf("print_crypto_contexts, error code = 0x%x, %s\n", ex.code().value(), ex.what());
     }
     printf("----------------\n");
 }

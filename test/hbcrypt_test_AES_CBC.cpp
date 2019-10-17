@@ -158,10 +158,7 @@ namespace {
             }
 
         } catch (std::system_error const &ex) {
-            printf("test_aes_cbc, error code = 0x%x, %s, %s\n",
-                   ex.code().value(),
-                   hcrypt::status_to_string(ex.code().value()),
-                   ex.what());
+            printf("test_aes_cbc, error code = 0x%x, %s\n", ex.code().value(), ex.what());
         }
         printf("----------------\n");
     }
@@ -183,10 +180,7 @@ void test_aes_cbc() {
         });
 
     } catch (std::system_error const &ex) {
-        printf("test_aes_cmac, error code = 0x%x, %s, %s\n",
-               ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
-               ex.what());
+        printf("test_aes_cmac, error code = 0x%x, %s\n", ex.code().value(), ex.what());
     }
     printf("----------------\n");
 }

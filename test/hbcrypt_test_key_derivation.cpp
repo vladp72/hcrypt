@@ -154,12 +154,10 @@ namespace {
             printf("%*cKey: %S\n", offset + 2, ' ', hcrypt::to_hex(derived_key).c_str());
 
         } catch (std::system_error const &ex) {
-            printf("%*ctest_sdk_sample_key_derivation, error code = 0x%x, %s, "
-                   "%s\n",
+            printf("%*ctest_sdk_sample_key_derivation, error code = 0x%x, %s\n",
                    offset,
                    ' ',
                    ex.code().value(),
-                   hcrypt::status_to_string(ex.code().value()),
                    ex.what());
         }
     }
@@ -178,9 +176,8 @@ void test_sample_key_derivation() {
         }
 
     } catch (std::system_error const &ex) {
-        printf("test_sdk_sample_key_derivation, error code = 0x%x, %s, %s\n",
+        printf("test_sdk_sample_key_derivation, error code = 0x%x, %s\n",
                ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
                ex.what());
     }
     printf("\n----------------\n");

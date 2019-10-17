@@ -12,11 +12,10 @@ void test_ncrypt_providers() {
         });
 
     } catch (std::system_error const &ex) {
-        printf("%*ctest_ncrypt_providers, error code = ox%x, %s, %s\n",
+        printf("%*ctest_ncrypt_providers, error code = ox%x, %s\n",
                offset,
                ' ',
                ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
                ex.what());
     }
     printf("\n----------------\n");

@@ -32,16 +32,15 @@ void enum_keys(int offset, NCryptProviderName const &provider_name, unsigned lon
                        offset + 2,
                        ' ',
                        key_status.value(),
-                       hcrypt::status_to_string(key_status.value()));
+                       key_status.message().c_str());
             }
         }
 
     } catch (std::system_error const &ex) {
-        printf("%*cenum_keys, error code = 0x%x, %s, %s\n",
+        printf("%*cenum_keys, error code = 0x%x, %s\n",
                offset + 2,
                ' ',
                ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
                ex.what());
     }
 }
@@ -58,11 +57,10 @@ void test_ncrypt_enum_keys() {
         });
 
     } catch (std::system_error const &ex) {
-        printf("%*ctest_ncrypt_providers, error code = 0x%x, %s, %s\n",
+        printf("%*ctest_ncrypt_providers, error code = 0x%x, %s\n",
                offset,
                ' ',
                ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
                ex.what());
     }
     printf("\n----------------\n");

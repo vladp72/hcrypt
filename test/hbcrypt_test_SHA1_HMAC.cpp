@@ -54,10 +54,7 @@ namespace {
             }
 
         } catch (std::system_error const &ex) {
-            printf("test_sha1_hmac, error code = 0x%x, %s, %s\n",
-                   ex.code().value(),
-                   hcrypt::status_to_string(ex.code().value()),
-                   ex.what());
+            printf("test_sha1_hmac, error code = 0x%x, %s\n", ex.code().value(), ex.what());
         }
         printf("----------------\n");
     }
@@ -75,10 +72,7 @@ void test_sha1_hmac() {
         });
 
     } catch (std::system_error const &ex) {
-        printf("test_sha1_hmac, error code = 0x%x, %s, %s\n",
-               ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
-               ex.what());
+        printf("test_sha1_hmac, error code = 0x%x, %s\n", ex.code().value(), ex.what());
     }
     printf("----------------\n");
 }

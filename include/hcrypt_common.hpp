@@ -60,7 +60,6 @@ namespace hcrypt {
     template<typename G>
     class scope_guard: private G {
     public:
-
         explicit constexpr scope_guard(G const &g)
             : G{g} {
         }
@@ -591,6 +590,11 @@ namespace hcrypt {
     inline DWORD nt_status_to_win32_error_ex(long const status) {
         return RtlNtStatusToDosError(status);
     }
+
+    inline win32_error nt_status_to_win32_error(long const status) {
+        return win32_error(nt_status_to_win32_error_ex(status));
+    }
+
 } // namespace hcrypt
 
 namespace std {
@@ -640,7 +644,6 @@ namespace hcrypt {
                    (std::system_category() == e.category() &&
                     nt_status_to_win32_error_ex(static_cast<long>(condition)) == e.value());
         }
-
     };
 
     inline error_category_t const error_category_singleton;
@@ -684,11 +687,11 @@ namespace hcrypt {
     using buffer = std::vector<char>;
 
     [[nodiscard]] inline std::error_code try_resize(buffer &b, size_t new_size) noexcept {
-        status s{status::success};
+        std::error_code s{hcrypt::win32_error(ERROR_SUCCESS)};
         try {
             b.resize(new_size);
         } catch (std::bad_alloc const &) {
-            s = status::no_memory;
+            s = win32_error(ERROR_NOT_ENOUGH_MEMORY);
         } catch (...) {
             BCRYPT_CRASH_APPLICATION();
         }
@@ -700,11 +703,11 @@ namespace hcrypt {
     }
 
     [[nodiscard]] inline std::error_code try_resize(std::wstring &b, size_t new_size) noexcept {
-        std::error_code s{status::success};
+        std::error_code s{hcrypt::win32_error(ERROR_SUCCESS)};
         try {
             b.resize(new_size);
         } catch (std::bad_alloc const &) {
-            s = status::no_memory;
+            s = win32_error(ERROR_NOT_ENOUGH_MEMORY);
         } catch (...) {
             BCRYPT_CRASH_APPLICATION();
         }
@@ -1214,32 +1217,34 @@ namespace hcrypt {
     }
 
     inline std::string guid_to_string(GUID const &guid) {
-        return make_string("%08lX-%04hX-%04hX-%02X%02X-%02X%02X%02X%02X%02X%02X",
-                           guid.Data1,
-                           guid.Data2,
-                           guid.Data3,
-                           static_cast<int>(guid.Data4[0]),
-                           static_cast<int>(guid.Data4[1]),
-                           static_cast<int>(guid.Data4[2]),
-                           static_cast<int>(guid.Data4[3]),
-                           static_cast<int>(guid.Data4[4]),
-                           static_cast<int>(guid.Data4[5]),
-                           static_cast<int>(guid.Data4[6]),
-                           static_cast<int>(guid.Data4[7]));
+        return make_string(
+            "%08lX-%04hX-%04hX-%02X%02X-%02X%02X%02X%02X%02X%02X",
+            guid.Data1,
+            guid.Data2,
+            guid.Data3,
+            static_cast<int>(guid.Data4[0]),
+            static_cast<int>(guid.Data4[1]),
+            static_cast<int>(guid.Data4[2]),
+            static_cast<int>(guid.Data4[3]),
+            static_cast<int>(guid.Data4[4]),
+            static_cast<int>(guid.Data4[5]),
+            static_cast<int>(guid.Data4[6]),
+            static_cast<int>(guid.Data4[7]));
     }
 
     inline std::wstring guid_to_wstring(GUID const &guid) {
-        return make_wstring(L"%08lX-%04hX-%04hX-%02X%02X-%02X%02X%02X%02X%02X%02X",
-                            guid.Data1,
-                            guid.Data2,
-                            guid.Data3,
-                            static_cast<int>(guid.Data4[0]),
-                            static_cast<int>(guid.Data4[1]),
-                            static_cast<int>(guid.Data4[2]),
-                            static_cast<int>(guid.Data4[3]),
-                            static_cast<int>(guid.Data4[4]),
-                            static_cast<int>(guid.Data4[5]),
-                            static_cast<int>(guid.Data4[6]),
-                            static_cast<int>(guid.Data4[7]));
+        return make_wstring(
+            L"%08lX-%04hX-%04hX-%02X%02X-%02X%02X%02X%02X%02X%02X",
+            guid.Data1,
+            guid.Data2,
+            guid.Data3,
+            static_cast<int>(guid.Data4[0]),
+            static_cast<int>(guid.Data4[1]),
+            static_cast<int>(guid.Data4[2]),
+            static_cast<int>(guid.Data4[3]),
+            static_cast<int>(guid.Data4[4]),
+            static_cast<int>(guid.Data4[5]),
+            static_cast<int>(guid.Data4[6]),
+            static_cast<int>(guid.Data4[7]));
     }
 } // namespace hcrypt

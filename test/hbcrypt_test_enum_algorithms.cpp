@@ -3,11 +3,12 @@
 namespace {
     void print_algorithms(int offset, ULONG ciypher_operations) {
         try {
-            printf("%*c--Querying algorithms for cipher operations - %lu, %ws\n",
-                   offset,
-                   ' ',
-                   ciypher_operations,
-                   bcrypt::algorithm_operations_to_string(ciypher_operations).c_str());
+            printf(
+                "%*c--Querying algorithms for cipher operations - %lu, %ws\n",
+                offset,
+                ' ',
+                ciypher_operations,
+                bcrypt::algorithm_operations_to_string(ciypher_operations).c_str());
 
             bcrypt::find_first(
                 bcrypt::enum_algorithms(ciypher_operations),
@@ -17,10 +18,7 @@ namespace {
                 });
 
         } catch (std::system_error const &ex) {
-            printf("print_algorithms, error code = 0x%x, %s, %s\n",
-                   ex.code().value(),
-                   hcrypt::status_to_string(ex.code().value()),
-                   ex.what());
+            printf("print_algorithms, error code = 0x%x, %s\n", ex.code().value(), ex.what());
         }
     }
 } // namespace
@@ -38,10 +36,7 @@ void print_algorithms() {
 
         print_algorithms(offset + 2, cypher_operations);
     } catch (std::system_error const &ex) {
-        printf("resolve_providers, error code = 0x%x, %s, %s\n",
-               ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
-               ex.what());
+        printf("resolve_providers, error code = 0x%x, %s\n", ex.code().value(), ex.what());
     }
     printf("----------------\n");
 }

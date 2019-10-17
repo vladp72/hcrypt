@@ -63,12 +63,8 @@ int main() {
         test_ecdsa();
 
     } catch (std::system_error const &ex) {
-        printf("Error code = 0x%x, %s, %s\n",
-               ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
-               ex.what());
+        printf("Error code = 0x%x, %s\n", ex.code().value(), ex.what());
     } catch (std::exception const &ex) {
-        printf("Exception = %s\n",
-               ex.what());
+        printf("Exception = %s\n", ex.what());
     }
 }

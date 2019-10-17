@@ -99,7 +99,7 @@ namespace bcrypt {
     [[nodiscard]] inline std::error_code try_enum_registered_providers(providers_cptr *providers) noexcept {
         CRYPT_PROVIDERS *buffer{nullptr};
         unsigned long element_count{0};
-        std::error_code status{static_cast<hcrypt::status>(
+        std::error_code status{hcrypt::nt_status_to_win32_error(
             BCryptEnumRegisteredProviders(&element_count, &buffer))};
         if (hcrypt::is_success(status)) {
             providers->attach(buffer);
@@ -145,7 +145,7 @@ namespace bcrypt {
         provider_registration_cptr *registartion) noexcept {
         CRYPT_PROVIDER_REG *registration_buffer{nullptr};
         unsigned long buffer_size{0};
-        std::error_code status{static_cast<hcrypt::status>(BCryptQueryProviderRegistration(
+        std::error_code status{hcrypt::nt_status_to_win32_error(BCryptQueryProviderRegistration(
             provider, mode, itf_id, &buffer_size, &registration_buffer))};
         if (hcrypt::is_success(status)) {
             if (buffer_size) {
@@ -180,7 +180,7 @@ namespace bcrypt {
         provider_registration_refs_cptr *registration) noexcept {
         CRYPT_PROVIDER_REFS *registration_buffer{nullptr};
         unsigned long buffer_size{0};
-        std::error_code status{static_cast<hcrypt::status>(BCryptResolveProviders(
+        std::error_code status{hcrypt::nt_status_to_win32_error(BCryptResolveProviders(
             context, itf_id, function, provider, mode, flags, &buffer_size, &registration_buffer))};
         if (hcrypt::is_success(status)) {
             if (buffer_size) {
@@ -234,7 +234,7 @@ namespace bcrypt {
         unsigned long operations, algorithm_identifiers_t *algorithms) noexcept {
         BCRYPT_ALGORITHM_IDENTIFIER *algorithms_buffer{nullptr};
         unsigned long algorithms_element_count{0};
-        std::error_code status{static_cast<hcrypt::status>(BCryptEnumAlgorithms(
+        std::error_code status{hcrypt::nt_status_to_win32_error(BCryptEnumAlgorithms(
             operations, &algorithms_element_count, &algorithms_buffer, 0))};
         if (hcrypt::is_success(status)) {
             algorithms->first.attach(algorithms_buffer);
@@ -276,7 +276,7 @@ namespace bcrypt {
         unsigned long table, crypto_context_cptr *crypto_contexts) noexcept {
         CRYPT_CONTEXTS *buffer{nullptr};
         unsigned long buffer_size{0};
-        std::error_code status{static_cast<hcrypt::status>(
+        std::error_code status{hcrypt::nt_status_to_win32_error(
             BCryptEnumContexts(table, &buffer_size, &buffer))};
         if (hcrypt::is_success(status)) {
             crypto_contexts->attach(buffer);
@@ -322,7 +322,7 @@ namespace bcrypt {
         crypto_context_function_cptr *crypto_context_functions) noexcept {
         CRYPT_CONTEXT_FUNCTIONS *buffer{nullptr};
         unsigned long buffer_size{0};
-        std::error_code status{static_cast<hcrypt::status>(BCryptEnumContextFunctions(
+        std::error_code status{hcrypt::nt_status_to_win32_error(BCryptEnumContextFunctions(
             table, crypto_context, itf_id, &buffer_size, &buffer))};
         if (hcrypt::is_success(status)) {
             crypto_context_functions->attach(buffer);
@@ -374,7 +374,7 @@ namespace bcrypt {
         crypto_context_function_providers_cptr *crypto_context_function_providers) noexcept {
         CRYPT_CONTEXT_FUNCTION_PROVIDERS *buffer{nullptr};
         unsigned long buffer_size{0};
-        std::error_code status{static_cast<hcrypt::status>(BCryptEnumContextFunctionProviders(
+        std::error_code status{hcrypt::nt_status_to_win32_error(BCryptEnumContextFunctionProviders(
             table, crypto_context, itf_id, function, &buffer_size, &buffer))};
         if (hcrypt::is_success(status)) {
             crypto_context_function_providers->attach(buffer);
@@ -420,7 +420,7 @@ namespace bcrypt {
     [[nodiscard]] inline std::error_code try_is_fips_complience_on(bool *complience_on) noexcept {
         BOOLEAN flag{false};
         std::error_code status{
-            static_cast<hcrypt::status>(BCryptGetFipsAlgorithmMode(&flag))};
+            hcrypt::nt_status_to_win32_error(BCryptGetFipsAlgorithmMode(&flag))};
         *complience_on = flag ? true : false;
         return status;
     }
@@ -656,7 +656,7 @@ namespace bcrypt {
         char *buffer,
         size_t buffer_size,
         use_entropy_in_buffer use_buffer = use_entropy_in_buffer::no) noexcept {
-        std::error_code status{static_cast<hcrypt::status>(BCryptGenRandom(
+        std::error_code status{hcrypt::nt_status_to_win32_error(BCryptGenRandom(
             nullptr,
             reinterpret_cast<unsigned char *>(buffer),
             static_cast<unsigned long>(buffer_size),
@@ -697,7 +697,7 @@ namespace bcrypt {
                                                        size_t buffer_size,
                                                        size_t *rezult_size) const noexcept {
             unsigned long tmp_rezult_size{0};
-            std::error_code status{static_cast<hcrypt::status>(
+            std::error_code status{hcrypt::nt_status_to_win32_error(
                 BCryptGetProperty(get_object_handle(),
                                   property_name,
                                   reinterpret_cast<unsigned char *>(buffer),
@@ -710,7 +710,7 @@ namespace bcrypt {
 
         [[nodiscard]] std::error_code try_get_property(wchar_t const *property_name,
                                                        hcrypt::buffer *buffer) const noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
             for (;;) {
                 size_t rezult_size{0};
                 bool empty_buffer{buffer->empty()};
@@ -725,7 +725,7 @@ namespace bcrypt {
                     } else {
                         status = hcrypt::try_resize(buffer, rezult_size);
                     }
-                } else if (hcrypt::status::buffer_too_small == status) {
+                } else if (ERROR_INSUFFICIENT_BUFFER == status.value()) {
                     status = hcrypt::try_resize(buffer, rezult_size);
                 } else {
                     break;
@@ -736,7 +736,7 @@ namespace bcrypt {
 
         [[nodiscard]] std::error_code try_get_property(wchar_t const *property_name,
                                                        std::wstring *buffer) const noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             for (;;) {
                 size_t rezult_size{0};
@@ -758,7 +758,7 @@ namespace bcrypt {
                         status = hcrypt::try_resize(
                             buffer, (rezult_size / sizeof(wchar_t)));
                     }
-                } else if (hcrypt::status::buffer_too_small == status) {
+                } else if (ERROR_INSUFFICIENT_BUFFER == status.value()) {
                     status = hcrypt::try_resize(buffer, rezult_size / sizeof(wchar_t));
                 } else {
                     break;
@@ -826,7 +826,7 @@ namespace bcrypt {
         [[nodiscard]] std::error_code try_set_property(wchar_t const *property_name,
                                                        char const *buffer,
                                                        size_t buffer_size) {
-            std::error_code status{static_cast<hcrypt::status>(BCryptSetProperty(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptSetProperty(
                 get_object_handle(),
                 property_name,
                 reinterpret_cast<unsigned char *>(const_cast<char *>(buffer)),
@@ -1187,7 +1187,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]] std::error_code try_duplicate_to(hash *hash) const noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
             if (hash != this) {
                 unsigned long hash_size{0};
                 status = try_get_object_length(&hash_size);
@@ -1205,7 +1205,7 @@ namespace bcrypt {
 
                 BCRYPT_HASH_HANDLE h{nullptr};
 
-                status = static_cast<hcrypt::status>(BCryptDuplicateHash(
+                status = hcrypt::nt_status_to_win32_error(BCryptDuplicateHash(
                     h_,
                     &h,
                     reinterpret_cast<unsigned char *>(b.data()),
@@ -1231,7 +1231,7 @@ namespace bcrypt {
 
             BCRYPT_HASH_HANDLE h{nullptr};
 
-            std::error_code status{static_cast<hcrypt::status>(
+            std::error_code status{hcrypt::nt_status_to_win32_error(
                 BCryptDuplicateHash(h_,
                                     &h,
                                     reinterpret_cast<unsigned char *>(b.data()),
@@ -1250,7 +1250,8 @@ namespace bcrypt {
 
         void close() noexcept {
             if (is_valid()) {
-                std::error_code status{static_cast<hcrypt::status>(BCryptDestroyHash(h_))};
+                std::error_code status{
+                    hcrypt::nt_status_to_win32_error(BCryptDestroyHash(h_))};
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
                 h_ = nullptr;
                 b_.clear();
@@ -1258,7 +1259,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]] std::error_code try_hash_data(char const *buffer, size_t buffer_length) {
-            return static_cast<hcrypt::status>(BCryptHashData(
+            return hcrypt::nt_status_to_win32_error(BCryptHashData(
                 h_,
                 reinterpret_cast<unsigned char *>(const_cast<char *>(buffer)),
                 static_cast<unsigned long>(buffer_length),
@@ -1275,7 +1276,7 @@ namespace bcrypt {
 
         [[nodiscard]] std::error_code try_process_multiple_operations(
             BCRYPT_MULTI_HASH_OPERATION const *operations, size_t operations_count) {
-            return static_cast<hcrypt::status>(BCryptProcessMultiOperations(
+            return hcrypt::nt_status_to_win32_error(BCryptProcessMultiOperations(
                 h_,
                 BCRYPT_OPERATION_TYPE_HASH,
                 reinterpret_cast<void *>(const_cast<BCRYPT_MULTI_HASH_OPERATION *>(operations)),
@@ -1304,7 +1305,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]] std::error_code try_finish(char *output, size_t output_length) {
-            return static_cast<hcrypt::status>(
+            return hcrypt::nt_status_to_win32_error(
                 BCryptFinishHash(h_,
                                  reinterpret_cast<unsigned char *>(output),
                                  static_cast<unsigned long>(output_length),
@@ -1312,7 +1313,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]] std::error_code try_finish(hcrypt::buffer *b) {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             unsigned long hash_length{0};
             status = try_get_hash_length(&hash_length);
@@ -1425,7 +1426,8 @@ namespace bcrypt {
 
         void close() noexcept {
             if (is_valid()) {
-                std::error_code status{static_cast<hcrypt::status>(BCryptDestroySecret(h_))};
+                std::error_code status{
+                    hcrypt::nt_status_to_win32_error(BCryptDestroySecret(h_))};
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
                 h_ = nullptr;
             }
@@ -1434,11 +1436,11 @@ namespace bcrypt {
         [[nodiscard]] std::error_code try_derive_key(wchar_t const *key_derivation_function,
                                                      BCryptBufferDesc *parameters_list,
                                                      hcrypt::buffer *b) noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             unsigned long key_size{0};
 
-            status = static_cast<hcrypt::status>(BCryptDeriveKey(
+            status = hcrypt::nt_status_to_win32_error(BCryptDeriveKey(
                 h_, key_derivation_function, parameters_list, nullptr, 0, &key_size, 0));
 
             if (hcrypt::is_failure(status)) {
@@ -1450,7 +1452,7 @@ namespace bcrypt {
                 return status;
             }
 
-            status = static_cast<hcrypt::status>(
+            status = hcrypt::nt_status_to_win32_error(
                 BCryptDeriveKey(h_,
                                 key_derivation_function,
                                 parameters_list,
@@ -1468,11 +1470,11 @@ namespace bcrypt {
 
         hcrypt::buffer derive_key(wchar_t const *key_derivation_function,
                                   BCryptBufferDesc *parameters_list = nullptr) {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
             unsigned long key_size{0};
             hcrypt::buffer b;
 
-            status = static_cast<hcrypt::status>(BCryptDeriveKey(
+            status = hcrypt::nt_status_to_win32_error(BCryptDeriveKey(
                 h_, key_derivation_function, parameters_list, nullptr, 0, &key_size, 0));
 
             if (hcrypt::is_failure(status)) {
@@ -1481,7 +1483,7 @@ namespace bcrypt {
 
             b.resize(key_size);
 
-            status = static_cast<hcrypt::status>(
+            status = hcrypt::nt_status_to_win32_error(
                 BCryptDeriveKey(h_,
                                 key_derivation_function,
                                 parameters_list,
@@ -1568,7 +1570,7 @@ namespace bcrypt {
         }
 
         [[nodiscard]] std::error_code try_duplicate_to(key *key) const noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             if (key != this) {
                 unsigned long key_size{0};
@@ -1586,7 +1588,7 @@ namespace bcrypt {
 
                 BCRYPT_KEY_HANDLE h{nullptr};
 
-                status = static_cast<hcrypt::status>(BCryptDuplicateKey(
+                status = hcrypt::nt_status_to_win32_error(BCryptDuplicateKey(
                     h_,
                     &h,
                     reinterpret_cast<unsigned char *>(b.data()),
@@ -1613,7 +1615,7 @@ namespace bcrypt {
 
             BCRYPT_KEY_HANDLE h{nullptr};
 
-            std::error_code status{static_cast<hcrypt::status>(
+            std::error_code status{hcrypt::nt_status_to_win32_error(
                 BCryptDuplicateKey(h_,
                                    &h,
                                    reinterpret_cast<unsigned char *>(b.data()),
@@ -1632,7 +1634,8 @@ namespace bcrypt {
 
         void close() noexcept {
             if (is_valid()) {
-                std::error_code status{static_cast<hcrypt::status>(BCryptDestroyKey(h_))};
+                std::error_code status{
+                    hcrypt::nt_status_to_win32_error(BCryptDestroyKey(h_))};
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
                 h_ = nullptr;
                 b_.clear();
@@ -1641,7 +1644,7 @@ namespace bcrypt {
 
         [[nodiscard]] std::error_code try_finalize_key_pair() {
             std::error_code status{
-                static_cast<hcrypt::status>(BCryptFinalizeKeyPair(h_, 0))};
+                hcrypt::nt_status_to_win32_error(BCryptFinalizeKeyPair(h_, 0))};
             return status;
         }
 
@@ -1657,7 +1660,7 @@ namespace bcrypt {
                                                      hcrypt::buffer *b) noexcept {
             unsigned long buffer_size{0};
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptExportKey(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptExportKey(
                 h_, export_key_protector, blob_type, nullptr, 0, &buffer_size, 0))};
             if (hcrypt::is_failure(status)) {
                 return status;
@@ -1668,7 +1671,7 @@ namespace bcrypt {
                 return status;
             }
 
-            status = static_cast<hcrypt::status>(BCryptExportKey(
+            status = hcrypt::nt_status_to_win32_error(BCryptExportKey(
                 h_,
                 export_key_protector,
                 blob_type,
@@ -1695,7 +1698,7 @@ namespace bcrypt {
             hcrypt::buffer b;
             unsigned long buffer_size{0};
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptExportKey(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptExportKey(
                 h_, export_key_protector, blob_type, nullptr, 0, &buffer_size, 0))};
             if (hcrypt::is_failure(status)) {
                 throw std::system_error(status, "BCryptExportKey failed");
@@ -1703,7 +1706,7 @@ namespace bcrypt {
 
             b.resize(buffer_size);
 
-            status = static_cast<hcrypt::status>(BCryptExportKey(
+            status = hcrypt::nt_status_to_win32_error(BCryptExportKey(
                 h_,
                 export_key_protector,
                 blob_type,
@@ -1732,7 +1735,7 @@ namespace bcrypt {
                                                          unsigned long flags = 0) noexcept {
             ULONG generated_key_length_tmp{0};
 
-            std::error_code status{static_cast<hcrypt::status>(
+            std::error_code status{hcrypt::nt_status_to_win32_error(
                 BCryptKeyDerivation(h_,
                                     parameter_list,
                                     reinterpret_cast<unsigned char *>(key_buffer),
@@ -1751,7 +1754,7 @@ namespace bcrypt {
                                                          BCryptBufferDesc *parameter_list,
                                                          unsigned long flags,
                                                          hcrypt::buffer *b) noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             size_t generated_key_size{0};
             status = hcrypt::try_resize(b, desired_key_size);
@@ -1823,7 +1826,7 @@ namespace bcrypt {
             ;
             unsigned long buffer_size{0};
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptSignHash(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptSignHash(
                 h_,
                 padding_info,
                 reinterpret_cast<unsigned char *>(const_cast<char *>(hash_value_to_sign)),
@@ -1845,7 +1848,7 @@ namespace bcrypt {
                                                     void *padding_info,
                                                     unsigned long flags,
                                                     hcrypt::buffer *b) noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             size_t buffer_size{0};
 
@@ -1914,7 +1917,7 @@ namespace bcrypt {
                                                            char *signature,
                                                            size_t signature_size,
                                                            unsigned long flags = 0) noexcept {
-            return static_cast<hcrypt::status>(BCryptVerifySignature(
+            return hcrypt::nt_status_to_win32_error(BCryptVerifySignature(
                 h_,
                 const_cast<void *>(padding_info),
                 reinterpret_cast<unsigned char *>(const_cast<char *>(hash)),
@@ -1934,7 +1937,7 @@ namespace bcrypt {
                 padding_info, hash, hash_size, signature, signature_size, flags);
 
             if (hcrypt::is_failure(status)) {
-                if (hcrypt::status::invalid_signature == status) {
+                if (NTE_BAD_SIGNATURE == status.value()) {
                     return false;
                 }
 
@@ -1954,7 +1957,7 @@ namespace bcrypt {
                                                   size_t *output_expected_length,
                                                   unsigned long flags = 0) {
             unsigned long output_expected_length_tmp{0};
-            std::error_code status{static_cast<hcrypt::status>(BCryptEncrypt(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptEncrypt(
                 h_,
                 reinterpret_cast<unsigned char *>(const_cast<char *>(input_buffer)),
                 static_cast<unsigned long>(encrypt_buffer_length),
@@ -2005,7 +2008,7 @@ namespace bcrypt {
                                                   size_t *output_expected_length,
                                                   unsigned long flags = 0) {
             unsigned long output_expected_length_tmp{0};
-            std::error_code status{static_cast<hcrypt::status>(BCryptDecrypt(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptDecrypt(
                 h_,
                 reinterpret_cast<unsigned char *>(const_cast<char *>(input_buffer)),
                 static_cast<unsigned long>(encrypt_buffer_length),
@@ -2042,7 +2045,7 @@ namespace bcrypt {
                                                flags)};
 
             if (hcrypt::is_failure(status)) {
-                if (hcrypt::status::auth_tag_mismatch == status) {
+                if (ERROR_CRC == status.value()) {
                     return false;
                 }
 
@@ -2066,7 +2069,7 @@ namespace bcrypt {
                                                            secret *s) noexcept {
         BCRYPT_SECRET_HANDLE h{nullptr};
 
-        std::error_code status{static_cast<hcrypt::status>(
+        std::error_code status{hcrypt::nt_status_to_win32_error(
             BCryptSecretAgreement(private_key, public_key, &h, 0))};
         if (hcrypt::is_success(status)) {
             s->attach(h);
@@ -2161,7 +2164,7 @@ namespace bcrypt {
                                                wchar_t const *provider = nullptr,
                                                unsigned long flags = 0) noexcept {
             close();
-            std::error_code status{static_cast<hcrypt::status>(
+            std::error_code status{hcrypt::nt_status_to_win32_error(
                 BCryptOpenAlgorithmProvider(&h_, algorithm, provider, flags))};
             return status;
         }
@@ -2177,8 +2180,8 @@ namespace bcrypt {
 
         void close() noexcept {
             if (is_valid()) {
-                std::error_code status{
-                    static_cast<hcrypt::status>(BCryptCloseAlgorithmProvider(h_, 0))};
+                std::error_code status{hcrypt::nt_status_to_win32_error(
+                    BCryptCloseAlgorithmProvider(h_, 0))};
                 BCRYPT_CODDING_ERROR_IF_NOT(hcrypt::is_success(status));
                 h_ = nullptr;
             }
@@ -2187,7 +2190,7 @@ namespace bcrypt {
         [[nodiscard]] std::error_code try_generate_symmetric_key(char const *secret,
                                                                  size_t secret_length,
                                                                  key *k) noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             unsigned long key_size{0};
             status = try_get_key_object_length(&key_size);
@@ -2204,7 +2207,7 @@ namespace bcrypt {
 
             BCRYPT_KEY_HANDLE key_handle{nullptr};
 
-            status = static_cast<hcrypt::status>(BCryptGenerateSymmetricKey(
+            status = hcrypt::nt_status_to_win32_error(BCryptGenerateSymmetricKey(
                 h_,
                 &key_handle,
                 reinterpret_cast<unsigned char *>(b.data()),
@@ -2230,7 +2233,7 @@ namespace bcrypt {
 
             BCRYPT_KEY_HANDLE key_handle{nullptr};
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptGenerateSymmetricKey(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptGenerateSymmetricKey(
                 h_,
                 &key_handle,
                 reinterpret_cast<unsigned char *>(b.data()),
@@ -2255,7 +2258,7 @@ namespace bcrypt {
                                                                   key *k) noexcept {
             BCRYPT_KEY_HANDLE new_key{nullptr};
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptGenerateKeyPair(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptGenerateKeyPair(
                 h_, &new_key, static_cast<unsigned long>(key_size), 0))};
 
             if (hcrypt::is_failure(status)) {
@@ -2271,7 +2274,7 @@ namespace bcrypt {
         key generate_empty_key_pair(size_t key_size) {
             BCRYPT_KEY_HANDLE new_key{nullptr};
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptGenerateKeyPair(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptGenerateKeyPair(
                 h_, &new_key, static_cast<unsigned long>(key_size), 0))};
 
             if (hcrypt::is_failure(status)) {
@@ -2289,7 +2292,7 @@ namespace bcrypt {
                                                               char const *key_object,
                                                               size_t key_object_size,
                                                               key *k) noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             unsigned long key_size{0};
             status = try_get_object_length(&key_size);
@@ -2305,7 +2308,7 @@ namespace bcrypt {
                 return status;
             }
 
-            status = static_cast<hcrypt::status>(BCryptImportKey(
+            status = hcrypt::nt_status_to_win32_error(BCryptImportKey(
                 h_,
                 import_key,
                 blob_type,
@@ -2344,7 +2347,7 @@ namespace bcrypt {
             hcrypt::buffer b;
             b.resize(get_object_length());
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptImportKey(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptImportKey(
                 h_,
                 import_key,
                 blob_type,
@@ -2380,11 +2383,11 @@ namespace bcrypt {
                                                           BCRYPT_KEY_HANDLE import_key,
                                                           unsigned long flags,
                                                           key *k) noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             BCRYPT_KEY_HANDLE new_key{nullptr};
 
-            status = static_cast<hcrypt::status>(BCryptImportKeyPair(
+            status = hcrypt::nt_status_to_win32_error(BCryptImportKeyPair(
                 h_,
                 import_key,
                 blob_type,
@@ -2420,7 +2423,7 @@ namespace bcrypt {
                             unsigned long flags = 0) {
             BCRYPT_KEY_HANDLE new_key{nullptr};
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptImportKeyPair(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptImportKeyPair(
                 h_,
                 import_key,
                 blob_type,
@@ -2454,7 +2457,7 @@ namespace bcrypt {
                                                             size_t salt_length,
                                                             unsigned long long iterations_count,
                                                             hcrypt::buffer *b) noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             unsigned long key_size{0};
             status = try_get_key_object_length(&key_size);
@@ -2468,7 +2471,7 @@ namespace bcrypt {
                 return status;
             }
 
-            status = static_cast<hcrypt::status>(BCryptDeriveKeyPBKDF2(
+            status = hcrypt::nt_status_to_win32_error(BCryptDeriveKeyPBKDF2(
                 h_,
                 reinterpret_cast<unsigned char *>(const_cast<char *>(password)),
                 static_cast<unsigned long>(password_length),
@@ -2494,7 +2497,7 @@ namespace bcrypt {
             hcrypt::buffer b;
             b.resize(get_key_object_length());
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptDeriveKeyPBKDF2(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptDeriveKeyPBKDF2(
                 h_,
                 reinterpret_cast<unsigned char *>(const_cast<char *>(password)),
                 static_cast<unsigned long>(password_length),
@@ -2516,7 +2519,7 @@ namespace bcrypt {
                                                       size_t secret_length,
                                                       unsigned long flags,
                                                       hash *hash) {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             unsigned long object_length{0};
             status = try_get_object_length(&object_length);
@@ -2533,7 +2536,7 @@ namespace bcrypt {
 
             BCRYPT_HASH_HANDLE h{nullptr};
 
-            status = static_cast<hcrypt::status>(BCryptCreateHash(
+            status = hcrypt::nt_status_to_win32_error(BCryptCreateHash(
                 h_,
                 &h,
                 reinterpret_cast<unsigned char *>(b.data()),
@@ -2563,7 +2566,7 @@ namespace bcrypt {
 
             BCRYPT_HASH_HANDLE new_h{nullptr};
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptCreateHash(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptCreateHash(
                 h_,
                 &new_h,
                 reinterpret_cast<unsigned char *>(b.data()),
@@ -2587,7 +2590,7 @@ namespace bcrypt {
                                                            size_t secret_length,
                                                            unsigned long flags,
                                                            hash *hash) {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             hcrypt::buffer multiobject_info;
             status = try_get_multi_object_length(&multiobject_info);
@@ -2612,7 +2615,7 @@ namespace bcrypt {
 
             BCRYPT_HASH_HANDLE h{nullptr};
 
-            status = static_cast<hcrypt::status>(BCryptCreateMultiHash(
+            status = hcrypt::nt_status_to_win32_error(BCryptCreateMultiHash(
                 h_,
                 &h,
                 numer_of_hashes,
@@ -2652,7 +2655,7 @@ namespace bcrypt {
 
             BCRYPT_HASH_HANDLE new_h{nullptr};
 
-            std::error_code status{static_cast<hcrypt::status>(BCryptCreateMultiHash(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptCreateMultiHash(
                 h_,
                 &new_h,
                 numer_of_hashes,
@@ -2679,7 +2682,7 @@ namespace bcrypt {
                                                     size_t input_length,
                                                     char *hash_buffer,
                                                     size_t hash_buffer_length) noexcept {
-            return static_cast<hcrypt::status>(BCryptHash(
+            return hcrypt::nt_status_to_win32_error(BCryptHash(
                 h_,
                 reinterpret_cast<unsigned char *>(const_cast<char *>(secret)),
                 static_cast<unsigned long>(secret_length),
@@ -2694,7 +2697,7 @@ namespace bcrypt {
                                                     char const *input,
                                                     size_t input_length,
                                                     hcrypt::buffer *b) noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             unsigned long hash_length{0};
             status = try_get_hash_length(&hash_length);
@@ -2753,7 +2756,7 @@ namespace bcrypt {
             char *buffer,
             size_t buffer_size,
             use_entropy_in_buffer use_buffer = use_entropy_in_buffer::no) noexcept {
-            std::error_code status{static_cast<hcrypt::status>(BCryptGenRandom(
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptGenRandom(
                 h_,
                 reinterpret_cast<unsigned char *>(buffer),
                 static_cast<unsigned long>(buffer_size),

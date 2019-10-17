@@ -152,11 +152,10 @@ namespace {
             printf("%*cVerification failed as expected\n", offset, ' ');
 
         } catch (std::system_error const &ex) {
-            printf("%*ctest_ecdsa, error code = 0x%x, %s, %s\n",
+            printf("%*ctest_ecdsa, error code = 0x%x, %s\n",
                    offset,
                    ' ',
                    ex.code().value(),
-                   hcrypt::status_to_string(ex.code().value()),
                    ex.what());
         }
         printf("----------------\n");
@@ -181,10 +180,7 @@ void test_ecdsa() {
                               });
                       });
     } catch (std::system_error const &ex) {
-        printf("test_ecdsa, error code = 0x%x, %s, %s\n",
-               ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
-               ex.what());
+        printf("test_ecdsa, error code = 0x%x, %s\n", ex.code().value(), ex.what());
     }
     printf("----------------\n");
 }

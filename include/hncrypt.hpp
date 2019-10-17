@@ -486,7 +486,7 @@ namespace ncrypt {
 
         [[nodiscard]] std::error_code try_get_property(wchar_t const *property_name,
                                                        std::wstring *buffer) const noexcept {
-            std::error_code status{hcrypt::status::success};
+            std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             for (;;) {
                 size_t rezult_size{0};

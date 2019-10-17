@@ -3,7 +3,7 @@
 
 namespace {
 
-    //wchar_t const *hash_algorithms[]{
+    // wchar_t const *hash_algorithms[]{
     //    // BCRYPT_MD2_ALGORITHM,
     //    // BCRYPT_MD4_ALGORITHM,
     //    // BCRYPT_MD5_ALGORITHM,
@@ -13,7 +13,7 @@ namespace {
     //    // BCRYPT_SHA512_ALGORITHM,
     //};
 
-    //wchar_t const *encryption_algorithms[]{
+    // wchar_t const *encryption_algorithms[]{
     //    BCRYPT_DSA_ALGORITHM,
     //    /*  BCRYPT_AES_ALGORITHM,
     //        BCRYPT_AES_GMAC_ALGORITHM,
@@ -124,11 +124,10 @@ namespace {
             }
 
         } catch (std::system_error const &ex) {
-            printf("%*ctest_message_signing, error code = 0x%x, %s, %s\n",
+            printf("%*ctest_message_signing, error code = 0x%x, %s\n",
                    offset,
                    ' ',
                    ex.code().value(),
-                   hcrypt::status_to_string(ex.code().value()),
                    ex.what());
         }
     }
@@ -159,10 +158,7 @@ void test_message_signing() {
                       });
 
     } catch (std::system_error const &ex) {
-        printf("test_message_signing, error code = 0x%x, %s, %s\n",
-               ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
-               ex.what());
+        printf("test_message_signing, error code = 0x%x, %s\n", ex.code().value(), ex.what());
     }
     printf("\n----------------\n");
 }

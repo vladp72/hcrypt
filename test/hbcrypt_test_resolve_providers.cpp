@@ -24,22 +24,14 @@ void resolve_providers() {
                                    });
 
             } catch (std::system_error const &ex) {
-                printf("%*cError code = %#x, %s, %s\n",
-                       offset + 2,
-                       ' ',
-                       ex.code().value(),
-                       hcrypt::status_to_string(ex.code().value()),
-                       ex.what());
+                printf("%*cError code = %#x, %s\n", offset + 2, ' ', ex.code().value(), ex.what());
             }
 
             return true;
         });
 
     } catch (std::system_error const &ex) {
-        printf("resolve_providers, error code = 0x%x, %s, %s\n",
-               ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
-               ex.what());
+        printf("resolve_providers, error code = 0x%x, %s\n", ex.code().value(), ex.what());
     }
     printf("----------------\n");
 }

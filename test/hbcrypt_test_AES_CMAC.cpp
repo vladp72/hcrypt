@@ -3,7 +3,7 @@
 
 namespace {
 
-    //unsigned char const message[] = {
+    // unsigned char const message[] = {
     //    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03,
     //    0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
     //    0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -83,10 +83,7 @@ namespace {
             }
 
         } catch (std::system_error const &ex) {
-            printf("test_aes_cmac, error code = 0x%x, %s, %s\n",
-                   ex.code().value(),
-                   hcrypt::status_to_string(ex.code().value()),
-                   ex.what());
+            printf("test_aes_cmac, error code = 0x%x, %s\n", ex.code().value(), ex.what());
         }
         printf("----------------\n");
     }
@@ -108,10 +105,7 @@ void test_aes_cmac() {
         });
 
     } catch (std::system_error const &ex) {
-        printf("test_aes_cmac, error code = 0x%x, %s, %s\n",
-               ex.code().value(),
-               hcrypt::status_to_string(ex.code().value()),
-               ex.what());
+        printf("test_aes_cmac, error code = 0x%x, %s\n", ex.code().value(), ex.what());
     }
     printf("----------------\n");
 }
