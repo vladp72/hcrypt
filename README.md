@@ -201,7 +201,7 @@ After changing mode to CCM
        bcrypt::hash h{provider.create_hash()};
        h.hash_data(data_to_hash.data(), data_to_hash.size());
        hcrypt::buffer hash_value{h.finish()};
-       printf("%*chash: %ws\n", offset + 2, ' ', hcrypt::to_hex(hash_value).c_str());
+       printf("hash: %ws\n", hcrypt::to_hex(hash_value).c_str());
    } catch (std::system_error const &ex) {
        <handle failure>
    }
@@ -222,7 +222,7 @@ After changing mode to CCM
    };
 
    try {
-       bcrypt::algorithm_provider hash_ap{hashing_algorithm};
+       bcrypt::algorithm_provider hash_ap{BCRYPT_SHA256_ALGORITHM};
        //
        // Hash message
        //       
@@ -233,7 +233,8 @@ After changing mode to CCM
        // Generate persistent keys for signing
        //       
        ncrypt::storage_provider sp{MS_KEY_STORAGE_PROVIDER};
-       ncrypt::key k{sp.create_key(ecdsa_algorithm, persistent_key_name)};
+       ncrypt::key k{sp.create_key(NCRYPT_ECDSA_P256_ALGORITHM, 
+                                   L"test_key_name_ecdsa_F3686E9E-A097-4959-A014-D8D2B2D9F42F")};
        k.finalize_key();
        //
        // Sign hash
@@ -261,8 +262,6 @@ After changing mode to CCM
                                        data_hash.size(),
                                        hash_signature.data(),
                                        hash_signature.size()));
-
-
    } catch (std::system_error const &ex) {
        <handle failure>
    }
