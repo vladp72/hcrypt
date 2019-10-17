@@ -224,9 +224,7 @@ After changing mode to CCM
                       reinterpret_cast<char const *>(key), 
                       32)};
   
-        // The data to be GMAC'd. It is not encrypted.
-        std::string_view aad(
-            "Not so secret additionally authenticated data");
+        std::string_view aad("Not so secret additionally authenticated data");
 
         UCHAR iv[12] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc};
         UCHAR tag[16] = {0};
