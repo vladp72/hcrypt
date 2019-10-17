@@ -252,7 +252,7 @@ After changing mode to CCM
 
 ```
 
-## Encrypting and Signing Using Symmetric Key
+## Encrypting Using Symmetric Key
 
 ```
     unsigned char const plain_text[] = "Text1 to encrypt";
