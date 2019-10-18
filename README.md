@@ -16,6 +16,8 @@ This is a header only library for Windows CNG API that includes functions from n
 
 [CNG Ncrypt storage property identifiers](https://docs.microsoft.com/en-us/windows/win32/seccng/key-storage-property-identifiers)
 
+[CNG Ncrypt key storage architecture](https://docs.microsoft.com/en-us/windows/win32/seccng/key-storage-and-retrieval?redirectedfrom=MSDN)
+
 [MSDN CNG samples](https://docs.microsoft.com/en-us/windows/win32/seccng/typical-cng-programming?redirectedfrom=MSDN)
 
 [MSDN classic samples](https://github.com/microsoft/Windows-classic-samples/tree/master/Samples/Security)
