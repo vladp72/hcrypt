@@ -131,6 +131,7 @@ add_executable ( hcrypt_test
                  test/hncrypt_test_providers.cpp
                  test/hncrypt_test_enum_keys.cpp
                  test/hncrypt_test_ecdsa256.cpp
+                 test/hncrypt_test_strong_key_protection.cpp
                )
 
 #

@@ -869,7 +869,7 @@ namespace bcrypt {
 
         template<typename T>
         void set_property(wchar_t const *property_name, T const &value) {
-            std::error_code status{try_set_property(property_name, value)};
+            std::error_code status{try_set_property(property_name, reinterpret_cast<char const *>(&value), sizeof(value))};
             if (hcrypt::is_failure(status)) {
                 throw std::system_error(status, "BCryptSetProperty failed");
             }

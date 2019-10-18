@@ -619,7 +619,8 @@ namespace ncrypt {
 
         template<typename T>
         void set_property(wchar_t const *property_name, T const &value) {
-            std::error_code status{try_set_property(property_name, value)};
+            std::error_code status{try_set_property(
+                property_name, reinterpret_cast<char const *>(&value), sizeof(value))};
             if (hcrypt::is_failure(status)) {
                 throw std::system_error(status, "NCryptSetProperty failed");
             }
@@ -767,25 +768,25 @@ namespace ncrypt {
         [[nodiscard]] std::error_code try_set_pin_property(std::wstring_view const &pin) {
             return try_set_property(NCRYPT_PIN_PROPERTY,
                                     reinterpret_cast<char const *>(pin.data()),
-                                    pin.size());
+                                    pin.size() * sizeof(wchar_t));
         }
 
         void set_pin_property(std::wstring_view const &pin) {
             set_property(NCRYPT_PIN_PROPERTY,
                          reinterpret_cast<char const *>(pin.data()),
-                         pin.size());
+                         pin.size() * sizeof(wchar_t));
         }
 
         [[nodiscard]] std::error_code try_set_reader(std::wstring_view const &reader) {
             return try_set_property(NCRYPT_READER_PROPERTY,
                                     reinterpret_cast<char const *>(reader.data()),
-                                    reader.size());
+                                    reader.size() * sizeof(wchar_t));
         }
 
         void set_reader(std::wstring_view const &reader) {
             set_property(NCRYPT_READER_PROPERTY,
                          reinterpret_cast<char const *>(reader.data()),
-                         reader.size());
+                         reader.size() * sizeof(wchar_t));
         }
 
         [[nodiscard]] std::error_code try_get_storage_provider(storage_provider *value) const
@@ -821,13 +822,13 @@ namespace ncrypt {
         [[nodiscard]] std::error_code try_set_secure_pin(std::wstring_view const &secure_pin) {
             return try_set_property(NCRYPT_SECURE_PIN_PROPERTY,
                                     reinterpret_cast<char const *>(secure_pin.data()),
-                                    secure_pin.size());
+                                    secure_pin.size() * sizeof(wchar_t));
         }
 
         void set_secure_pin(std::wstring_view const &secure_pin) {
             set_property(NCRYPT_SECURE_PIN_PROPERTY,
                          reinterpret_cast<char const *>(secure_pin.data()),
-                         secure_pin.size());
+                         secure_pin.size() * sizeof(wchar_t));
         }
 
         [[nodiscard]] std::error_code try_get_security_descriptor(hcrypt::buffer *b) const
@@ -912,13 +913,13 @@ namespace ncrypt {
         [[nodiscard]] std::error_code try_set_use_context(std::wstring_view const &use_context) {
             return try_set_property(NCRYPT_USE_CONTEXT_PROPERTY,
                                     reinterpret_cast<char const *>(use_context.data()),
-                                    use_context.size());
+                                    use_context.size() * sizeof(wchar_t));
         }
 
         void set_use_context(std::wstring_view const &use_context) {
             set_property(NCRYPT_USE_CONTEXT_PROPERTY,
                          reinterpret_cast<char const *>(use_context.data()),
-                         use_context.size());
+                         use_context.size() * sizeof(wchar_t));
         }
 
         [[nodiscard]] std::error_code try_get_use_count_enabled(unsigned long *value) const
@@ -970,6 +971,10 @@ namespace ncrypt {
 
         [[nodiscard]] std::error_code try_set_hwnd(HWND value) const noexcept {
             return try_set_property(NCRYPT_WINDOW_HANDLE_PROPERTY, value);
+        }
+
+        void set_hwnd(HWND value) noexcept {
+            set_property(NCRYPT_WINDOW_HANDLE_PROPERTY, value);
         }
 
         void get_hwnd(HWND value) const {
@@ -2077,7 +2082,10 @@ namespace ncrypt {
             return status;
         }
 
-        bool open_key(wchar_t const *key_name, unsigned long legacy_key_spec, unsigned long flags, key *k) {
+        bool open_key(wchar_t const *key_name,
+                      unsigned long legacy_key_spec,
+                      unsigned long flags,
+                      key *k) {
             bool result{true};
             std::error_code status{try_open_key(key_name, legacy_key_spec, flags, k)};
             if (status == hcrypt::win32_error(ERROR_SUCCESS)) {
@@ -2090,7 +2098,9 @@ namespace ncrypt {
             return result;
         }
 
-        key open_key(wchar_t const *key_name, unsigned long legacy_key_spec, unsigned long flags) {
+        key open_key(wchar_t const *key_name,
+                     unsigned long legacy_key_spec = 0,
+                     unsigned long flags = 0) {
             key new_key;
             std::error_code status{try_open_key(key_name, legacy_key_spec, flags, &new_key)};
             if (hcrypt::is_failure(status)) {
@@ -2219,7 +2229,6 @@ namespace ncrypt {
 
         std::error_code try_delete_key(wchar_t const *key_name,
                                        unsigned long flags = NCRYPT_SILENT_FLAG) {
-
             ncrypt::key k;
             std::error_code error{try_open_key(key_name, 0, 0, &k)};
             if (error == hcrypt::win32_error(ERROR_SUCCESS)) {
@@ -2228,13 +2237,12 @@ namespace ncrypt {
             return error;
         }
 
-        bool delete_key(wchar_t const *key_name,
-                        unsigned long flags = NCRYPT_SILENT_FLAG) {
+        bool delete_key(wchar_t const *key_name, unsigned long flags = NCRYPT_SILENT_FLAG) {
             ncrypt::key k;
             bool result{open_key(key_name, 0, 0, &k)};
             if (result) {
                 k.delete_key(flags);
-            } 
+            }
             return result;
         }
 

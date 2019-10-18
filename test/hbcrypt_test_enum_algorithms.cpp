@@ -36,7 +36,7 @@ void print_algorithms() {
 
         print_algorithms(offset + 2, cypher_operations);
     } catch (std::system_error const &ex) {
-        printf("resolve_providers, error code = 0x%x, %s\n", ex.code().value(), ex.what());
+        printf("print_algorithms, error code = 0x%x, %s\n", ex.code().value(), ex.what());
     }
     printf("----------------\n");
 }

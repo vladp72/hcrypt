@@ -19,6 +19,7 @@
 #include "hncrypt_test_providers.hpp"
 #include "hncrypt_test_enum_keys.hpp"
 #include "hncrypt_test_ECDSA256.hpp"
+#include "hncrypt_test_strong_key_protection.hpp"
 
 int main() {
     try {
@@ -61,6 +62,12 @@ int main() {
         test_ncrypt_enum_keys();
 
         test_ecdsa();
+
+        //
+        // This test prompts user to enter password that
+        // protects key. Run it only in interactive mode
+        //
+        //test_strong_key_protection();
 
     } catch (std::system_error const &ex) {
         printf("Error code = 0x%x, %s\n", ex.code().value(), ex.what());
