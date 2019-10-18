@@ -6,11 +6,15 @@ This is a header only library for Windows CNG API that includes functions from n
 
 [CNG Bcrypt algorithm providers](https://docs.microsoft.com/en-us/windows/win32/seccertenroll/cng-cryptographic-algorithm-providers)
 
+[CNG Bcrypt cryptography primitive property identifiers](https://docs.microsoft.com/en-us/windows/win32/seccng/cng-property-identifiers)
+
 [CNG algorithm identifiers](https://docs.microsoft.com/en-us/windows/win32/seccng/cng-algorithm-identifiers) 
 
 [MSDN documentation for ncrypt.h](https://docs.microsoft.com/en-us/windows/win32/api/ncrypt/)
 
 [CNG Ncrypt storage providers](https://docs.microsoft.com/en-us/windows/win32/seccertenroll/cng-key-storage-providers) 
+
+[CNG Ncrypt storage property identifiers](https://docs.microsoft.com/en-us/windows/win32/seccng/key-storage-property-identifiers)
 
 [MSDN CNG samples](https://docs.microsoft.com/en-us/windows/win32/seccng/typical-cng-programming?redirectedfrom=MSDN)
 
@@ -326,7 +330,7 @@ After changing mode to CCM
      }
 ```
 
-## Signing Using Persistent Assymetric Sample
+## Signing Using Persistent Assymetric Key
 
 ```
    unsigned char const msg[] = {
@@ -375,6 +379,89 @@ After changing mode to CCM
    } catch (std::system_error const &ex) {
        <handle failure>
    }
+```
+
+## Enumerate Algorithm Providers
+
+```
+  //
+  // All registered
+  //
+  hcrypt::for_each(bcrypt::enum_registered_providers(), [t](wchar_t const *provider_name){
+    <handle provider>
+  });
+
+  //
+  // Find first provider with matching requirements
+  //
+  auto matching_providers{bcrypt::resolve_providers(nullptr, 
+                                                    BCRYPT_HASH_INTERFACE, 
+                                                    nullptr, 
+                                                    nullptr, 
+                                                    CRYPT_UM, 
+                                                    CRYPT_ALL_FUNCTIONS | CRYPT_ALL_PROVIDERS)};
+
+   bcrypt::find_first(matching_providers,
+                      [](CRYPT_PROVIDER_REF const *provider_ref) -> bool {
+                          if (<does this provider satisfy our requirements?>) {
+                               //
+                               // abort search
+                               //
+                               return false;
+                          }
+                          //
+                          // continue search
+                          //
+                          return true;
+                      });
+  
+```
+
+## Enumerate All Keys for All Storage Providers
+
+```
+    try {
+        for_each(ncrypt::enum_providers(), [](NCryptProviderName const &name) {
+            ncrypt::storage_provider sp{name.pszName};
+            ncrypt::key k;
+            //
+            // enumerate user keys
+            //
+            ncrypt::storage_provider::key_iterator cur{sp.key_begin(NCRYPT_SILENT_FLAG)};
+            ncrypt::storage_provider::key_iterator end{};
+            
+            for (; cur != end; ++cur) {
+               NCryptKeyName const &key_name{*cur};
+               std::error_code err{sp.try_open_key(key_name.pszName, 
+                                                   key_name.dwLegacyKeySpec, 
+                                                   key_name.dwFlags, 
+                                                   &k)};
+
+               if (hcrypt::is_success(key_status)) {
+                   // use key
+               }
+            }
+            //
+            // enumerate machine keys
+            //
+            cur = sp.key_begin(NCRYPT_MACHINE_KEY_FLAG | NCRYPT_SILENT_FLAG);
+            for (; cur != end; ++cur) {
+               NCryptKeyName const &key_name{*cur};
+               std::error_code err{sp.try_open_key(key_name.pszName, 
+                                                   key_name.dwLegacyKeySpec, 
+                                                   key_name.dwFlags, 
+                                                   &k)};
+
+               if (hcrypt::is_success(key_status)) {
+                   // use key
+               }
+            }
+        });
+
+    } catch (std::system_error const &ex) {
+        <handle error>
+    }
+
 ```
 
 ## Class Diagrams
