@@ -20,6 +20,7 @@
 #include "hncrypt_test_enum_keys.hpp"
 #include "hncrypt_test_ECDSA256.hpp"
 #include "hncrypt_test_strong_key_protection.hpp"
+#include "hncrypt_test_key_derivation.hpp"
 
 int main() {
     try {
@@ -62,6 +63,8 @@ int main() {
         test_ncrypt_enum_keys();
 
         test_ecdsa();
+
+        test_sample_ncrypt_key_derivation();
 
         //
         // This test prompts user to enter password that

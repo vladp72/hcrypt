@@ -980,6 +980,17 @@ namespace ncrypt {
         void get_hwnd(HWND value) const {
             return set_property(NCRYPT_WINDOW_HANDLE_PROPERTY, value);
         }
+
+        [[nodiscard]] std::error_code try_set_kdf_secret_value(char const *secret,
+                                                               size_t secret_length) {
+            return try_set_property(NCRYPT_KDF_SECRET_VALUE,
+                                    reinterpret_cast<char const *>(secret),
+                                    secret_length);
+        }
+
+        void set_kdf_secret_value(char const *secret, size_t secret_length) {
+            set_property(NCRYPT_KDF_SECRET_VALUE, reinterpret_cast<char const *>(secret), secret_length);
+        }
     };
 
     inline bool is_key_handle(NCRYPT_KEY_HANDLE k) {
