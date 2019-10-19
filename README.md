@@ -382,6 +382,31 @@ After changing mode to CCM
        <handle failure>
    }
 ```
+## Generate Random Number
+
+```
+        char b1[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf};
+
+        bcrypt::generate_random(b1, sizeof(b1));
+        
+        char sb{bcrypt::generate_random<char>()};
+
+        unsigned char ub{bcrypt::generate_random<unsigned char>()};
+
+        short ss{bcrypt::generate_random<short>()};
+        
+        unsigned short us{bcrypt::generate_random<unsigned short>()};
+
+        long sl{bcrypt::generate_random<long>()};
+        
+        unsigned long ul{bcrypt::generate_random<unsigned long>()};
+
+        long long sll{bcrypt::generate_random<long long>()};
+        
+        unsigned long long ull{bcrypt::generate_random<unsigned long long>()};
+
+        double d{bcrypt::generate_random<double>()};
+```
 
 ## Enumerate Algorithm Providers
 
