@@ -2,4 +2,4 @@
 
 #include "hcrypt_test_helpers.hpp"
 
-void test_sample_hash();
+void perf_compare_hash();

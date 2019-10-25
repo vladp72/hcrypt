@@ -22,6 +22,10 @@
 #include "hncrypt_test_strong_key_protection.hpp"
 #include "hncrypt_test_key_derivation.hpp"
 
+#include "perf\numa.h"
+
+#include "hbcrypt_perf_hash.hpp"
+
 int main() {
     try {
         test_CTAD();
@@ -66,7 +70,9 @@ int main() {
 
         test_sample_ncrypt_key_derivation();
 
-        perf_sample_hash();
+        numa::test_all();
+
+        perf_compare_hash();
 
         //
         // This test prompts user to enter password that

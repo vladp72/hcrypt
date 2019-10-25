@@ -8,6 +8,94 @@
 
 namespace perf {
 
+    class set_this_thread_priority_t final {
+    public:
+        set_this_thread_priority_t(set_this_thread_priority_t const &) = delete;
+        set_this_thread_priority_t(set_this_thread_priority_t &&) = delete;
+        set_this_thread_priority_t &operator=(set_this_thread_priority_t const &) = delete;
+        set_this_thread_priority_t &operator=(set_this_thread_priority_t &&) = delete;
+
+        set_this_thread_priority_t()
+            : prev_priority_(get_current_priority()) {
+        }
+
+        explicit set_this_thread_priority_t(int new_priority)
+            : prev_priority_(get_current_priority()) {
+            change_priority(new_priority);
+        }
+
+        ~set_this_thread_priority_t() {
+            restore_prev_priority();
+        }
+
+        void change_priority(int new_priority) {
+            if (!prev_priority_) {
+                prev_priority_ = get_current_priority();
+            }
+            if (!SetThreadPriority(GetCurrentThread(), new_priority)) {
+                throw std::system_error(
+                    GetLastError(), std::system_category(), "SetThreadPriority");
+            }
+        }
+
+        std::optional<int> get_prev_priority() const {
+            return prev_priority_;
+        }
+
+        void restore_prev_priority() {
+            if (prev_priority_) {
+                change_priority(prev_priority_.value());
+                prev_priority_ = std::nullopt;
+            } else {
+                throw std::system_error(
+                    GetLastError(), std::system_category(), "Call to GetThreadPriority to restore thread priority failed");
+            }
+        }
+
+        void arm(int prev_priority) {
+            prev_priority_ = prev_priority;
+        }
+
+        void disarm() {
+            prev_priority_ = std::nullopt;
+        }
+
+        explicit operator bool() const {
+            return prev_priority_ != std::nullopt;
+        }
+
+    private:
+        static int get_current_priority() {
+            return GetThreadPriority(GetCurrentThread());
+        }
+
+        std::optional<int> prev_priority_;
+    };
+
+    class affinitize_thread_to_cpu_t {
+    public:
+        affinitize_thread_to_cpu_t(affinitize_thread_to_cpu_t const &) = delete;
+        affinitize_thread_to_cpu_t(affinitize_thread_to_cpu_t &&) = delete;
+        affinitize_thread_to_cpu_t &operator=(affinitize_thread_to_cpu_t const &) = delete;
+        affinitize_thread_to_cpu_t &operator=(affinitize_thread_to_cpu_t &&) = delete;
+
+        //affinitize_thread_to_cpu_t()
+        //    : prev_priority_(get_current_priority()) {
+        //}
+
+        //explicit affinitize_thread_to_cpu_t(int new_priority)
+        //    : prev_priority_(get_current_priority()) {
+        //    change_priority(new_priority);
+        //}
+
+        //~affinitize_thread_to_cpu_t() {
+        //    restore_prev_priority();
+        //}
+
+    private:
+
+    };
+
     //
     // [.exactly L elements.)
     //
