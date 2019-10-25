@@ -66,6 +66,8 @@ int main() {
 
         test_sample_ncrypt_key_derivation();
 
+        perf_sample_hash();
+
         //
         // This test prompts user to enter password that
         // protects key. Run it only in interactive mode

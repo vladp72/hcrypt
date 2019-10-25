@@ -1171,11 +1171,11 @@ namespace bcrypt {
 
         void swap(hash &other) noexcept {
             BCRYPT_HASH_HANDLE h{h_};
-            hcrypt::buffer b{b_};
+            hcrypt::buffer b{std::move(b_)};
             h_ = other.h_;
-            b_ = other.b_;
+            b_ = std::move(other.b_);
             other.h_ = h;
-            other.b_ = b;
+            other.b_ = std::move(b);
         }
 
         bool is_valid() const noexcept {
@@ -1189,15 +1189,8 @@ namespace bcrypt {
         [[nodiscard]] std::error_code try_duplicate_to(hash *hash) const noexcept {
             std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
             if (hash != this) {
-                unsigned long hash_size{0};
-                status = try_get_object_length(&hash_size);
-
-                if (hcrypt::is_failure(status)) {
-                    return status;
-                }
-
                 hcrypt::buffer b;
-                status = hcrypt::try_resize(b, hash_size);
+                status = hcrypt::try_resize(b, b_.size());
 
                 if (hcrypt::is_failure(status)) {
                     return status;
@@ -1227,7 +1220,7 @@ namespace bcrypt {
             hash hash_duplicate;
 
             hcrypt::buffer b;
-            b.resize(get_object_length());
+            b.resize(b_.size());
 
             BCRYPT_HASH_HANDLE h{nullptr};
 
@@ -1554,11 +1547,11 @@ namespace bcrypt {
 
         void swap(key &other) noexcept {
             BCRYPT_KEY_HANDLE h{h_};
-            hcrypt::buffer b{b_};
+            hcrypt::buffer b{std::move(b_)};
             h_ = other.h_;
-            b_ = other.b_;
+            b_ = std::move(other.b_);
             other.h_ = h;
-            other.b_ = b;
+            other.b_ = std::move(b);
         }
 
         bool is_valid() const noexcept {
@@ -1573,15 +1566,8 @@ namespace bcrypt {
             std::error_code status{hcrypt::win32_error(ERROR_SUCCESS)};
 
             if (key != this) {
-                unsigned long key_size{0};
-                status = try_get_key_object_length(&key_size);
-
-                if (hcrypt::is_failure(status)) {
-                    return status;
-                }
-
                 hcrypt::buffer b;
-                status = hcrypt::try_resize(b, key_size);
+                status = hcrypt::try_resize(b, b_.size());
                 if (hcrypt::is_failure(status)) {
                     return status;
                 }
@@ -1611,7 +1597,7 @@ namespace bcrypt {
             key key_duplicate;
 
             hcrypt::buffer b;
-            b.resize(get_key_object_length());
+            b.resize(b_.size());
 
             BCRYPT_KEY_HANDLE h{nullptr};
 
