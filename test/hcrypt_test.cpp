@@ -28,49 +28,47 @@
 
 int main() {
     try {
-        //test_CTAD();
+        test_CTAD();
 
-        //test_err();
+        test_err();
 
-        //test_base64();
+        test_base64();
 
-        //print_is_fips_complience_on();
+        print_is_fips_complience_on();
 
-        //print_registered_providers();
+        print_registered_providers();
 
-        //resolve_providers();
+        resolve_providers();
 
-        //print_algorithms();
+        print_algorithms();
 
-        //print_crypto_contexts();
+        print_crypto_contexts();
 
-        //test_algorithm();
+        test_algorithm();
 
-        //test_rand();
+        test_rand();
 
-        //test_sample_key_derivation();
+        test_sample_key_derivation();
 
-        //test_sample_hash();
+        test_sample_hash();
 
-        //test_message_signing();
+        test_message_signing();
 
-        //tesh_dh_oakley();
+        tesh_dh_oakley();
 
-        //test_sha1_hmac();
+        test_sha1_hmac();
 
-        //test_aes_cmac();
+        test_aes_cmac();
 
-        //test_aes_cbc();
+        test_aes_cbc();
 
-        //test_ncrypt_providers();
+        test_ncrypt_providers();
 
-        //test_ncrypt_enum_keys();
+        test_ncrypt_enum_keys();
 
-        //test_ecdsa();
+        test_ecdsa();
 
-        //test_sample_ncrypt_key_derivation();
-
-        //numa::test_all();
+        test_sample_ncrypt_key_derivation();
 
         perf_compare_hash();
 
@@ -79,6 +77,11 @@ int main() {
         // protects key. Run it only in interactive mode
         //
         //test_strong_key_protection();
+        
+        //
+        // uncomment if you need to explore output of library on your computer
+        //
+        // numa::test_all();
 
     } catch (std::system_error const &ex) {
         printf("Error code = 0x%x, %s\n", ex.code().value(), ex.what());
