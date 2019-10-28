@@ -479,7 +479,7 @@ After changing mode to CCM
                                                    key_name.dwFlags, 
                                                    &k)};
 
-               if (hcrypt::is_success(key_status)) {
+               if (hcrypt::is_success(err)) {
                    // use key
                }
             }
