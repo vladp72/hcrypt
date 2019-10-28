@@ -1013,7 +1013,47 @@ namespace numa {
         });
     }
 
-    int test_all() {
+    inline void print_prefered_cpu_for_perf_test(int padding = 0) {
+        SYSTEM_CPU_SET_INFORMATION const *selected_cpu{nullptr};
+
+        cpu_info::cbuffer const cpu_info{cpu_info::get_system_cpu_information()};
+
+        cpu_info::find_first_system_cpu_information_block(
+            cpu_info,
+            [padding, &selected_cpu](SYSTEM_CPU_SET_INFORMATION const &info, size_t size) -> bool {
+                switch (info.Type) {
+                case CpuSetInformation:
+                    //
+                    // Stay away from any cores that are parked oe allocated to someone.
+                    //
+                    if (info.CpuSet.Allocated || info.CpuSet.AllocatedToTargetProcess ||
+                        info.CpuSet.Parked || info.CpuSet.RealTime) {
+                        return true;
+                    }
+                    //
+                    // If we have not selected any CPUs so far then select this one
+                    //
+                    if (!selected_cpu) {
+                        selected_cpu = &info;
+                        return true;
+                    }
+                    //
+                    // Always prefer CPU with highest efficiency class
+                    //
+                    if (selected_cpu->CpuSet.EfficiencyClass < info.CpuSet.EfficiencyClass) {
+                        selected_cpu = &info;
+                        return true;
+                    }
+                    //
+                    // Otherwise pick CPU with highest ID that will be farthest from CPU 0
+                    //
+                    selected_cpu = &info;
+                }
+                return true;
+            });
+    }
+
+    inline int test_all() {
         try {
             printf("\n---\n");
             print_system_info();

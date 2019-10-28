@@ -1,5 +1,6 @@
 #include "hbcrypt_perf_hash.hpp"
 #include <algorithm>
+#include <numeric>
 #include "perf\hcrypt_perf.hpp"
 
 namespace {
@@ -32,7 +33,7 @@ void perf_compare_hash() {
         int offset{0};
 
         hcrypt::buffer data_to_hash;
-        data_to_hash.resize(4 * 1024);
+        data_to_hash.resize(1024);
         bcrypt::generate_random(data_to_hash.data(), data_to_hash.size());
 
         //
@@ -41,30 +42,63 @@ void perf_compare_hash() {
         printf("\n%*cBoosting priority to THREAD_PRIORITY_HIGHEST.\n", offset + 2, ' ');
         perf::set_this_thread_priority_t scoped_priority_boos{THREAD_PRIORITY_HIGHEST};
 
+        perf::affinitize_thread_to_cpu_t scoped_thread_affinity{
+            perf::affinitize_thread_to_cpu_t::choose_cpu_t::yes};
+        printf("\n%*cAffinitized CPU to.\n", offset + 2, ' ');
+        numa::print(2, 0, numa::cpu_info::get_thread_group_affinity());
+
         //
-        // Use it to warm up
+        // Warm up
         //
-        printf("\n%*cWarming up.\n", offset + 2, ' ');
+        printf("\n%*cWarming up using %S.\n", offset + 2, ' ', BCRYPT_SHA1_ALGORITHM);
         perf::samples_collection warm_up_samples;
         warm_up_samples.measure([&data_to_hash]() {
-            perf_sample_hash_create(BCRYPT_MD2_ALGORITHM, data_to_hash);
+            perf_sample_hash_create(BCRYPT_SHA1_ALGORITHM, data_to_hash);
         });
+        perf::result_t warm_up_samples_result{warm_up_samples.calculate_result()};
+        warm_up_samples_result.print(offset + 2, nullptr, data_to_hash.size());
+        //
+        // Reading buffer and accumulating result in a local variable 
+        // that is likley to be cached in a register
+        // is a cheapest computation similar to hashing
+        //
+        printf("\n%*cstd::accumulate.\n", offset + 2, ' ');
+        perf::samples_collection accumulate_samples;
+        long long sum{0};
+        accumulate_samples.measure([&data_to_hash, &sum]() {
+            sum = std::accumulate(data_to_hash.begin(), data_to_hash.end(), 0);
+        });
+        perf::result_t accumulate_result{accumulate_samples.calculate_result()};
+        accumulate_result.print(
+            offset + 2, &warm_up_samples_result, data_to_hash.size());
+        //
+        // Copying from one buffer to another is a bit more expensive
+        //
+        printf("\n%*cstd::copy.\n", offset + 2, ' ');
+        perf::samples_collection copy_samples;
+        hcrypt::buffer other_buffer;
+        other_buffer.resize(data_to_hash.size());
+        copy_samples.measure([&data_to_hash, &other_buffer]() {
+            std::copy(data_to_hash.begin(), data_to_hash.end(), other_buffer.begin());
+        });
+        perf::result_t copy_result{copy_samples.calculate_result()};
+        copy_result.print(offset + 2, &warm_up_samples_result, data_to_hash.size());
 
         std::for_each(
             std::begin(hash_algorithms),
             std::end(hash_algorithms),
-            [offset, &data_to_hash](wchar_t const *algorithm_name) {
-                printf("\n%*cMeasuring perf for %S creating hash.\n", offset + 2, ' ', algorithm_name);
-                try {
-                    perf::samples_collection samples;
-                    samples.measure([&data_to_hash, algorithm_name]() {
-                        perf_sample_hash_create(algorithm_name, data_to_hash);
-                    });
-                    perf::result_t result{samples.calculate_result()};
-                    result.print(offset + 2);
-                } catch (std::system_error const &ex) {
-                    printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
-                }
+            [offset, &data_to_hash, &warm_up_samples_result](wchar_t const *algorithm_name) {
+                // printf("\n%*cMeasuring perf for %S creating hash.\n", offset + 2, ' ', algorithm_name);
+                // try {
+                //    perf::samples_collection samples;
+                //    samples.measure([&data_to_hash, algorithm_name]() {
+                //        perf_sample_hash_create(algorithm_name, data_to_hash);
+                //    });
+                //    perf::result_t result{samples.calculate_result()};
+                //    result.print(offset + 2);
+                //} catch (std::system_error const &ex) {
+                //    printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
+                //}
 
                 printf("\n%*cMeasuring perf for %S duplicating hash.\n", offset + 2, ' ', algorithm_name);
                 try {
@@ -77,14 +111,11 @@ void perf_compare_hash() {
                         perf_sample_hash_duplicate(h, data_to_hash);
                     });
                     perf::result_t result{samples.calculate_result()};
-                    result.print(offset + 2);
+                    result.print(
+                        offset + 2, &warm_up_samples_result, data_to_hash.size());
                 } catch (std::system_error const &ex) {
-                    printf(
-                        "aborted, error code = 0x%x, %s\n",
-                        ex.code().value(),
-                        ex.what());
+                    printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
                 }
-
             });
 
     } catch (std::system_error const &ex) {

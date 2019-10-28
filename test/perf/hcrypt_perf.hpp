@@ -6,6 +6,8 @@
 #include <chrono>
 #include <atomic>
 
+#include "numa.hpp"
+
 namespace perf {
 
     class set_this_thread_priority_t final {
@@ -46,9 +48,6 @@ namespace perf {
             if (prev_priority_) {
                 change_priority(prev_priority_.value());
                 prev_priority_ = std::nullopt;
-            } else {
-                throw std::system_error(
-                    GetLastError(), std::system_category(), "Call to GetThreadPriority to restore thread priority failed");
             }
         }
 
@@ -72,28 +71,133 @@ namespace perf {
         std::optional<int> prev_priority_;
     };
 
-    class affinitize_thread_to_cpu_t {
+    class affinitize_thread_to_cpu_t final {
     public:
         affinitize_thread_to_cpu_t(affinitize_thread_to_cpu_t const &) = delete;
         affinitize_thread_to_cpu_t(affinitize_thread_to_cpu_t &&) = delete;
         affinitize_thread_to_cpu_t &operator=(affinitize_thread_to_cpu_t const &) = delete;
         affinitize_thread_to_cpu_t &operator=(affinitize_thread_to_cpu_t &&) = delete;
 
-        //affinitize_thread_to_cpu_t()
-        //    : prev_priority_(get_current_priority()) {
-        //}
+        enum class choose_cpu_t : char {
+            no = 0,
+            yes = 1,
+        };
 
-        //explicit affinitize_thread_to_cpu_t(int new_priority)
-        //    : prev_priority_(get_current_priority()) {
-        //    change_priority(new_priority);
-        //}
+        affinitize_thread_to_cpu_t()
+            : prev_affinity_(numa::cpu_info::get_thread_group_affinity()) {
+        }
 
-        //~affinitize_thread_to_cpu_t() {
-        //    restore_prev_priority();
-        //}
+        explicit affinitize_thread_to_cpu_t(GROUP_AFFINITY new_affinity_group) {
+            change_affinity(new_affinity_group);
+        }
+
+        explicit affinitize_thread_to_cpu_t(KAFFINITY mask) {
+            change_affinity(mask);
+        }
+
+        explicit affinitize_thread_to_cpu_t(choose_cpu_t val) {
+            if (val == choose_cpu_t::yes) {
+                if (!choose_cpu()) {
+                    throw std::system_error(
+                        ERROR_CPU_SET_INVALID, std::system_category(), "Failed to automatically select CPU to run performance test");
+                }
+            }
+        }
+
+        ~affinitize_thread_to_cpu_t() {
+            restore_prev_affinity();
+        }
+
+        [[nodiscard]] bool choose_cpu() {
+            SYSTEM_CPU_SET_INFORMATION const *selected_cpu{nullptr};
+
+            numa::cpu_info::cbuffer const cpu_info{
+                numa::cpu_info::get_system_cpu_information()};
+
+            numa::cpu_info::find_first_system_cpu_information_block(
+                cpu_info,
+                [&selected_cpu](SYSTEM_CPU_SET_INFORMATION const &info, size_t size) -> bool {
+                    switch (info.Type) {
+                    case CpuSetInformation:
+                        //
+                        // Stay away from any cores that are parked oe allocated to someone.
+                        //
+                        if (info.CpuSet.Allocated || info.CpuSet.AllocatedToTargetProcess ||
+                            info.CpuSet.Parked || info.CpuSet.RealTime) {
+                            return true;
+                        }
+                        //
+                        // If we have not selected any CPUs so far then select this one
+                        //
+                        if (!selected_cpu) {
+                            selected_cpu = &info;
+                            return true;
+                        }
+                        //
+                        // Always prefer CPU with highest efficiency class
+                        //
+                        if (selected_cpu->CpuSet.EfficiencyClass < info.CpuSet.EfficiencyClass) {
+                            selected_cpu = &info;
+                            return true;
+                        }
+                        //
+                        // Otherwise pick CPU with highest ID that will be farthest from CPU 0
+                        //
+                        selected_cpu = &info;
+                    }
+                    return true;
+                });
+
+            if (selected_cpu) {
+                //
+                // Affinitize thread to the selected CPU
+                //
+                GROUP_AFFINITY affinity_group{1ULL << selected_cpu->CpuSet.LogicalProcessorIndex,
+                                              selected_cpu->CpuSet.Group};
+                change_affinity(affinity_group);
+                return true;
+            }
+            return false;
+        }
+
+        void change_affinity(GROUP_AFFINITY const &new_affinity_group) {
+            if (!prev_affinity_) {
+                prev_affinity_ = numa::cpu_info::get_thread_group_affinity();
+            }
+            numa::cpu_info::set_thread_group_affinity(new_affinity_group);
+        }
+
+        void change_affinity(KAFFINITY mask) {
+            GROUP_AFFINITY new_affinity{numa::cpu_info::get_thread_group_affinity()};
+            new_affinity.Mask = mask;
+            change_affinity(new_affinity);
+        }
+
+        std::optional<GROUP_AFFINITY> get_prev_affinity() const {
+            return prev_affinity_;
+        }
+
+        void restore_prev_affinity() {
+            if (prev_affinity_) {
+                change_affinity(prev_affinity_.value());
+                prev_affinity_ = std::nullopt;
+            }
+        }
+
+        void arm(GROUP_AFFINITY prev_affinity) {
+            prev_affinity_ = prev_affinity;
+        }
+
+        void disarm() {
+            prev_affinity_ = std::nullopt;
+        }
+
+        explicit operator bool() const {
+            return prev_affinity_ != std::nullopt;
+        }
 
     private:
-
+        std::optional<GROUP_AFFINITY> prev_affinity_{};
     };
 
     //
@@ -213,6 +317,9 @@ namespace perf {
         9.0,  10.0, 25.0, 50.0, 75.0,  90.0,   95.0,    96.0,
         97.0, 98.0, 99.0, 99.9, 99.99, 99.999, 99.9999, 99.99999};
 
+    inline constexpr double const microseconds_in_second{1000'000.0};
+    inline constexpr double const nanoseconds_in_second{1000'000'000.0};
+
     struct result_t {
         size_t calls_per_iteration{0};
 
@@ -244,32 +351,159 @@ namespace perf {
         double sample_varience{0.0};
         double sample_standard_deviation{0.0};
 
-        void print(int offset = 0, bool print_percentile = false) {
-            printf("%*csamples %lli\n", offset + 2, ' ', total_samples);
+        void print(int offset = 0,
+                   result_t const *baseline = nullptr,
+                   size_t bytes_processed_per_call = 0,
+                   bool print_percentile = false) {
+            printf("%*csamples                     %lli\n", offset + 2, ' ', total_samples);
             if (zero_samples_count) {
-                printf("%*czero samples %lli\n", offset + 2, ' ', zero_samples_count);
+                printf("%*czero samples                %lli\n", offset + 2, ' ', zero_samples_count);
             }
-            printf("%*ccalls per iteration %zi\n", offset + 2, ' ', calls_per_iteration);
-            printf("%*cavg. %03.6f\n", offset + 2, ' ', mean / 1000'000.0);
-            printf("%*ctrimmed avg. %03.6f\n", offset + 2, ' ', trimmed_mean / 1000'000.0);
-            printf("%*cmedian. %03.6f\n",
-                   offset + 2,
-                   ' ',
-                   tail_histogram_times[static_cast<size_t>(histogram_idx::percentile_50)] /
-                       1000'000.0);
+            printf("%*ccalls per iteration         %zi\n", offset + 2, ' ', calls_per_iteration);
 
-            printf("%*cstandard daviation. %03.6f\n", offset + 2, ' ', sample_standard_deviation / 1000'000.0);
+            if (bytes_processed_per_call) {
+                printf("%*cbypes per call              %zi\n", offset + 2, ' ', bytes_processed_per_call);
+            }
 
+            double calls_microseconds{static_cast<double>(calls_per_iteration) *
+                                      microseconds_in_second};
+
+            double bytes_calls_microseconds{
+                static_cast<double>(calls_per_iteration) *
+                static_cast<double>(bytes_processed_per_call) * microseconds_in_second};
+
+            double baseline_calls_microseconds{0.0};
+            double baseline_bytes_calls_microseconds{0.0};
+
+            if (baseline) {
+                baseline_calls_microseconds =
+                    static_cast<double>(baseline->calls_per_iteration) * microseconds_in_second;
+
+                baseline_bytes_calls_microseconds =
+                    static_cast<double>(baseline->calls_per_iteration) *
+                    static_cast<double>(bytes_processed_per_call) * microseconds_in_second;
+            }
+
+            {
+                double average{mean / calls_microseconds};
+
+                printf("%*cavg.sec./call               %03.10f", offset + 2, ' ', average);
+
+                if (baseline) {
+                    double other_average{baseline->mean / baseline_calls_microseconds};
+
+                    double average_diff{average - other_average};
+
+                    printf(" %+03.10f", average_diff);
+                }
+                printf("\n");
+            }
+
+            if (bytes_processed_per_call) {
+                double average_per_byte{mean / bytes_calls_microseconds};
+
+                printf("%*cavg.sec./byte               %03.10f", offset + 2, ' ', average_per_byte);
+
+                if (baseline) {
+                    double other_average_per_byte{baseline->mean / baseline_bytes_calls_microseconds};
+
+                    double average_per_byte_diff{average_per_byte - other_average_per_byte};
+
+                    printf(" %+03.10f", average_per_byte_diff);
+                }
+                printf("\n");
+            }
+
+            {
+                double trimmed_average{trimmed_mean / calls_microseconds};
+
+                printf("%*ctrimmed avg.sec./call       %03.10f", offset + 2, ' ', trimmed_average);
+
+                if (baseline) {
+                    double other_trimmed_average{baseline->trimmed_mean / baseline_calls_microseconds};
+
+                    double trimmed_average_diff{trimmed_average - other_trimmed_average};
+
+                    printf(" %+03.10f", trimmed_average_diff);
+                }
+                printf("\n");
+            }
+
+            if (bytes_processed_per_call) {
+                double trimmed_average_per_byte{trimmed_mean / bytes_calls_microseconds};
+
+                printf("%*ctrimmed avg.sec./byte       %03.10f", offset + 2, ' ', trimmed_average_per_byte);
+
+                if (baseline) {
+                    double other_trimmed_average_per_byte{
+                        baseline->trimmed_mean / baseline_bytes_calls_microseconds};
+
+                    double trimmed_average_per_byte_diff{
+                        trimmed_average_per_byte - other_trimmed_average_per_byte};
+
+                    printf(" %+03.10f", trimmed_average_per_byte_diff);
+                }
+                printf("\n");
+            }
+
+            {
+                double median{tail_histogram_times[static_cast<size_t>(histogram_idx::percentile_50)] /
+                              calls_microseconds};
+
+                printf("%*cmed.sec/call                %03.10f", offset + 2, ' ', median);
+
+                if (baseline) {
+                    double other_median{
+                        baseline->tail_histogram_times[static_cast<size_t>(histogram_idx::percentile_50)] /
+                        baseline_calls_microseconds};
+
+                    double median_diff{median - other_median};
+
+                    printf(" %+03.10f", median_diff);
+                }
+
+                printf("\n");
+            }
+            {
+                double this_sample_standard_deviation{sample_standard_deviation / calls_microseconds};
+
+                printf("%*cstandard daviation sec/call %03.10f", offset + 2, ' ', this_sample_standard_deviation);
+
+                if (baseline) {
+                    double other_sample_standard_deviation{
+                        baseline->sample_standard_deviation / baseline_calls_microseconds};
+
+                    double sample_standard_deviation_diff{
+                        this_sample_standard_deviation - other_sample_standard_deviation};
+
+                    printf(" %+03.10f", sample_standard_deviation_diff);
+                }
+
+                printf("\n");
+            }
             if (print_percentile) {
                 for (size_t idx{static_cast<size_t>(histogram_idx::percentile_1)};
                      idx < histogram_size;
                      ++idx) {
-                    printf("%*c%02.5f %03.6f - %lli\n",
+                    double bucket_time{tail_histogram_times[idx] / calls_microseconds};
+
+                    printf("%*c%02.5f %03.10f - %lli",
                            offset + 2,
                            ' ',
                            tail_histogram_bucket[idx],
-                           tail_histogram_times[idx] / 1000'000.0,
+                           bucket_time,
                            tail_histogram_count[idx]);
+
+                    if (baseline) {
+                        double other_bucket_time{baseline->tail_histogram_times[idx] /
+                                                 baseline_calls_microseconds};
+
+                        double bucket_time_diff{bucket_time - other_bucket_time};
+
+                        printf(" %+03.10f", bucket_time_diff);
+                    }
+
+                    printf("\n");
                 }
             }
         }
