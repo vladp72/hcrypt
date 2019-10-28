@@ -353,9 +353,7 @@ namespace perf {
         double sample_varience{0.0};
         double sample_standard_deviation{0.0};
 
-        void print(int offset = 0,
-                   result_t const *baseline = nullptr,
-                   bool print_percentile = false) {
+        void print(int offset = 0, result_t const *baseline = nullptr) {
             printf("%*csamples                     %lli\n", offset + 2, ' ', total_samples);
             if (zero_samples_count) {
                 printf("%*czero samples                %lli\n", offset + 2, ' ', zero_samples_count);
@@ -363,10 +361,7 @@ namespace perf {
             printf("%*ccalls per iteration         %zi\n", offset + 2, ' ', calls_per_iteration);
 
             if (bytes_processed_per_call) {
-                printf("%*cbypes per call              %zi\n",
-                       offset + 2,
-                       ' ',
-                       bytes_processed_per_call);
+                printf("%*cbypes per call              %zi\n", offset + 2, ' ', bytes_processed_per_call);
             }
 
             double calls_microseconds{static_cast<double>(calls_per_iteration) *
@@ -486,30 +481,87 @@ namespace perf {
 
                 printf("\n");
             }
-            if (print_percentile) {
-                for (size_t idx{static_cast<size_t>(histogram_idx::percentile_1)};
-                     idx < histogram_size;
-                     ++idx) {
-                    double bucket_time{tail_histogram_times[idx] / calls_microseconds};
+        }
 
-                    printf("%*c%02.5f %03.10f - %lli",
-                           offset + 2,
-                           ' ',
-                           tail_histogram_bucket[idx],
-                           bucket_time,
-                           tail_histogram_count[idx]);
+        void print_percentiles(int offset = 0, result_t const *baseline = nullptr) {
+            double calls_microseconds{static_cast<double>(calls_per_iteration) *
+                                      microseconds_in_second};
 
-                    if (baseline) {
-                        double other_bucket_time{baseline->tail_histogram_times[idx] /
-                                                 baseline_calls_microseconds};
+            double baseline_calls_microseconds{0.0};
 
-                        double bucket_time_diff{bucket_time - other_bucket_time};
+            if (baseline) {
+                baseline_calls_microseconds =
+                    static_cast<double>(baseline->calls_per_iteration) * microseconds_in_second;
+            }
 
-                        printf(" %+03.10f", bucket_time_diff);
-                    }
+            for (size_t idx{static_cast<size_t>(histogram_idx::percentile_1)};
+                 idx < histogram_size;
+                 ++idx) {
+                double bucket_time{tail_histogram_times[idx] / calls_microseconds};
 
-                    printf("\n");
+                printf("%*c%08.5f %03.10f - %06lli ",
+                       offset + 2,
+                       ' ',
+                       tail_histogram_bucket[idx],
+                       bucket_time,
+                       tail_histogram_count[idx]);
+
+                if (baseline) {
+                    double other_bucket_time{baseline->tail_histogram_times[idx] /
+                                             baseline_calls_microseconds};
+
+                    double bucket_time_diff{bucket_time - other_bucket_time};
+
+                    printf(" %+014.10f ", bucket_time_diff);
                 }
+
+                printf("\n");
+            }
+        }
+
+        void print_frequency(int offset = 0, result_t const *baseline = nullptr) {
+            double calls_microseconds{static_cast<double>(calls_per_iteration) *
+                                      microseconds_in_second};
+
+            double baseline_calls_microseconds{0.0};
+
+            if (baseline) {
+                baseline_calls_microseconds =
+                    static_cast<double>(baseline->calls_per_iteration) * microseconds_in_second;
+            }
+
+            for (size_t idx{0}; idx < 100; ++idx) {
+
+                if (0 == frequency_histogram_count[idx]) {
+                    continue;
+                }
+
+                double bucket_time{frequency_histogram_times[idx] / calls_microseconds};
+
+                long long percent_of_total{100LL * frequency_histogram_count[idx] /
+                                           total_samples};
+
+                printf("%*c%03zi %03.10f - %06lli ",
+                       offset + 2,
+                       ' ',
+                       idx,
+                       bucket_time,
+                       frequency_histogram_count[idx]);
+
+                if (baseline) {
+                    double other_bucket_time{(baseline->frequency_histogram_times[idx]) /
+                                             baseline_calls_microseconds};
+
+                    double bucket_time_diff{bucket_time - other_bucket_time};
+
+                    printf(" %+014.10f ", bucket_time_diff);
+                }
+
+                for (long long bar_idx{0}; bar_idx < percent_of_total; ++bar_idx) {
+                    printf("|");
+                }
+
+                printf("\n");
             }
         }
     };

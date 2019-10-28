@@ -72,12 +72,18 @@ int main() {
 
         perf_compare_hash();
 
+        perf_hash_compare_buffer_sizes(BCRYPT_MD5_ALGORITHM);
+
+        perf_hash_compare_buffer_sizes(BCRYPT_SHA1_ALGORITHM);
+
+        perf_hash_compare_buffer_sizes(BCRYPT_SHA256_ALGORITHM);
+
         //
         // This test prompts user to enter password that
         // protects key. Run it only in interactive mode
         //
-        //test_strong_key_protection();
-        
+        // test_strong_key_protection();
+
         //
         // uncomment if you need to explore output of library on your computer
         //

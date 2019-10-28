@@ -13,6 +13,9 @@ namespace {
                                      BCRYPT_SHA384_ALGORITHM,
                                      BCRYPT_SHA512_ALGORITHM};
 
+    size_t const buffer_sizes[]{
+        64, 128, 256, 512, 1'024, 4'096, 8'192, 16'384, 32'768, 65'536, 131'072, 262'144, 524'288, 1'048'576};
+
     void perf_sample_hash_create(wchar_t const *algorithm_name,
                                  hcrypt::buffer const &data_to_hash) {
         bcrypt::algorithm_provider provider{algorithm_name};
@@ -32,8 +35,10 @@ void perf_compare_hash() {
     try {
         int offset{0};
 
+        printf("---perf_compare_hash---------------\n");
+
         hcrypt::buffer data_to_hash;
-        data_to_hash.resize(64);
+        data_to_hash.resize(1024);
         bcrypt::generate_random(data_to_hash.data(), data_to_hash.size());
 
         //
@@ -59,7 +64,7 @@ void perf_compare_hash() {
             warm_up_samples.calculate_result(data_to_hash.size())};
         warm_up_samples_result.print(offset + 2, nullptr);
         //
-        // Reading buffer and accumulating result in a local variable 
+        // Reading buffer and accumulating result in a local variable
         // that is likley to be cached in a register
         // is a cheapest computation similar to hashing
         //
@@ -71,8 +76,7 @@ void perf_compare_hash() {
         });
         perf::result_t accumulate_result{
             accumulate_samples.calculate_result(data_to_hash.size())};
-        accumulate_result.print(
-            offset + 2, &warm_up_samples_result);
+        accumulate_result.print(offset + 2, &warm_up_samples_result);
         //
         // Copying from one buffer to another is a bit more expensive
         //
@@ -113,8 +117,7 @@ void perf_compare_hash() {
                         perf_sample_hash_duplicate(h, data_to_hash);
                     });
                     perf::result_t result{samples.calculate_result(data_to_hash.size())};
-                    result.print(
-                        offset + 2, &warm_up_samples_result);
+                    result.print(offset + 2, &warm_up_samples_result);
                 } catch (std::system_error const &ex) {
                     printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
                 }
@@ -122,6 +125,73 @@ void perf_compare_hash() {
 
     } catch (std::system_error const &ex) {
         printf("perf_compare_hash, error code = 0x%x, %s\n", ex.code().value(), ex.what());
+    }
+    printf("\n----------------\n");
+}
+
+void perf_hash_compare_buffer_sizes(wchar_t const *algorithm_name) {
+    try {
+        int offset{0};
+
+        printf("---perf_hash_compare_buffer_sizes(%S)---------------\n", algorithm_name);
+
+        hcrypt::buffer data_to_hash;
+        data_to_hash.resize(1024);
+        bcrypt::generate_random(data_to_hash.data(), data_to_hash.size());
+
+        //
+        // To reduce verience boost priority
+        //
+        printf("\n%*cBoosting priority to THREAD_PRIORITY_HIGHEST.\n", offset + 2, ' ');
+        perf::set_this_thread_priority_t scoped_priority_boos{THREAD_PRIORITY_HIGHEST};
+
+        perf::affinitize_thread_to_cpu_t scoped_thread_affinity{
+            perf::affinitize_thread_to_cpu_t::choose_cpu_t::yes};
+        printf("\n%*cAffinitized CPU to.\n", offset + 2, ' ');
+        numa::print(2, 0, numa::cpu_info::get_thread_group_affinity());
+
+        //
+        // Warm up
+        //
+        printf("\n%*cWarming up using %S.\n", offset + 2, ' ', algorithm_name);
+        perf::samples_collection warm_up_samples;
+        warm_up_samples.measure([&data_to_hash, algorithm_name]() {
+            perf_sample_hash_create(algorithm_name, data_to_hash);
+        });
+        perf::result_t warm_up_samples_result{
+            warm_up_samples.calculate_result(data_to_hash.size())};
+        warm_up_samples_result.print(offset + 2);
+        warm_up_samples_result.print_frequency(offset + 2);
+
+        std::for_each(
+            std::begin(buffer_sizes),
+            std::end(buffer_sizes),
+            [offset, &data_to_hash, &warm_up_samples_result, algorithm_name](size_t buffer_size) {
+                printf("\n%*cMeasuring perf for %S buffer size %zi.\n", offset + 2, ' ', algorithm_name, buffer_size);
+                try {
+                    data_to_hash.resize(buffer_size);
+                    bcrypt::generate_random(data_to_hash.data(), data_to_hash.size());
+
+                    bcrypt::algorithm_provider provider{algorithm_name};
+                    bcrypt::hash h{provider.create_hash()};
+
+                    perf::samples_collection samples;
+
+                    samples.measure([&data_to_hash, &h]() {
+                        perf_sample_hash_duplicate(h, data_to_hash);
+                    });
+                    perf::result_t result{samples.calculate_result(data_to_hash.size())};
+                    result.print(offset + 2, &warm_up_samples_result);
+                    warm_up_samples_result.print_frequency(offset + 2, &warm_up_samples_result);
+                } catch (std::system_error const &ex) {
+                    printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
+                }
+            });
+
+    } catch (std::system_error const &ex) {
+        printf("perf_hash_compare_buffer_sizes, error code = 0x%x, %s\n",
+               ex.code().value(),
+               ex.what());
     }
     printf("\n----------------\n");
 }
