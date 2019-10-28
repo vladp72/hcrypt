@@ -323,6 +323,8 @@ namespace perf {
     struct result_t {
         size_t calls_per_iteration{0};
 
+        size_t bytes_processed_per_call{0};
+
         long long min_time{0};
         long long max_time{0};
 
@@ -353,7 +355,6 @@ namespace perf {
 
         void print(int offset = 0,
                    result_t const *baseline = nullptr,
-                   size_t bytes_processed_per_call = 0,
                    bool print_percentile = false) {
             printf("%*csamples                     %lli\n", offset + 2, ' ', total_samples);
             if (zero_samples_count) {
@@ -362,7 +363,10 @@ namespace perf {
             printf("%*ccalls per iteration         %zi\n", offset + 2, ' ', calls_per_iteration);
 
             if (bytes_processed_per_call) {
-                printf("%*cbypes per call              %zi\n", offset + 2, ' ', bytes_processed_per_call);
+                printf("%*cbypes per call              %zi\n",
+                       offset + 2,
+                       ' ',
+                       bytes_processed_per_call);
             }
 
             double calls_microseconds{static_cast<double>(calls_per_iteration) *
@@ -381,7 +385,8 @@ namespace perf {
 
                 baseline_bytes_calls_microseconds =
                     static_cast<double>(baseline->calls_per_iteration) *
-                    static_cast<double>(bytes_processed_per_call) * microseconds_in_second;
+                    static_cast<double>(baseline->bytes_processed_per_call) *
+                    microseconds_in_second;
             }
 
             {
@@ -404,7 +409,7 @@ namespace perf {
 
                 printf("%*cavg.sec./byte               %03.10f", offset + 2, ' ', average_per_byte);
 
-                if (baseline) {
+                if (baseline && baseline->bytes_processed_per_call) {
                     double other_average_per_byte{baseline->mean / baseline_bytes_calls_microseconds};
 
                     double average_per_byte_diff{average_per_byte - other_average_per_byte};
@@ -434,7 +439,7 @@ namespace perf {
 
                 printf("%*ctrimmed avg.sec./byte       %03.10f", offset + 2, ' ', trimmed_average_per_byte);
 
-                if (baseline) {
+                if (baseline && baseline->bytes_processed_per_call) {
                     double other_trimmed_average_per_byte{
                         baseline->trimmed_mean / baseline_bytes_calls_microseconds};
 
@@ -551,11 +556,12 @@ namespace perf {
             return true;
         }
 
-        result_t calculate_result() const noexcept {
+        result_t calculate_result(size_t bytes_processed_per_call = 0) const noexcept {
             result_t stats{};
             bool is_first{true};
 
             stats.calls_per_iteration = calls_per_iteration_;
+            stats.bytes_processed_per_call = bytes_processed_per_call;
 
             stats.min_time = min_time_;
             stats.max_time = max_time_;
