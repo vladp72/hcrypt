@@ -134,6 +134,7 @@ add_executable ( hcrypt_test
                  test/hncrypt_test_strong_key_protection.cpp
                  test/hncrypt_test_key_derivation.cpp
                  test/hbcrypt_perf_hash.cpp
+                 test/hbcrypt_perf_base64.cpp
                  )
 
 #
