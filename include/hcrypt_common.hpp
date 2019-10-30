@@ -11,8 +11,10 @@
 #include <windows.h>
 #include <winternl.h>
 #include <intrin.h>
+#include <wincrypt.h>
 
 #pragma comment(lib, "ntdll.lib")
+#pragma comment(lib, "Crypt32.lib")
 
 #define BCRYPT_PLATFORM_FAIL_FAST(EC) \
     {                                 \
@@ -702,6 +704,22 @@ namespace hcrypt {
         return try_resize(*b, new_size);
     }
 
+    [[nodiscard]] inline std::error_code try_resize(std::string &b, size_t new_size) noexcept {
+        std::error_code s{hcrypt::win32_error(ERROR_SUCCESS)};
+        try {
+            b.resize(new_size);
+        } catch (std::bad_alloc const &) {
+            s = win32_error(ERROR_NOT_ENOUGH_MEMORY);
+        } catch (...) {
+            BCRYPT_CRASH_APPLICATION();
+        }
+        return s;
+    }
+
+    [[nodiscard]] inline std::error_code try_resize(std::string *b, size_t new_size) noexcept {
+        return try_resize(*b, new_size);
+    }
+
     [[nodiscard]] inline std::error_code try_resize(std::wstring &b, size_t new_size) noexcept {
         std::error_code s{hcrypt::win32_error(ERROR_SUCCESS)};
         try {
@@ -1140,6 +1158,395 @@ namespace hcrypt {
                 "Buffer does not contain valid Base64 encoded string"};
         }
         return str;
+    }
+
+    [[nodiscard]] inline std::error_code try_string_to_binary(std::string_view str,
+                                                              unsigned long in_flags,
+                                                              char *buffer,
+                                                              size_t *buffer_size,
+                                                              unsigned long *out_flags = nullptr,
+                                                              size_t *initial_skip = nullptr) {
+        std::error_code status{ERROR_SUCCESS, std::system_category()};
+        unsigned long buffer_size_tmp{static_cast<unsigned long>(*buffer_size)};
+        unsigned long initial_skip_tmp{0};
+
+        if (!CryptStringToBinaryA(str.data(),
+                                  static_cast<unsigned long>(str.size()),
+                                  in_flags,
+                                  reinterpret_cast<unsigned char *>(buffer),
+                                  buffer_size ? &buffer_size_tmp : nullptr,
+                                  &initial_skip_tmp,
+                                  out_flags)) {
+            status = hcrypt::win32_error(GetLastError());
+        } else {
+            *buffer_size = buffer_size_tmp;
+            if (initial_skip) {
+                *initial_skip = initial_skip_tmp;
+            }
+        }
+        return status;
+    }
+
+    inline void string_to_binary(std::string_view str,
+                                 unsigned long in_flags,
+                                 char *buffer,
+                                 size_t *buffer_size,
+                                 unsigned long *out_flags = nullptr,
+                                 size_t *initial_skip = nullptr) {
+        std::error_code status{try_string_to_binary(
+            str, in_flags, buffer, buffer_size, out_flags, initial_skip)};
+
+        if (!is_success(status)) {
+            throw std::system_error(status, "CryptStringToBinaryA failed");
+        }
+    }
+
+    [[nodiscard]] inline std::error_code try_string_to_binary(std::string_view str,
+                                                              unsigned long in_flags,
+                                                              buffer *buffer,
+                                                              unsigned long *out_flags = nullptr,
+                                                              size_t *initial_skip = nullptr) {
+        size_t buffer_size{0};
+        std::error_code status{try_string_to_binary(
+            str, in_flags, nullptr, &buffer_size, out_flags, initial_skip)};
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_resize(buffer, buffer_size);
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_string_to_binary(
+            str, in_flags, buffer->data(), &buffer_size, out_flags, initial_skip);
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_resize(buffer, buffer_size);
+
+        return status;
+    }
+
+    [[nodiscard]] inline buffer string_to_binary(std::string_view str,
+                                                 unsigned long in_flags,
+                                                 unsigned long *out_flags = nullptr,
+                                                 size_t *initial_skip = nullptr) {
+        buffer b;
+        std::error_code status{try_string_to_binary(str, in_flags, &b, out_flags, initial_skip)};
+
+        if (!is_success(status)) {
+            throw std::system_error(status, "CryptStringToBinaryA failed");
+        }
+        return b;
+    }
+
+    [[nodiscard]] inline std::error_code try_wstring_to_binary(std::wstring_view str,
+                                                               unsigned long in_flags,
+                                                               char *buffer,
+                                                               size_t *buffer_size,
+                                                               unsigned long *out_flags = nullptr,
+                                                               size_t *initial_skip = nullptr) {
+        std::error_code status{ERROR_SUCCESS, std::system_category()};
+        unsigned long buffer_size_tmp{static_cast<unsigned long>(*buffer_size)};
+        unsigned long initial_skip_tmp{0};
+
+        if (!CryptStringToBinaryW(str.data(),
+                                  static_cast<unsigned long>(str.size()),
+                                  in_flags,
+                                  reinterpret_cast<unsigned char *>(buffer),
+                                  buffer_size ? &buffer_size_tmp : nullptr,
+                                  &initial_skip_tmp,
+                                  out_flags)) {
+            status = hcrypt::win32_error(GetLastError());
+        } else {
+            *buffer_size = buffer_size_tmp;
+            if (initial_skip) {
+                *initial_skip = initial_skip_tmp;
+            }
+        }
+        return status;
+    }
+
+    inline void wstring_to_binary(std::wstring_view str,
+                                  unsigned long in_flags,
+                                  char *buffer,
+                                  size_t *buffer_size,
+                                  unsigned long *out_flags = nullptr,
+                                  size_t *initial_skip = nullptr) {
+        std::error_code status{try_wstring_to_binary(
+            str, in_flags, buffer, buffer_size, out_flags, initial_skip)};
+
+        if (!is_success(status)) {
+            throw std::system_error(status, "CryptStringToBinaryW failed");
+        }
+    }
+
+    [[nodiscard]] inline std::error_code try_wstring_to_binary(std::wstring_view str,
+                                                               unsigned long in_flags,
+                                                               buffer *buffer,
+                                                               unsigned long *out_flags = nullptr,
+                                                               size_t *initial_skip = nullptr) {
+        size_t buffer_size{0};
+        std::error_code status{try_wstring_to_binary(
+            str, in_flags, nullptr, &buffer_size, out_flags, initial_skip)};
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_resize(buffer, buffer_size);
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_wstring_to_binary(
+            str, in_flags, buffer->data(), &buffer_size, out_flags, initial_skip);
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_resize(buffer, buffer_size);
+
+        return status;
+    }
+
+    [[nodiscard]] inline buffer wstring_to_binary(std::wstring_view str,
+                                                  unsigned long in_flags,
+                                                  unsigned long *out_flags = nullptr,
+                                                  size_t *initial_skip = nullptr) {
+        buffer b;
+        std::error_code status{try_wstring_to_binary(str, in_flags, &b, out_flags, initial_skip)};
+
+        if (!is_success(status)) {
+            throw std::system_error(status, "CryptStringToBinaryW failed");
+        }
+        return b;
+    }
+
+    [[nodiscard]] inline std::error_code try_binary_to_string(char const *buffer,
+                                                              size_t buffer_size,
+                                                              unsigned long flags,
+                                                              char *str,
+                                                              size_t *str_len) {
+        std::error_code status{ERROR_SUCCESS, std::system_category()};
+        unsigned long str_len_tmp{static_cast<unsigned long>(*str_len)};
+
+        if (0 == buffer_size) {
+            str_len = 0;
+            return status;
+        }
+
+        if (!CryptBinaryToStringA(reinterpret_cast<unsigned char const *>(buffer),
+                                  static_cast<unsigned long>(buffer_size),
+                                  flags,
+                                  str,
+                                  &str_len_tmp)) {
+            status = hcrypt::win32_error(GetLastError());
+        } else {
+            *str_len = str_len_tmp;
+        }
+        return status;
+    }
+
+    [[nodiscard]] inline std::error_code try_binary_to_string(buffer const &buffer,
+                                                              unsigned long flags,
+                                                              char *str,
+                                                              size_t *str_len) {
+        return try_binary_to_string(buffer.data(), buffer.size(), flags, str, str_len);
+    }
+
+    inline void binary_to_string(char const *buffer,
+                                 size_t buffer_size,
+                                 unsigned long flags,
+                                 char *str,
+                                 size_t *str_len) {
+        std::error_code status{try_binary_to_string(buffer, buffer_size, flags, str, str_len)};
+
+        if (!is_success(status)) {
+            throw std::system_error(status, "CryptBinaryToStringA failed");
+        }
+    }
+
+    inline void binary_to_string(buffer const &buffer, unsigned long flags, char *str, size_t *str_len) {
+        binary_to_string(buffer.data(), buffer.size(), flags, str, str_len);
+    }
+
+    [[nodiscard]] inline std::error_code try_binary_to_string(char const *buffer,
+                                                              size_t buffer_size,
+                                                              unsigned long flags,
+                                                              std::string *str) {
+        size_t str_len{0};
+
+        std::error_code status{
+            try_binary_to_string(buffer, buffer_size, flags, nullptr, &str_len)};
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_resize(str, str_len);
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_binary_to_string(buffer, buffer_size, flags, str->data(), &str_len);
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_resize(str, str_len);
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        erase_tail_zeroes(*str);
+
+        return status;
+    }
+
+    [[nodiscard]] inline std::error_code try_binary_to_string(buffer const &buffer,
+                                                              unsigned long flags,
+                                                              std::string *str) {
+        return try_binary_to_string(buffer.data(), buffer.size(), flags, str);
+    }
+
+    [[nodiscard]] inline std::string binary_to_string(char const *buffer,
+                                                      size_t buffer_size,
+                                                      unsigned long flags) {
+        std::string s;
+        std::error_code status{try_binary_to_string(buffer, buffer_size, flags, &s)};
+
+        if (!is_success(status)) {
+            throw std::system_error(status, "CryptBinaryToStringA failed");
+        }
+
+        return s;
+    }
+
+    [[nodiscard]] inline std::string binary_to_string(buffer const &buffer,
+                                                      unsigned long flags) {
+        return binary_to_string(buffer.data(), buffer.size(), flags);
+    }
+
+    [[nodiscard]] inline std::error_code try_binary_to_wstring(char const *buffer,
+                                                               size_t buffer_size,
+                                                               unsigned long flags,
+                                                               wchar_t *str,
+                                                               size_t *str_len) {
+        std::error_code status{ERROR_SUCCESS, std::system_category()};
+        unsigned long str_len_tmp{static_cast<unsigned long>(*str_len)};
+
+        if (0 == buffer_size) {
+            str_len = 0;
+            return status;
+        }
+
+        if (!CryptBinaryToStringW(reinterpret_cast<unsigned char const *>(buffer),
+                                  static_cast<unsigned long>(buffer_size),
+                                  flags,
+                                  str,
+                                  &str_len_tmp)) {
+            status = hcrypt::win32_error(GetLastError());
+        } else {
+            *str_len = str_len_tmp;
+        }
+        return status;
+    }
+
+    [[nodiscard]] inline std::error_code try_binary_to_wstring(buffer const &buffer,
+                                                               unsigned long flags,
+                                                               wchar_t *str,
+                                                               size_t *str_len) {
+        return try_binary_to_wstring(buffer.data(), buffer.size(), flags, str, str_len);
+    }
+
+    inline void binary_to_wstring(char const *buffer,
+                                  size_t buffer_size,
+                                  unsigned long flags,
+                                  wchar_t *str,
+                                  size_t *str_len) {
+        std::error_code status{try_binary_to_wstring(buffer, buffer_size, flags, str, str_len)};
+
+        if (!is_success(status)) {
+            throw std::system_error(status, "CryptBinaryToStringW failed");
+        }
+    }
+
+    inline void binary_to_wstring(buffer const &buffer,
+                                  unsigned long flags,
+                                  wchar_t *str,
+                                  size_t *str_len) {
+        binary_to_wstring(buffer.data(), buffer.size(), flags, str, str_len);
+    }
+
+    [[nodiscard]] inline std::error_code try_binary_to_wstring(char const *buffer,
+                                                               size_t buffer_size,
+                                                               unsigned long flags,
+                                                               std::wstring *str) {
+        size_t str_len{0};
+
+        std::error_code status{try_binary_to_wstring(
+            buffer, buffer_size, flags, nullptr, &str_len)};
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_resize(str, str_len);
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_binary_to_wstring(buffer, buffer_size, flags, str->data(), &str_len);
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        status = try_resize(str, str_len);
+
+        if (!is_success(status)) {
+            return status;
+        }
+
+        erase_tail_zeroes(*str);
+
+        return status;
+    }
+
+    [[nodiscard]] inline std::error_code try_binary_to_wstring(buffer const &buffer,
+                                                               unsigned long flags,
+                                                               std::wstring *str) {
+        return try_binary_to_wstring(buffer.data(), buffer.size(), flags, str);
+    }
+
+    [[nodiscard]] inline std::wstring binary_to_wstring(char const *buffer,
+                                                        size_t buffer_size,
+                                                        unsigned long flags) {
+        std::wstring s;
+        std::error_code status{try_binary_to_wstring(buffer, buffer_size, flags, &s)};
+
+        if (!is_success(status)) {
+            throw std::system_error(status, "CryptBinaryToStringW failed");
+        }
+
+        return s;
+    }
+
+    [[nodiscard]] inline std::wstring binary_to_wstring(buffer const &buffer,
+                                                        unsigned long flags) {
+        return binary_to_wstring(buffer.data(), buffer.size(), flags);
     }
 
     // filetime_duration has the same layout as FILETIME; 100ns intervals

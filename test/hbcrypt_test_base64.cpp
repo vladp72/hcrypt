@@ -22,11 +22,16 @@ namespace {
     }
 
     void test_base64(int offset, std::string_view const &in) {
-        hcrypt::buffer encoded;
+        std::string encoded;
         print_container(offset, "data    :", in);
         print_container_hex(offset, "hex     :", in);
         hcrypt::to_base64(in.data(), in.size(), std::back_inserter(encoded));
         print_container(offset, "encoded :", encoded);
+
+        std::string other_encoded{hcrypt::binary_to_string(
+            in.data(), in.length(), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF)};
+        BCRYPT_CODDING_ERROR_IF_NOT(encoded == other_encoded);
+
         hcrypt::buffer decoded;
         auto [result, iter] = hcrypt::from_base64(
             encoded.data(), encoded.size(), std::back_inserter(decoded));
@@ -35,6 +40,10 @@ namespace {
 
         BCRYPT_CODDING_ERROR_IF_NOT(
             in == std::string_view(decoded.data(), decoded.size()));
+
+        hcrypt::buffer other_decoded{hcrypt::string_to_binary(other_encoded, CRYPT_STRING_BASE64)};
+        BCRYPT_CODDING_ERROR_IF_NOT(
+            in == std::string_view(other_decoded.data(), other_decoded.size()));
     }
 
     void test_base64_decoding_bad_input(int offset, std::string_view const &in) {
