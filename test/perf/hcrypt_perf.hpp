@@ -337,24 +337,33 @@ namespace perf {
         long long tail_histogram_times[histogram_size];
         long long tail_histogram_count[histogram_size];
         //
-        // Distribution over 100 buckets
+        // Distribution over time if time is 100 buckets
         //
-        long long frequency_histogram_times[100];
         long long frequency_histogram_count[100];
+        double frequency_histogram_bucket_size{0.0};
         //
         // Mean over all samples
         //
         double mean{0.0};
         //
+        // Total time spent in the middle 66% percent
+        //
+        long long trimmed_total_time{0};
+        //
+        // Number of samples in middle 66% percent
+        //
+        long long trimmed_total_samples{0};
+        //
         // Mean after triming 10% of samples from both sides
         //
-        double trimmed_mean{0.0};
+        double trimmed_mean_time{0.0};
 
         double sample_varience{0.0};
         double sample_standard_deviation{0.0};
 
         void print(int offset = 0, result_t const *baseline = nullptr) {
             printf("%*csamples                     %lli\n", offset + 2, ' ', total_samples);
+            printf("%*ctrimmed samples             %lli\n", offset + 2, ' ', trimmed_total_samples);
             if (zero_samples_count) {
                 printf("%*czero samples                %lli\n", offset + 2, ' ', zero_samples_count);
             }
@@ -415,12 +424,13 @@ namespace perf {
             }
 
             {
-                double trimmed_average{trimmed_mean / calls_microseconds};
+                double trimmed_average{trimmed_mean_time / calls_microseconds};
 
                 printf("%*ctrimmed avg.sec./call       %03.10f", offset + 2, ' ', trimmed_average);
 
                 if (baseline) {
-                    double other_trimmed_average{baseline->trimmed_mean / baseline_calls_microseconds};
+                    double other_trimmed_average{baseline->trimmed_mean_time /
+                                                 baseline_calls_microseconds};
 
                     double trimmed_average_diff{trimmed_average - other_trimmed_average};
 
@@ -430,13 +440,13 @@ namespace perf {
             }
 
             if (bytes_processed_per_call) {
-                double trimmed_average_per_byte{trimmed_mean / bytes_calls_microseconds};
+                double trimmed_average_per_byte{trimmed_mean_time / bytes_calls_microseconds};
 
                 printf("%*ctrimmed avg.sec./byte       %03.10f", offset + 2, ' ', trimmed_average_per_byte);
 
                 if (baseline && baseline->bytes_processed_per_call) {
                     double other_trimmed_average_per_byte{
-                        baseline->trimmed_mean / baseline_bytes_calls_microseconds};
+                        baseline->trimmed_mean_time / baseline_bytes_calls_microseconds};
 
                     double trimmed_average_per_byte_diff{
                         trimmed_average_per_byte - other_trimmed_average_per_byte};
@@ -519,27 +529,26 @@ namespace perf {
             }
         }
 
-        void print_frequency(int offset = 0, result_t const *baseline = nullptr) {
+        void print_frequency(int offset = 0) {
             double calls_microseconds{static_cast<double>(calls_per_iteration) *
                                       microseconds_in_second};
 
-            double baseline_calls_microseconds{0.0};
-
-            if (baseline) {
-                baseline_calls_microseconds =
-                    static_cast<double>(baseline->calls_per_iteration) * microseconds_in_second;
-            }
+            printf("%*cfrequency bucket size %03.10f\n",
+                   offset + 2,
+                   ' ',
+                   frequency_histogram_bucket_size / microseconds_in_second);
 
             for (size_t idx{0}; idx < 100; ++idx) {
-
                 if (0 == frequency_histogram_count[idx]) {
                     continue;
                 }
 
-                double bucket_time{frequency_histogram_times[idx] / calls_microseconds};
+                double bucket_time{
+                    (static_cast<double>(min_time) +
+                     frequency_histogram_bucket_size * static_cast<double>(idx)) /
+                    microseconds_in_second};
 
-                long long percent_of_total{100LL * frequency_histogram_count[idx] /
-                                           total_samples};
+                long long percent_of_total{100LL * frequency_histogram_count[idx] / total_samples};
 
                 printf("%*c%03zi %03.10f - %06lli ",
                        offset + 2,
@@ -547,15 +556,6 @@ namespace perf {
                        idx,
                        bucket_time,
                        frequency_histogram_count[idx]);
-
-                if (baseline) {
-                    double other_bucket_time{(baseline->frequency_histogram_times[idx]) /
-                                             baseline_calls_microseconds};
-
-                    double bucket_time_diff{bucket_time - other_bucket_time};
-
-                    printf(" %+014.10f ", bucket_time_diff);
-                }
 
                 for (long long bar_idx{0}; bar_idx < percent_of_total; ++bar_idx) {
                     printf("|");
@@ -595,15 +595,42 @@ namespace perf {
         bool measure(F const &f) {
             clear();
             calls_per_iteration_ = find_min_calls_per_iteration(f);
-            size_t iteraction{0};
-            while (iteraction < 10000) {
-                std::chrono::microseconds time{measure(f, calls_per_iteration_)};
-                if (time >= std::chrono::microseconds{1}) {
-                    add_sample(time.count());
-                } else {
-                    ++zero_samples_count_;
+            size_t total_samples{0};
+
+            constexpr size_t const samples_to_collect_max{10000};
+            constexpr size_t const first_samples_to_collect_in_teration{1500};
+            constexpr size_t const consequent_samples_to_collect_in_teration{500};
+
+            size_t samples_to_collect_in_teration{first_samples_to_collect_in_teration};
+            //
+            // Keep runnig test until we got 1000 samples in the midle 66% of
+            // the interval, or until we collected total 10K samples
+            //
+            while (total_samples < samples_to_collect_max) {
+                size_t samples{0};
+                while (samples < samples_to_collect_in_teration) {
+                    std::chrono::microseconds time{measure(f, calls_per_iteration_)};
+                    if (time >= std::chrono::microseconds{1}) {
+                        add_sample(time.count());
+                    } else {
+                        ++zero_samples_count_;
+                    }
+                    ++samples;
+                    ++total_samples;
                 }
-                ++iteraction;
+                //
+                // In first iteration we colelcted 1500 samples
+                // in all consequent iterations collect 500 samples
+                //
+                samples_to_collect_in_teration = consequent_samples_to_collect_in_teration;
+                //
+                // Calculate stats and see if we reached the
+                // goal of 1000 samples in the middle 66%
+                //
+                result_t stats{calculate_result()};
+                if (stats.trimmed_total_samples >= 1000) {
+                    break;
+                }
             }
             return true;
         }
@@ -624,43 +651,78 @@ namespace perf {
 
             stats.mean = get_mean();
 
+            stats.frequency_histogram_bucket_size =
+                static_cast<double>(get_max_time() - get_min_time()) / 100.0;
+
             long long samples_count_accumulator{0};
             size_t tail_histogram_idx{static_cast<size_t>(histogram_idx::percentile_1)};
 
-            long long trimmed_total_time{0};
-            long long trimmed_total_samples{0};
-
-            for_each_sample([&](long long time, long long count) noexcept {
+            for_each_time_bucket([&](long long time, long long count) noexcept {
+                //
+                // Keep accumulating how many samples we've observed so far
+                //
                 samples_count_accumulator += count;
-
-                stats.sample_varience +=
-                    count * count * (stats.mean - time) * (stats.mean - time);
-
+                //
+                // verience is mean minus sample squared. Multiply by the number
+                // of samples we have in this time bucket
+                //
+                stats.sample_varience += count * (stats.mean - time) * (stats.mean - time);
+                //
+                // Frequency histogram condences entire time range samples
+                // spread across to 100 slots.
+                //
+                double time_percent{0};
+                if (get_max_time() > get_min_time()) {
+                    time_percent =
+                        (static_cast<double>(time - get_min_time()) /
+                         static_cast<double>(get_max_time() - get_min_time())) *
+                        100.0;
+                }
+                //
+                // Agregate number of samples per slot.
+                //
+                stats.frequency_histogram_count[static_cast<size_t>(time_percent)] += count;
+                //
+                // Ratio os samples we observed so far devided by total samples
+                // will give us percentile we are in.
+                //
                 double percentile = (static_cast<double>(samples_count_accumulator) /
                                      static_cast<double>(this->get_total_samples())) *
                                     100.0;
-
-                size_t histogram_idx{static_cast<size_t>(percentile)};
-                if (histogram_idx < 100) {
-                    stats.frequency_histogram_count[static_cast<size_t>(percentile)] += count;
-                    stats.frequency_histogram_times[static_cast<size_t>(percentile)] += time;
-
-                    if (histogram_idx >= 10 && histogram_idx < 90) {
-                        trimmed_total_time += time * count;
-                        trimmed_total_samples += count;
-                    }
+                //
+                // Update percentile histogram. Tail histogram is an integral
+                // of distribution. We need to add samples to all slots after
+                // current percentile.
+                //
+                size_t tail_histogram_idx{static_cast<size_t>(percentile)};
+                //
+                // Trimmed total includes only middle 66% of samples so
+                // we exclude first and last 17% of samples.
+                //
+                if (tail_histogram_idx >= 17 && tail_histogram_idx < 83) {
+                    stats.trimmed_total_time += time * count;
+                    stats.trimmed_total_samples += count;
                 }
-
+                //
+                // skip all stots before current percentile
+                //
                 while (tail_histogram_idx < static_cast<size_t>(histogram_idx::percentile_size) &&
-                       tail_histogram_bucket[tail_histogram_idx] <= percentile) {
+                       tail_histogram_bucket[tail_histogram_idx] < percentile) {
+                    ++tail_histogram_idx;
+                }
+                //
+                // Add to all remaining percentiles
+                //
+                while (tail_histogram_idx < static_cast<size_t>(histogram_idx::percentile_size) &&
+                       tail_histogram_bucket[tail_histogram_idx] < percentile) {
                     stats.tail_histogram_times[tail_histogram_idx] = time;
                     stats.tail_histogram_count[tail_histogram_idx] = samples_count_accumulator;
                     ++tail_histogram_idx;
                 }
             });
 
-            stats.trimmed_mean = static_cast<double>(trimmed_total_time) /
-                                 static_cast<double>(trimmed_total_samples);
+            stats.trimmed_mean_time = static_cast<double>(stats.trimmed_total_time) /
+                                      static_cast<double>(stats.trimmed_total_samples);
 
             stats.sample_varience /= (total_samples_ - 1);
 
@@ -785,8 +847,8 @@ namespace perf {
         }
 
         template<typename F>
-        void for_each_sample(F &&f) noexcept(noexcept(f(std::declval<long long>(),
-                                                        std::declval<long long>()))) {
+        void for_each_time_bucket(F &&f) noexcept(
+            noexcept(f(std::declval<long long>(), std::declval<long long>()))) {
             for (auto const &[range, samples_array] : this->samples_) {
                 for (size_t idx = 0; idx < range_size; ++idx) {
                     if (samples_array[idx] > 0) {
@@ -797,7 +859,7 @@ namespace perf {
         }
 
         template<typename F>
-        void for_each_sample(F &&f) const
+        void for_each_time_bucket(F &&f) const
             noexcept(noexcept(f(std::declval<long long>(), std::declval<long long>()))) {
             for (auto const &[range, samples_array] : this->samples_) {
                 for (size_t idx = 0; idx < range_size; ++idx) {

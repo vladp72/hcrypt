@@ -89,7 +89,7 @@ void perf_base64_compare_buffer_sizes() {
                     perf::result_t result{
                         samples.calculate_result(data_to_encode.size())};
                     result.print(offset + 2, &warm_up_samples_result);
-                    //result.print_frequency(offset + 2, &warm_up_samples_result);
+                    result.print_frequency(offset + 2);
                 } catch (std::system_error const &ex) {
                     printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
                 }
@@ -117,7 +117,7 @@ void perf_base64_compare_buffer_sizes() {
                     perf::result_t result{
                         samples.calculate_result(data_to_encode.size())};
                     result.print(offset + 2, &warm_up_samples_result);
-                    //result.print_frequency(offset + 2, &warm_up_samples_result);
+                    result.print_frequency(offset + 2);
                 } catch (std::system_error const &ex) {
                     printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
                 }

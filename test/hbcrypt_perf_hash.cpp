@@ -182,7 +182,7 @@ void perf_hash_compare_buffer_sizes(wchar_t const *algorithm_name) {
                     });
                     perf::result_t result{samples.calculate_result(data_to_hash.size())};
                     result.print(offset + 2, &warm_up_samples_result);
-                    result.print_frequency(offset + 2, &warm_up_samples_result);
+                    result.print_frequency(offset + 2);
                 } catch (std::system_error const &ex) {
                     printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
                 }
