@@ -332,38 +332,37 @@ namespace perf {
         long long total_samples{0};
         long long total_time{0};
         //
-        // Percentiles focusing on tail latency
-        //
-        long long tail_histogram_times[histogram_size];
-        long long tail_histogram_count[histogram_size];
-        //
         // Distribution over time if time is 100 buckets
         //
         long long frequency_histogram_count[100];
         double frequency_histogram_bucket_size{0.0};
         //
-        // Mean over all samples
+        // median
+        //
+        double median{0};
+        //
+        // Mean of all samples
         //
         double mean{0.0};
-        //
-        // Total time spent in the middle 66% percent
-        //
-        long long trimmed_total_time{0};
-        //
-        // Number of samples in middle 66% percent
-        //
-        long long trimmed_total_samples{0};
-        //
-        // Mean after triming 10% of samples from both sides
-        //
-        double trimmed_mean_time{0.0};
 
         double sample_varience{0.0};
         double sample_standard_deviation{0.0};
+        //
+        // Only sa,mples +- 1 standard deviation from the median
+        //
+        long long trimmed_total_time{0};
+        long long trimmed_total_samples{0};
+        double trimmed_mean_time{0.0};
 
         void print(int offset = 0, result_t const *baseline = nullptr) {
-            printf("%*csamples                     %lli\n", offset + 2, ' ', total_samples);
-            printf("%*ctrimmed samples             %lli\n", offset + 2, ' ', trimmed_total_samples);
+            printf(
+                "%*csamples                     %lli +- STD has %lli samples or %03.3f%% samples\n",
+                offset + 2,
+                ' ',
+                total_samples,
+                trimmed_total_samples,
+                100.0 * static_cast<double>(trimmed_total_samples) /
+                    static_cast<double>(total_samples));
             if (zero_samples_count) {
                 printf("%*czero samples                %lli\n", offset + 2, ' ', zero_samples_count);
             }
@@ -455,25 +454,6 @@ namespace perf {
                 }
                 printf("\n");
             }
-
-            {
-                double median{tail_histogram_times[static_cast<size_t>(histogram_idx::percentile_50)] /
-                              calls_microseconds};
-
-                printf("%*cmed.sec/call                %03.10f", offset + 2, ' ', median);
-
-                if (baseline) {
-                    double other_median{
-                        baseline->tail_histogram_times[static_cast<size_t>(histogram_idx::percentile_50)] /
-                        baseline_calls_microseconds};
-
-                    double median_diff{median - other_median};
-
-                    printf(" %+03.10f", median_diff);
-                }
-
-                printf("\n");
-            }
             {
                 double this_sample_standard_deviation{sample_standard_deviation / calls_microseconds};
 
@@ -487,42 +467,6 @@ namespace perf {
                         this_sample_standard_deviation - other_sample_standard_deviation};
 
                     printf(" %+03.10f", sample_standard_deviation_diff);
-                }
-
-                printf("\n");
-            }
-        }
-
-        void print_percentiles(int offset = 0, result_t const *baseline = nullptr) {
-            double calls_microseconds{static_cast<double>(calls_per_iteration) *
-                                      microseconds_in_second};
-
-            double baseline_calls_microseconds{0.0};
-
-            if (baseline) {
-                baseline_calls_microseconds =
-                    static_cast<double>(baseline->calls_per_iteration) * microseconds_in_second;
-            }
-
-            for (size_t idx{static_cast<size_t>(histogram_idx::percentile_1)};
-                 idx < histogram_size;
-                 ++idx) {
-                double bucket_time{tail_histogram_times[idx] / calls_microseconds};
-
-                printf("%*c%08.5f %03.10f - %06lli ",
-                       offset + 2,
-                       ' ',
-                       tail_histogram_bucket[idx],
-                       bucket_time,
-                       tail_histogram_count[idx]);
-
-                if (baseline) {
-                    double other_bucket_time{baseline->tail_histogram_times[idx] /
-                                             baseline_calls_microseconds};
-
-                    double bucket_time_diff{bucket_time - other_bucket_time};
-
-                    printf(" %+014.10f ", bucket_time_diff);
                 }
 
                 printf("\n");
@@ -546,7 +490,7 @@ namespace perf {
                 double bucket_time{
                     (static_cast<double>(min_time) +
                      frequency_histogram_bucket_size * static_cast<double>(idx)) /
-                    microseconds_in_second};
+                    calls_microseconds};
 
                 long long percent_of_total{100LL * frequency_histogram_count[idx] / total_samples};
 
@@ -657,19 +601,29 @@ namespace perf {
             long long samples_count_accumulator{0};
             size_t tail_histogram_idx{static_cast<size_t>(histogram_idx::percentile_1)};
 
+            long long half_samples_count{this->get_total_samples() / 2};
+
             for_each_time_bucket([&](long long time, long long count) noexcept {
                 //
-                // Keep accumulating how many samples we've observed so far
+                // If we went over half of samples then we found interval that
+                // has median store timestamp of that interval
+                //
+                if (half_samples_count > samples_count_accumulator &&
+                    half_samples_count <= samples_count_accumulator + count) {
+                    stats.median = static_cast<double>(time);
+                }
+                //
+                // Accumulate how many samples we've observed so far
                 //
                 samples_count_accumulator += count;
+
                 //
                 // verience is mean minus sample squared. Multiply by the number
                 // of samples we have in this time bucket
                 //
                 stats.sample_varience += count * (stats.mean - time) * (stats.mean - time);
                 //
-                // Frequency histogram condences entire time range samples
-                // spread across to 100 slots.
+                // Frequency histogram condences entire time range into 100 slots.
                 //
                 double time_percent{0};
                 if (get_max_time() > get_min_time()) {
@@ -682,51 +636,36 @@ namespace perf {
                 // Agregate number of samples per slot.
                 //
                 stats.frequency_histogram_count[static_cast<size_t>(time_percent)] += count;
+            });
+
+            stats.sample_varience /= (static_cast<double>(total_samples_) - 1.0);
+            stats.sample_standard_deviation = sqrt(stats.sample_varience);
+            //
+            // In sacond iteration calculate number of samples that are
+            // +- standard deviation from the average
+            //
+            // For an approximately normal data set, the values within one
+            // standard deviation of the mean account for about 68% of the set;
+            // while within two standard deviations account for about 95%; and
+            // within three standard deviations account for about 99.7%.
+            //
+            double lower_bound{stats.mean - stats.sample_standard_deviation};
+            double upper_bound{stats.mean + stats.sample_standard_deviation};
+
+            for_each_time_bucket([&](long long time, long long count) noexcept {
                 //
-                // Ratio os samples we observed so far devided by total samples
-                // will give us percentile we are in.
+                // If we went over half of samples then we found interval that
+                // has median store timestamp of that interval
                 //
-                double percentile = (static_cast<double>(samples_count_accumulator) /
-                                     static_cast<double>(this->get_total_samples())) *
-                                    100.0;
-                //
-                // Update percentile histogram. Tail histogram is an integral
-                // of distribution. We need to add samples to all slots after
-                // current percentile.
-                //
-                size_t tail_histogram_idx{static_cast<size_t>(percentile)};
-                //
-                // Trimmed total includes only middle 66% of samples so
-                // we exclude first and last 17% of samples.
-                //
-                if (tail_histogram_idx >= 17 && tail_histogram_idx < 83) {
-                    stats.trimmed_total_time += time * count;
+                if (static_cast<double>(time) >= lower_bound &&
+                    static_cast<double>(time) <= upper_bound) {
                     stats.trimmed_total_samples += count;
-                }
-                //
-                // skip all stots before current percentile
-                //
-                while (tail_histogram_idx < static_cast<size_t>(histogram_idx::percentile_size) &&
-                       tail_histogram_bucket[tail_histogram_idx] < percentile) {
-                    ++tail_histogram_idx;
-                }
-                //
-                // Add to all remaining percentiles
-                //
-                while (tail_histogram_idx < static_cast<size_t>(histogram_idx::percentile_size) &&
-                       tail_histogram_bucket[tail_histogram_idx] < percentile) {
-                    stats.tail_histogram_times[tail_histogram_idx] = time;
-                    stats.tail_histogram_count[tail_histogram_idx] = samples_count_accumulator;
-                    ++tail_histogram_idx;
+                    stats.trimmed_total_time += count * time;
                 }
             });
 
             stats.trimmed_mean_time = static_cast<double>(stats.trimmed_total_time) /
-                                      static_cast<double>(stats.trimmed_total_samples);
-
-            stats.sample_varience /= (total_samples_ - 1);
-
-            stats.sample_standard_deviation = sqrt(stats.sample_varience);
+                                      static_cast<double>(stats.total_samples);
 
             return stats;
         }
