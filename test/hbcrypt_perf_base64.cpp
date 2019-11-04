@@ -58,19 +58,15 @@ void perf_base64_compare_buffer_sizes() {
                "hcrypt::string_to_binary.\n",
                offset + 2,
                ' ');
-        perf::samples_collection warm_up_samples;
-        warm_up_samples.measure([&data_to_encode]() {
-            perf_sample_binary_to_string(data_to_encode);
-        });
-        perf::result_t warm_up_samples_result{
-            warm_up_samples.calculate_result(data_to_encode.size())};
-        warm_up_samples_result.print(offset + 2);
-        //warm_up_samples_result.print_frequency(offset + 2);
+        perf::result_t warm_up_perf_result{
+            perf::meassure_and_print_result(offset + 2, [&data_to_encode]() {
+                perf_sample_binary_to_string(data_to_encode);
+            })};
 
         std::for_each(
             std::begin(buffer_sizes),
             std::end(buffer_sizes),
-            [offset, &data_to_encode, &warm_up_samples_result](size_t buffer_size) {
+            [offset, &data_to_encode, &warm_up_perf_result](size_t buffer_size) {
                 printf("\n%*cMeasuring perf for hcrypt::binary_to_string - "
                        "hcrypt::string_to_binary buffer size %zi.\n",
                        offset + 2,
@@ -81,15 +77,10 @@ void perf_base64_compare_buffer_sizes() {
                     bcrypt::generate_random(data_to_encode.data(),
                                             data_to_encode.size());
 
-                    perf::samples_collection samples;
-
-                    samples.measure([&data_to_encode]() {
-                        perf_sample_binary_to_string(data_to_encode);
-                    });
-                    perf::result_t result{
-                        samples.calculate_result(data_to_encode.size())};
-                    result.print(offset + 2, &warm_up_samples_result);
-                    //result.print_frequency(offset + 2);
+                    perf::meassure_and_print_result(
+                        offset + 2, warm_up_perf_result, [&data_to_encode]() {
+                            perf_sample_binary_to_string(data_to_encode);
+                        });
                 } catch (std::system_error const &ex) {
                     printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
                 }
@@ -98,7 +89,7 @@ void perf_base64_compare_buffer_sizes() {
         std::for_each(
             std::begin(buffer_sizes),
             std::end(buffer_sizes),
-            [offset, &data_to_encode, &warm_up_samples_result](size_t buffer_size) {
+            [offset, &data_to_encode, &warm_up_perf_result](size_t buffer_size) {
                 printf("\n%*cMeasuring perf for hcrypt::to_base64 - "
                        "hcrypt::from_base64 buffer size %zi.\n",
                        offset + 2,
@@ -109,15 +100,10 @@ void perf_base64_compare_buffer_sizes() {
                     bcrypt::generate_random(data_to_encode.data(),
                                             data_to_encode.size());
 
-                    perf::samples_collection samples;
-
-                    samples.measure([&data_to_encode]() {
-                        perf_sample_base64(data_to_encode);
-                    });
-                    perf::result_t result{
-                        samples.calculate_result(data_to_encode.size())};
-                    result.print(offset + 2, &warm_up_samples_result);
-                    //result.print_frequency(offset + 2);
+                    perf::meassure_and_print_result(
+                        offset + 2, warm_up_perf_result, [&data_to_encode]() {
+                            perf_sample_base64(data_to_encode);
+                        });
                 } catch (std::system_error const &ex) {
                     printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
                 }

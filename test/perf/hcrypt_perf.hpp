@@ -281,42 +281,6 @@ namespace perf {
         long long start_{0LL};
     };
 
-    enum class histogram_idx : size_t {
-        percentile_1,
-        percentile_2,
-        percentile_3,
-        percentile_4,
-        percentile_5,
-        percentile_6,
-        percentile_7,
-        percentile_8,
-        percentile_9,
-        percentile_10,
-        percentile_25,
-        percentile_50,
-        percentile_75,
-        percentile_90,
-        percentile_95,
-        percentile_96,
-        percentile_97,
-        percentile_98,
-        percentile_99,
-        percentile_99_9,
-        percentile_99_99,
-        percentile_99_999,
-        percentile_99_9999,
-        percentile_99_99999,
-        percentile_size,
-    };
-
-    inline constexpr size_t const histogram_size{
-        static_cast<size_t>(histogram_idx::percentile_size)};
-
-    inline constexpr double const tail_histogram_bucket[histogram_size] = {
-        1.0,  2.0,  3.0,  4.0,  5.0,   6.0,    7.0,     8.0,
-        9.0,  10.0, 25.0, 50.0, 75.0,  90.0,   95.0,    96.0,
-        97.0, 98.0, 99.0, 99.9, 99.99, 99.999, 99.9999, 99.99999};
-
     inline constexpr double const microseconds_in_second{1000'000.0};
     inline constexpr double const nanoseconds_in_second{1000'000'000.0};
 
@@ -328,7 +292,7 @@ namespace perf {
         long long min_time{0};
         long long max_time{0};
 
-        long long zero_samples_count{0};
+        long long bad_samples_count{0};
         long long total_samples{0};
         long long total_time{0};
         //
@@ -355,16 +319,16 @@ namespace perf {
         double trimmed_mean_time{0.0};
 
         void print(int offset = 0, result_t const *baseline = nullptr) {
-            printf(
-                "%*csamples                     %lli +- STD has %lli samples or %03.3f%% samples\n",
-                offset + 2,
-                ' ',
-                total_samples,
-                trimmed_total_samples,
-                100.0 * static_cast<double>(trimmed_total_samples) /
-                    static_cast<double>(total_samples));
-            if (zero_samples_count) {
-                printf("%*czero samples                %lli\n", offset + 2, ' ', zero_samples_count);
+            printf("%*csamples                     %lli +- STD has %lli "
+                   "samples or %03.3f%% samples\n",
+                   offset + 2,
+                   ' ',
+                   total_samples,
+                   trimmed_total_samples,
+                   100.0 * static_cast<double>(trimmed_total_samples) /
+                       static_cast<double>(total_samples));
+            if (bad_samples_count) {
+                printf("%*czero samples                %lli\n", offset + 2, ' ', bad_samples_count);
             }
             printf("%*ccalls per iteration         %zi\n", offset + 2, ' ', calls_per_iteration);
 
@@ -510,7 +474,17 @@ namespace perf {
         }
     };
 
-    class samples_collection {
+    struct result_description_t {
+        std::wstring name;
+        bool is_baseline{false};
+
+        friend bool operator<(result_description_t const &lhs,
+                              result_description_t const &rhs) {
+            return lhs.name < rhs.name;
+        }
+    };
+
+    class experiment {
         constexpr static long long const range_size{4000LL};
 
         using samples_range_t = fixed_size_halfopen_range<range_size>;
@@ -518,12 +492,12 @@ namespace perf {
         using samples_t = std::map<samples_range_t, range_values_t>;
 
     public:
-        samples_collection() = default;
-        ~samples_collection() = default;
-        samples_collection(samples_collection const &) = default;
-        samples_collection(samples_collection &&) = default;
-        samples_collection &operator=(samples_collection const &) = default;
-        samples_collection &operator=(samples_collection &&) = default;
+        experiment() = default;
+        ~experiment() = default;
+        experiment(experiment const &) = default;
+        experiment(experiment &&) = default;
+        experiment &operator=(experiment const &) = default;
+        experiment &operator=(experiment &&) = default;
 
         void clear() {
             min_time_ = 0;
@@ -531,7 +505,7 @@ namespace perf {
             total_samples_ = 0;
             total_time_ = 0;
             calls_per_iteration_ = 0;
-            zero_samples_count_ = 0;
+            bad_samples_count_ = 0;
             samples_.clear();
         }
 
@@ -557,7 +531,7 @@ namespace perf {
                     if (time >= std::chrono::microseconds{1}) {
                         add_sample(time.count());
                     } else {
-                        ++zero_samples_count_;
+                        ++bad_samples_count_;
                     }
                     ++samples;
                     ++total_samples;
@@ -589,7 +563,7 @@ namespace perf {
             stats.min_time = min_time_;
             stats.max_time = max_time_;
 
-            stats.zero_samples_count = zero_samples_count_;
+            stats.bad_samples_count = bad_samples_count_;
             stats.total_samples = total_samples_;
             stats.total_time = total_time_;
 
@@ -599,7 +573,6 @@ namespace perf {
                 static_cast<double>(get_max_time() - get_min_time()) / 100.0;
 
             long long samples_count_accumulator{0};
-            size_t tail_histogram_idx{static_cast<size_t>(histogram_idx::percentile_1)};
 
             long long half_samples_count{this->get_total_samples() / 2};
 
@@ -848,10 +821,53 @@ namespace perf {
         size_t calls_per_iteration_{0};
         long long min_time_{0};
         long long max_time_{0};
-        long long zero_samples_count_{0};
+        long long bad_samples_count_{0};
         long long total_samples_{0};
         long long total_time_{0};
         samples_t samples_;
     };
 
+    using result_set_t = std::map<result_description_t, result_t>;
+
+    template<typename F>
+    result_t meassure(F const &f) {
+        experiment e;
+        e.measure(f);
+        result_t r{e.calculate_result()};
+        return r;
+    }
+
+    template<typename F>
+    result_t meassure(result_description_t desc, result_set_t const &result_set, F const &f) {
+        experiment e;
+        e.measure(f);
+        result_t r{e.calculate_result()};
+        result_set[desc] = r;
+        return r;
+    }
+
+    template<typename F>
+    result_t meassure_and_print_result(int offset,
+                                       result_t const *baseline,
+                                       bool print_frequency,
+                                       F const &f) {
+        experiment e;
+        e.measure(f);
+        result_t r{e.calculate_result()};
+        r.print(offset, baseline);
+        if (print_frequency) {
+            r.print_frequency(offset);
+        }
+        return r;
+    }
+
+    template<typename F>
+    result_t meassure_and_print_result(int offset, result_t const &baseline, F const &f) {
+        return meassure_and_print_result(offset, &baseline, false, f);
+    }
+
+    template<typename F>
+    result_t meassure_and_print_result(int offset, F const &f) {
+        return meassure_and_print_result(offset, nullptr, false, f);
+    }
 } // namespace perf
