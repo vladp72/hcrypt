@@ -415,9 +415,9 @@ After changing mode to CCM
   // All registered
   //
   hcrypt::for_each(bcrypt::enum_registered_providers(), 
-      [](wchar_t const *provider_name){
-          <handle provider>
-      });
+                   [](wchar_t const *provider_name){
+                       <handle provider>
+                   });
 
   //
   // Find first provider with matching requirements
