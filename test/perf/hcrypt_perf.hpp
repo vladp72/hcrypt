@@ -230,7 +230,7 @@ namespace perf {
         }
 
         constexpr bool is_in(unsigned long p) const {
-            (p >= start_ && p < get_end());
+            return p >= start_ && p < get_end();
         }
 
         constexpr bool is_overlapping(fixed_size_halfopen_range const &other) const {
@@ -555,7 +555,7 @@ namespace perf {
 
         result_t calculate_result(size_t bytes_processed_per_call = 0) const noexcept {
             result_t stats{};
-            bool is_first{true};
+            //bool is_first{true};
 
             stats.calls_per_iteration = calls_per_iteration_;
             stats.bytes_processed_per_call = bytes_processed_per_call;
@@ -829,22 +829,22 @@ namespace perf {
 
     using result_set_t = std::map<result_description_t, result_t>;
 
-    template<typename F>
-    result_t meassure(F const &f) {
-        experiment e;
-        e.measure(f);
-        result_t r{e.calculate_result()};
-        return r;
-    }
+    //template<typename F>
+    //result_t meassure(F const &f) {
+    //    experiment e;
+    //    e.measure(f);
+    //    result_t r{e.calculate_result()};
+    //    return r;
+    //}
 
-    template<typename F>
-    result_t meassure(result_description_t desc, result_set_t const &result_set, F const &f) {
-        experiment e;
-        e.measure(f);
-        result_t r{e.calculate_result()};
-        result_set[desc] = r;
-        return r;
-    }
+    //template<typename F>
+    //result_t meassure(result_description_t const &desc, result_set_t const &result_set, F const &f) {
+    //    experiment e;
+    //    e.measure(f);
+    //    result_t r{e.calculate_result()};
+    //    result_set[desc] = r;
+    //    return r;
+    //}
 
     template<typename F>
     result_t meassure_and_print_result(int offset,

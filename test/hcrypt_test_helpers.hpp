@@ -518,7 +518,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
     PIN_INFO pin_info{};
     status = obj.try_get_pin_info(&pin_info);
     if (hcrypt::is_success(status)) {
-        printf("%*cpin info: ver 0x%lx, type %ws, purpose %ws, change permissions 0x%lx, unblock permissions 0x%lx, flags 0x%x, cache policy ver 0x%lx, cache policy info 0x%lx, cache policy type %ws\n",
+        printf("%*cpin info: ver 0x%lx, type %ws, purpose %ws, change permissions 0x%lx, unblock permissions 0x%lx, flags 0x%lx, cache policy ver 0x%lx, cache policy info 0x%lx, cache policy type %ws\n",
                offset,
                ' ',
                pin_info.dwVersion,

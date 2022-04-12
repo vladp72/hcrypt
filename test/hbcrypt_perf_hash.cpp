@@ -67,20 +67,19 @@ void perf_compare_hash() {
         //
         printf("\n%*cstd::accumulate.\n", offset + 2, ' ');
         long long sum{0};
-        perf::result_t accumulate_result{
-            perf::meassure_and_print_result(offset + 2, [&data_to_hash, &sum]() {
+        perf::meassure_and_print_result(offset + 2, [&data_to_hash, &sum]() {
                 sum = std::accumulate(data_to_hash.begin(), data_to_hash.end(), 0);
-            })};
+            });
         //
         // Copying from one buffer to another is a bit more expensive
         //
         printf("\n%*cstd::copy.\n", offset + 2, ' ');
         hcrypt::buffer other_buffer;
         other_buffer.resize(data_to_hash.size());
-        perf::result_t copy_result{perf::meassure_and_print_result(
+        perf::meassure_and_print_result(
             offset + 2, [&data_to_hash, &other_buffer]() {
                 std::copy(data_to_hash.begin(), data_to_hash.end(), other_buffer.begin());
-            })};
+            });
 
         std::for_each(
             std::begin(hash_algorithms),
@@ -103,10 +102,10 @@ void perf_compare_hash() {
                     bcrypt::algorithm_provider provider{algorithm_name};
                     bcrypt::hash h{provider.create_hash()};
 
-                    perf::result_t result{perf::meassure_and_print_result(
+                    perf::meassure_and_print_result(
                         offset + 2, warm_up_perf_result, [&data_to_hash, &h]() {
                             perf_sample_hash_duplicate(h, data_to_hash);
-                        })};
+                        });
 
                 } catch (std::system_error const &ex) {
                     printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
@@ -161,10 +160,10 @@ void perf_hash_compare_buffer_sizes(wchar_t const *algorithm_name) {
                     bcrypt::algorithm_provider provider{algorithm_name};
                     bcrypt::hash h{provider.create_hash()};
 
-                    perf::result_t result{perf::meassure_and_print_result(
+                    perf::meassure_and_print_result(
                         offset + 2, warm_up_perf_result, [&data_to_hash, &h]() {
                             perf_sample_hash_duplicate(h, data_to_hash);
-                        })};
+                        });
                 } catch (std::system_error const &ex) {
                     printf("aborted, error code = 0x%x, %s\n", ex.code().value(), ex.what());
                 }

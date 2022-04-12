@@ -36,7 +36,7 @@ namespace {
             bcrypt::hash h{hash_ap.create_hash()};
             print_bcrypt_object_properties(offset + 2, h, true);
 
-            unsigned long hash_size{h.get_hash_length()};
+            //unsigned long hash_size{h.get_hash_length()};
 
             printf("%*cHashing message %S\n",
                    offset,

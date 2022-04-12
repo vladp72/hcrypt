@@ -517,12 +517,12 @@ namespace ncrypt {
             return status;
         }
 
-        template<typename T>
+        template<typename P>
         [[nodiscard]] std::error_code try_get_property(wchar_t const *property_name,
-                                                       T *value,
+                                                       P *value,
                                                        size_t *result_size = nullptr) const
             noexcept {
-            static_assert(std::is_pod_v<T>);
+            static_assert(std::is_pod_v<P>);
             size_t tmp_result_size{0};
             std::error_code status{try_get_property(
                 property_name, reinterpret_cast<char *>(value), sizeof(*value), &tmp_result_size)};
@@ -553,18 +553,18 @@ namespace ncrypt {
             return b;
         }
 
-        template<typename T>
-        T get_property_as(wchar_t const *property_name) const {
-            T value{};
-            std::error_code status{try_get_property<T>(property_name, &value)};
+        template<typename P>
+        P get_property_as(wchar_t const *property_name) const {
+            P value{};
+            std::error_code status{try_get_property<P>(property_name, &value)};
             if (hcrypt::is_failure(status)) {
                 throw std::system_error(status, "NCryptGetProperty failed");
             }
             return value;
         }
 
-        template<typename T>
-        size_t get_property(wchar_t const *property_name, T *value) const {
+        template<typename P>
+        size_t get_property(wchar_t const *property_name, P *value) const {
             size_t property_size{0};
             std::error_code status{try_get_property(property_name, &value, &property_size)};
             if (hcrypt::is_failure(status)) {
@@ -589,7 +589,7 @@ namespace ncrypt {
                                                        hcrypt::buffer const &buffer) {
             std::error_code status{
                 try_set_property(property_name,
-                                 const_cast<unsigned char *>(buffer.data()),
+                                 const_cast<char *>(buffer.data()),
                                  static_cast<unsigned long>(buffer.size()))};
             return status;
         }
@@ -598,14 +598,14 @@ namespace ncrypt {
                                                        std::wstring const &buffer) {
             std::error_code status{try_set_property(
                 property_name,
-                const_cast<unsigned char *>(buffer.data()),
+                reinterpret_cast<unsigned char *>(const_cast<wchar_t *>(buffer.data())),
                 static_cast<unsigned long>(buffer.size() * sizeof(wchar_t)))};
             return status;
         }
 
-        template<typename T>
+        template<typename P>
         [[nodiscard]] std::error_code try_set_property(wchar_t const *property_name,
-                                                       T const &value) {
+                                                       P const &value) {
             std::error_code status{try_set_property(property_name, &value, sizeof(value))};
             return status;
         }
@@ -617,8 +617,8 @@ namespace ncrypt {
             }
         }
 
-        template<typename T>
-        void set_property(wchar_t const *property_name, T const &value) {
+        template<typename P>
+        void set_property(wchar_t const *property_name, P const &value) {
             std::error_code status{try_set_property(
                 property_name, reinterpret_cast<char const *>(&value), sizeof(value))};
             if (hcrypt::is_failure(status)) {
@@ -646,9 +646,9 @@ namespace ncrypt {
 
         std::wstring get_associated_ecdh_name() const {
             std::wstring name;
-            hcrypt::status status{try_get_property(NCRYPT_ASSOCIATED_ECDH_KEY, &name)};
-            if (!hcrypt::is_success(status) && status.value() != ERROR_NOT_FOUND) {
-                throw std::system_error(status, "NCryptGetProperty failed");
+            std::error_code err{try_get_property(NCRYPT_ASSOCIATED_ECDH_KEY, &name)};
+            if (!hcrypt::is_success(err) && err.value() != ERROR_NOT_FOUND) {
+                throw std::system_error(err, "NCryptGetProperty failed");
             }
             return name;
         }
@@ -859,10 +859,10 @@ namespace ncrypt {
 
         bool get_security_descriptor_supported() const {
             unsigned long value{0};
-            hcrypt::status status{try_get_property(
+            std::error_code err{try_get_property(
                 NCRYPT_SECURITY_DESCR_SUPPORT_PROPERTY, &value)};
-            if (!hcrypt::is_success(status) && status.value() != ERROR_NOT_FOUND) {
-                throw std::system_error(status, "NCryptGetProperty failed");
+            if (!hcrypt::is_success(err) && err.value() != ERROR_NOT_FOUND) {
+                throw std::system_error(err, "NCryptGetProperty failed");
             }
             return hcrypt::is_flag_on(value, 1);
         }
@@ -929,9 +929,9 @@ namespace ncrypt {
 
         bool get_use_count_enabled() const {
             unsigned long value{0};
-            hcrypt::status status{try_get_property(NCRYPT_USE_COUNT_ENABLED_PROPERTY, &value)};
-            if (!hcrypt::is_success(status) && status.value() != ERROR_NOT_FOUND) {
-                throw std::system_error(status, "NCryptGetProperty failed");
+            std::error_code err{try_get_property(NCRYPT_USE_COUNT_ENABLED_PROPERTY, &value)};
+            if (!hcrypt::is_success(err) && err.value() != ERROR_NOT_FOUND) {
+                throw std::system_error(err, "NCryptGetProperty failed");
             }
             return hcrypt::is_flag_on(value, 1);
         }

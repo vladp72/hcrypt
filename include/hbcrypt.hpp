@@ -767,12 +767,12 @@ namespace bcrypt {
             return status;
         }
 
-        template<typename T>
+        template<typename P>
         [[nodiscard]] std::error_code try_get_property(wchar_t const *property_name,
-                                                       T *value,
+                                                       P *value,
                                                        size_t *result_size = nullptr) const
             noexcept {
-            static_assert(std::is_pod_v<T>);
+            static_assert(std::is_pod_v<P>);
             size_t tmp_result_size{0};
             std::error_code status{try_get_property(
                 property_name, reinterpret_cast<char *>(value), sizeof(*value), &tmp_result_size)};
@@ -803,18 +803,18 @@ namespace bcrypt {
             return b;
         }
 
-        template<typename T>
-        T get_property_as(wchar_t const *property_name) const {
-            T value{};
-            std::error_code status{try_get_property<T>(property_name, &value)};
+        template<typename P>
+        P get_property_as(wchar_t const *property_name) const {
+            P value{};
+            std::error_code status{try_get_property<P>(property_name, &value)};
             if (hcrypt::is_failure(status)) {
                 throw std::system_error(status, "BCryptGetProperty failed");
             }
             return value;
         }
 
-        template<typename T>
-        size_t get_property(wchar_t const *property_name, T *value) const {
+        template<typename P>
+        size_t get_property(wchar_t const *property_name, P *value) const {
             size_t property_size{0};
             std::error_code status{try_get_property(property_name, &value, &property_size)};
             if (hcrypt::is_failure(status)) {
@@ -836,10 +836,22 @@ namespace bcrypt {
         }
 
         [[nodiscard]] std::error_code try_set_property(wchar_t const *property_name,
+                                                       unsigned char const *buffer,
+                                                       size_t buffer_size) {
+            std::error_code status{hcrypt::nt_status_to_win32_error(BCryptSetProperty(
+                get_object_handle(),
+                property_name,
+                const_cast<unsigned char *>(buffer),
+                static_cast<unsigned long>(buffer_size),
+                0))};
+            return status;
+        }
+
+        [[nodiscard]] std::error_code try_set_property(wchar_t const *property_name,
                                                        hcrypt::buffer const &buffer) {
             std::error_code status{
                 try_set_property(property_name,
-                                 const_cast<unsigned char *>(buffer.data()),
+                                 const_cast<char *>(buffer.data()),
                                  static_cast<unsigned long>(buffer.size()))};
             return status;
         }
@@ -848,14 +860,14 @@ namespace bcrypt {
                                                        std::wstring const &buffer) {
             std::error_code status{try_set_property(
                 property_name,
-                const_cast<unsigned char *>(buffer.data()),
+                reinterpret_cast<char *>(const_cast<wchar_t *>(buffer.data())),
                 static_cast<unsigned long>(buffer.size() * sizeof(wchar_t)))};
             return status;
         }
 
-        template<typename T>
+        template<typename P>
         [[nodiscard]] std::error_code try_set_property(wchar_t const *property_name,
-                                                       T const &value) {
+                                                       P const &value) {
             std::error_code status{try_set_property(property_name, &value, sizeof(value))};
             return status;
         }
@@ -867,8 +879,8 @@ namespace bcrypt {
             }
         }
 
-        template<typename T>
-        void set_property(wchar_t const *property_name, T const &value) {
+        template<typename P>
+        void set_property(wchar_t const *property_name, P const &value) {
             std::error_code status{try_set_property(property_name, reinterpret_cast<char const *>(&value), sizeof(value))};
             if (hcrypt::is_failure(status)) {
                 throw std::system_error(status, "BCryptSetProperty failed");

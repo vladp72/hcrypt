@@ -456,8 +456,8 @@ namespace numa {
         // affinity to.
         //
         static idle_processor_cycle_time_array get_idle_rocessor_cycle_time(USHORT processor_group) {
-            ULONG buffer_size{get_group_maximum_processor_count(processor_group) *
-                              sizeof(idle_processor_cycle_time_array::value_type)};
+            ULONG buffer_size{static_cast<ULONG>(get_group_maximum_processor_count(processor_group) *
+                              sizeof(idle_processor_cycle_time_array::value_type))};
             idle_processor_cycle_time_array result;
 
             for (;;) {
@@ -564,7 +564,7 @@ namespace numa {
 
         template<typename F>
         static void find_first_active_processor_in_group(USHORT group_number, F const &fn) {
-            ULONG active_processor_count{get_group_active_processor_count()};
+            ULONG active_processor_count{get_group_active_processor_count(group_number)};
             for (ULONG idx = 0; idx < active_processor_count; ++idx) {
                 if (!fn(group_number, idx)) {
                     break;
@@ -694,7 +694,7 @@ namespace numa {
 
     inline void print(int padding, size_t idx, NUMA_NODE_RELATIONSHIP const &info) {
         printf("%*c[%zi] NUMA_NODE_RELATIONSHIP(%zi) {\n", padding, ' ', idx, sizeof(info));
-        printf("%*cNodeNumber = %i\n", padding + 2, ' ', info.NodeNumber);
+        printf("%*cNodeNumber = %lu\n", padding + 2, ' ', info.NodeNumber);
         // BYTE Reserved[20];
         print(padding + 2, 0, info.GroupMask);
         printf("%*c}\n", padding, ' ');
@@ -715,7 +715,7 @@ namespace numa {
         printf("%*cLevel         = %i, 0x%x\n", padding + 2, ' ', info.Level, info.Level);
         printf("%*cAssociativity = %i, 0x%x\n", padding + 2, ' ', info.Associativity, info.Associativity);
         printf("%*cLineSize      = %i, 0x%x\n", padding + 2, ' ', info.LineSize, info.LineSize);
-        printf("%*cCacheSize     = %i, 0x%x\n", padding + 2, ' ', info.CacheSize, info.CacheSize);
+        printf("%*cCacheSize     = %lu, 0x%lx\n", padding + 2, ' ', info.CacheSize, info.CacheSize);
         printf("%*cType          = %i, %S\n",
                padding + 2,
                ' ',
@@ -784,7 +784,7 @@ namespace numa {
                        ' ',
                        info.Relationship,
                        cpu_info::processor_relationship_to_wstr(info.Relationship));
-                printf("%*cSize = %i\n", padding + 2, ' ', info.Size);
+                printf("%*cSize = %lu\n", padding + 2, ' ', info.Size);
                 switch (info.Relationship) {
                 case RelationProcessorCore:
                     //[[fallthrough]]
@@ -812,7 +812,7 @@ namespace numa {
 
     inline void print(int padding, size_t idx, SYSTEM_CPU_SET_INFORMATION const &info, size_t buffer_size) {
         printf("%*c[%zi] SYSTEM_CPU_SET_INFORMATION(%zi, %zi) {\n", padding, ' ', idx, sizeof(info), buffer_size);
-        printf("%*cSize                     = %i\n", padding + 2, ' ', info.Size);
+        printf("%*cSize                     = %lu\n", padding + 2, ' ', info.Size);
         printf("%*cType                     = %i, %S\n",
                padding + 2,
                ' ',
@@ -820,7 +820,7 @@ namespace numa {
                cpu_info::cpu_set_information_type_to_wstr(info.Type));
         switch (info.Type) {
         case CpuSetInformation:
-            printf("%*cId                       = %u, 0x%x\n",
+            printf("%*cId                       = %lu, 0x%lx\n",
                    padding + 2,
                    ' ',
                    info.CpuSet.Id,
@@ -830,32 +830,32 @@ namespace numa {
                    ' ',
                    info.CpuSet.Group,
                    info.CpuSet.Group);
-            printf("%*cLogicalProcessorIndex    = %u, 0x%x\n",
+            printf("%*cLogicalProcessorIndex    = %lu, 0x%lx\n",
                    padding + 2,
                    ' ',
                    static_cast<unsigned long>(info.CpuSet.LogicalProcessorIndex),
                    static_cast<unsigned long>(info.CpuSet.LogicalProcessorIndex));
-            printf("%*cCoreIndex                = %u, 0x%x\n",
+            printf("%*cCoreIndex                = %lu, 0x%lx\n",
                    padding + 2,
                    ' ',
                    static_cast<unsigned long>(info.CpuSet.CoreIndex),
                    static_cast<unsigned long>(info.CpuSet.CoreIndex));
-            printf("%*cLastLevelCacheIndex      = %u, 0x%x\n",
+            printf("%*cLastLevelCacheIndex      = %lu, 0x%lx\n",
                    padding + 2,
                    ' ',
                    static_cast<unsigned long>(info.CpuSet.LastLevelCacheIndex),
                    static_cast<unsigned long>(info.CpuSet.LastLevelCacheIndex));
-            printf("%*cNumaNodeIndex            = %u, 0x%x\n",
+            printf("%*cNumaNodeIndex            = %lu, 0x%lx\n",
                    padding + 2,
                    ' ',
                    static_cast<unsigned long>(info.CpuSet.NumaNodeIndex),
                    static_cast<unsigned long>(info.CpuSet.NumaNodeIndex));
-            printf("%*cEfficiencyClass          = %u, 0x%x\n",
+            printf("%*cEfficiencyClass          = %lu, 0x%lx\n",
                    padding + 2,
                    ' ',
                    static_cast<unsigned long>(info.CpuSet.EfficiencyClass),
                    static_cast<unsigned long>(info.CpuSet.EfficiencyClass));
-            printf("%*cAllFlags                 = %u, 0x%x\n",
+            printf("%*cAllFlags                 = %lu, 0x%lx\n",
                    padding + 2,
                    ' ',
                    static_cast<unsigned long>(info.CpuSet.AllFlags),
@@ -876,17 +876,17 @@ namespace numa {
                    padding + 2,
                    ' ',
                    info.CpuSet.RealTime ? "Y" : "N");
-            printf("%*cReservedFlags            = %u, 0x%x\n",
+            printf("%*cReservedFlags            = %lu, 0x%lx\n",
                    padding + 2,
                    ' ',
                    static_cast<unsigned long>(info.CpuSet.ReservedFlags),
                    static_cast<unsigned long>(info.CpuSet.ReservedFlags));
-            printf("%*cReserved                 = %u, 0x%x\n",
+            printf("%*cReserved                 = %lu, 0x%lx\n",
                    padding + 2,
                    ' ',
                    static_cast<unsigned long>(info.CpuSet.Reserved),
                    static_cast<unsigned long>(info.CpuSet.Reserved));
-            printf("%*cSchedulingClass          = %u\n",
+            printf("%*cSchedulingClass          = %lu\n",
                    padding + 2,
                    ' ',
                    static_cast<unsigned long>(info.CpuSet.SchedulingClass));
@@ -930,7 +930,7 @@ namespace numa {
                            info.CpuSet.Group,
                            info.CpuSet.Group);
                     printf(
-                        "LogicalProcessorIndex = %u, 0x%x, bitmask 0x%02I64x\n",
+                        "LogicalProcessorIndex = %lu, 0x%lx, bitmask 0x%02I64x\n",
                         static_cast<unsigned long>(info.CpuSet.LogicalProcessorIndex),
                         static_cast<unsigned long>(info.CpuSet.LogicalProcessorIndex),
                         1ULL << info.CpuSet.LogicalProcessorIndex);
@@ -970,13 +970,13 @@ namespace numa {
     inline void print_system_info() {
         printf("get_group_maximum_processor_group_count() -> %u\n",
                cpu_info::get_group_maximum_processor_group_count());
-        printf("get_highest_numa_number()                 -> %hu\n",
+        printf("get_highest_numa_number()                 -> %lu\n",
                cpu_info::get_highest_numa_number());
-        printf("get_system_maximum_processor_count()      -> %u\n",
+        printf("get_system_maximum_processor_count()      -> %lu\n",
                cpu_info::get_system_maximum_processor_count());
         printf("get_active_processor_group_count()        -> %u\n",
                cpu_info::get_active_processor_group_count());
-        printf("get_system_active_processor_count()       -> %u\n",
+        printf("get_system_active_processor_count()       -> %lu\n",
                cpu_info::get_system_active_processor_count());
 
         cpu_info::find_first_numa_node([](USHORT numa_node_number) -> bool {
@@ -1020,7 +1020,7 @@ namespace numa {
 
         cpu_info::find_first_system_cpu_information_block(
             cpu_info,
-            [padding, &selected_cpu](SYSTEM_CPU_SET_INFORMATION const &info, size_t size) -> bool {
+            [&selected_cpu](SYSTEM_CPU_SET_INFORMATION const &info, size_t size) -> bool {
                 switch (info.Type) {
                 case CpuSetInformation:
                     //
