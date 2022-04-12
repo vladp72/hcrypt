@@ -502,7 +502,7 @@ inline void print_ncrypt_object_properties(int offset, T &obj, bool hide_errors 
     ncrypt::storage_provider provider;
     status = obj.try_get_storage_provider(&provider);
     if (hcrypt::is_success(status)) {
-        printf("%*cprovider handle: %zx\n", offset, ' ', provider.get_handle());
+        printf("%*cprovider handle: %zx\n", offset, ' ', static_cast<size_t>(provider.get_handle()));
     } else if (!hide_errors) {
         printf("%*cprovider handle: error code = 0x%x\n", offset, ' ', status.value());
     }

@@ -655,7 +655,7 @@ namespace numa {
 
     inline void print(int padding, size_t idx, GROUP_AFFINITY const &info) {
         printf("%*c[%zi] GROUP_AFFINITY(%zi) {\n", padding, ' ', idx, sizeof(info));
-        printf("%*cMask        = %zi, 0x%zx\n", padding + 2, ' ', info.Mask, info.Mask);
+        printf("%*cMask        = %zi, 0x%zx\n", padding + 2, ' ', static_cast<size_t>(info.Mask), static_cast<size_t>(info.Mask));
         printf("%*cGroup       = %hi, 0x%hx\n", padding + 2, ' ', info.Group, info.Group);
         // printf("%*cReserved[3] = {0x%x, 0x%x, 0x%x}\n", padding + 2, ' ', info.Reserved[0], info.Reserved[1], info.Reserved[2]);
         printf("%*c}\n", padding, ' ');
@@ -737,7 +737,7 @@ namespace numa {
         printf("%*c[%zi] GROUP_RELATIONSHIP(%zi) {\n", padding, ' ', idx, sizeof(info));
         printf("%*cMaximumProcessorCount = %i\n", padding + 2, ' ', info.MaximumProcessorCount);
         printf("%*cActiveProcessorCount  = %i\n", padding + 2, ' ', info.ActiveProcessorCount);
-        printf("%*cActiveProcessorMask   = 0x%zx\n", padding + 2, ' ', info.ActiveProcessorMask);
+        printf("%*cActiveProcessorMask   = 0x%zx\n", padding + 2, ' ', static_cast<size_t>(info.ActiveProcessorMask));
         printf("%*c}\n", padding, ' ');
     }
 
