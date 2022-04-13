@@ -5,9 +5,11 @@
 #include <system_error>
 #include <iterator>
 #include <vector>
+#include <array>
 #include <string>
 #include <string_view>
 #include <chrono>
+#include <algorithm>
 
 #include <windows.h>
 #include <winternl.h>
@@ -636,13 +638,11 @@ namespace hcrypt {
                 std::system_category());
         }
 
-        virtual bool equivalent(int e, const std::error_condition &condition) const
-            noexcept override {
+        virtual bool equivalent(int e, const std::error_condition &condition) const noexcept override {
             return default_error_condition(e) == condition;
         }
 
-        virtual bool equivalent(std::error_code const &e, int condition) const
-            noexcept override {
+        virtual bool equivalent(std::error_code const &e, int condition) const noexcept override {
             return (*this == e.category() && e.value() == condition) ||
                    (std::system_category() == e.category() &&
                     nt_status_to_win32_error_ex(static_cast<long>(condition)) == e.value());
@@ -651,23 +651,39 @@ namespace hcrypt {
 
     inline error_category_t const error_category_singleton;
 
-    inline std::error_category const &get_error_category() noexcept {
+    [[nodiscard]] inline std::error_category const &get_error_category() noexcept {
         return error_category_singleton;
     }
 
-    inline std::error_code make_error_code(status const s) noexcept {
+    [[nodiscard]] inline std::error_code make_error_code(status const s) noexcept {
         return {static_cast<int>(s), get_error_category()};
     }
 
-    inline std::error_code make_error_code(long const s) noexcept {
+    [[nodiscard]] inline std::error_code make_error_code(long const s) noexcept {
         return make_error_code(static_cast<status>(s));
     }
 
-    inline std::error_code make_error_code(win32_error const s) noexcept {
+    [[nodiscard]] inline std::error_code make_error_code(win32_error const s) noexcept {
         return {static_cast<int>(s), std::system_category()};
     }
 
-    inline bool is_success(std::error_code const &err) {
+    [[nodiscard]] inline win32_error get_last_error() {
+        return static_cast<win32_error>(GetLastError());
+    }
+
+    [[nodiscard]] inline win32_error make_win32_error(DWORD e) {
+        return static_cast<win32_error>(e);
+    }
+
+    [[nodiscard]] inline std::error_code get_last_error_code() {
+        return get_last_error();
+    }
+
+    [[nodiscard]] inline win32_error make_win32_error_code(DWORD e) {
+        return make_win32_error(e);
+    }
+
+    [[nodiscard]] inline bool is_success(std::error_code const &err) {
         if (get_error_category() == err.category()) {
             return is_success(err.value());
         } else if (std::system_category() == err.category()) {
@@ -677,7 +693,7 @@ namespace hcrypt {
         return false;
     }
 
-    inline bool is_failure(std::error_code const &err) {
+    [[nodiscard]] inline bool is_failure(std::error_code const &err) {
         if (get_error_category() == err.category()) {
             return is_failure(err.value());
         } else if (std::system_category() == err.category()) {
@@ -1655,4 +1671,37 @@ namespace hcrypt {
             static_cast<int>(guid.Data4[6]),
             static_cast<int>(guid.Data4[7]));
     }
+
+    class secure_memory_resource: public std::pmr::memory_resource {
+    public:
+        explicit secure_memory_resource(memory_resource *upstream = nullptr) noexcept
+            : upstream_{upstream ? upstream : std::pmr::get_default_resource()} {
+        }
+
+        ~secure_memory_resource() noexcept {
+        }
+
+    protected:
+        void *do_allocate(size_t bytes, [[maybe_unused]] size_t alignment) override {
+            return upstream_->allocate(bytes, alignment);
+        }
+
+        void do_deallocate(void *p, size_t bytes, [[maybe_unused]] size_t alignment) noexcept override {
+            SecureZeroMemory(p, bytes);
+            upstream_->deallocate(p, bytes, alignment);
+        }
+
+        bool do_is_equal(memory_resource const &other) const noexcept override {
+            return (&other == this);
+        }
+
+    private:
+        memory_resource *upstream_{nullptr};
+    };
+
+    [[nodiscard]] inline secure_memory_resource *get_secure_memory_resource() {
+        static secure_memory_resource instance;
+        return &instance;
+    }
+
 } // namespace hcrypt

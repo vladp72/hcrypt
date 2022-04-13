@@ -21,6 +21,7 @@
 #include "hncrypt_test_ECDSA256.hpp"
 #include "hncrypt_test_strong_key_protection.hpp"
 #include "hncrypt_test_key_derivation.hpp"
+#include "credman_tests.hpp"
 
 #include "perf\numa.hpp"
 
@@ -29,57 +30,80 @@
 
 int main() {
     try {
-        test_CTAD();
 
-        test_err();
+        //
+        // credential manager tests
+        //
+        test_enumirate_supported_persistence_types();
 
-        test_base64();
+        test_enumirate_all_credentials();
 
-        print_is_fips_complience_on();
+        test_get_target_info();
 
-        print_registered_providers();
+        test_protect_unprotect();
 
-        resolve_providers();
+        test_creds_lifetime();
 
-        print_algorithms();
+        test_pack_unpack_auth_buffer();
 
-        print_crypto_contexts();
 
-        test_algorithm();
+        // test_CTAD();
 
-        test_rand();
+        // test_err();
 
-        test_sample_key_derivation();
+        // test_base64();
 
-        test_sample_hash();
+        // print_is_fips_complience_on();
 
-        test_message_signing();
+        // print_registered_providers();
 
-        tesh_dh_oakley();
+        // resolve_providers();
 
-        test_sha1_hmac();
+        // print_algorithms();
 
-        test_aes_cmac();
+        // print_crypto_contexts();
 
-        test_aes_cbc();
+        // test_algorithm();
 
-        test_ncrypt_providers();
+        // test_rand();
 
-        test_ncrypt_enum_keys();
+        // test_sample_key_derivation();
 
-        test_ecdsa();
+        // test_sample_hash();
 
-        test_sample_ncrypt_key_derivation();
+        // test_message_signing();
 
-        perf_compare_hash();
+        // tesh_dh_oakley();
 
-        perf_hash_compare_buffer_sizes(BCRYPT_MD5_ALGORITHM);
+        // test_sha1_hmac();
 
-        perf_hash_compare_buffer_sizes(BCRYPT_SHA1_ALGORITHM);
+        // test_aes_cmac();
 
-        perf_hash_compare_buffer_sizes(BCRYPT_SHA256_ALGORITHM);
+        // test_aes_cbc();
 
-        perf_base64_compare_buffer_sizes();
+        // test_ncrypt_providers();
+
+        // test_ncrypt_enum_keys();
+
+        // test_ecdsa();
+
+        // test_sample_ncrypt_key_derivation();
+
+        //
+        // Uncomment to run perf tests
+        //
+
+
+        //perf_compare_hash();
+
+        //perf_hash_compare_buffer_sizes(BCRYPT_MD5_ALGORITHM);
+
+        //perf_hash_compare_buffer_sizes(BCRYPT_SHA1_ALGORITHM);
+
+        //perf_hash_compare_buffer_sizes(BCRYPT_SHA256_ALGORITHM);
+
+        //perf_base64_compare_buffer_sizes();
+
 
         //
         // This test prompts user to enter password that
