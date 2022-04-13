@@ -37,7 +37,8 @@ namespace credman {
                                                      save_credentials ? &save_credentials_tmp : nullptr,
                                                      flags)};
         if (err != ERROR_SUCCESS) {
-            throw std::system_error(hcrypt::make_win32_error_code(err));
+            throw std::system_error(
+                hcrypt::make_win32_error_code(err), "CredUIPromptForWindowsCredentialsW failed");
         }
 
         std::pmr::vector<char> result{hcrypt::get_secure_memory_resource()};
@@ -60,7 +61,7 @@ namespace credman {
     void confirm_credentials(wchar_t const *target_name, bool confirm) {
         std::error_code err{try_confirm_credentials(target_name, confirm)};
         if (err != hcrypt::make_win32_error_code(NO_ERROR)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredUIConfirmCredentialsW failed");
         }
     }
 
@@ -151,6 +152,6 @@ namespace credman {
             }
         }
 
-        throw std::system_error(err);
+        throw std::system_error(err, "CredUnPackAuthenticationBufferW failed");
     }
 } // namespace credman

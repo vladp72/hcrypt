@@ -544,7 +544,7 @@ namespace credman {
     [[nodiscard]] inline session_types_arr get_session_types() {
         session_types_arr arr;
         if (!CredGetSessionTypes(static_cast<unsigned long>(arr.size()), arr.data())) {
-            throw std::system_error(hcrypt::get_last_error_code());
+            throw std::system_error(hcrypt::get_last_error_code(), "CredGetSessionTypes failed");
         }
         return arr;
     }
@@ -589,7 +589,7 @@ namespace credman {
         marshaled_credentials_ptr marshaled_credentials;
         std::error_code err{try_marshal_credential(credentials, &marshaled_credentials)};
         if (err != hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredMarshalCredentialW failed");
         }
         return marshaled_credentials;
     }
@@ -624,7 +624,7 @@ namespace credman {
         std::error_code err{try_unmarshal_credential(
             marshaled_credentials, &creds.type, &creds.buffer)};
         if (err != hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredUnmarshalCredentialW failed");
         }
         return creds;
     }
@@ -651,7 +651,7 @@ namespace credman {
         std::error_code err{try_pack_authentication_buffer(
             flags, user_name, password, nullptr, &size)};
         if (err != hcrypt::make_win32_error_code(ERROR_INSUFFICIENT_BUFFER)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredPackAuthenticationBufferW failed");
         }
         BCRYPT_CODDING_ERROR_IF(0 == size);
         hcrypt::buffer packed_authenticated_buffer;
@@ -660,7 +660,7 @@ namespace credman {
         err = try_pack_authentication_buffer(
             flags, user_name, password, packed_authenticated_buffer.data(), &size2);
         if (err != hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredPackAuthenticationBufferW failed");
         }
         BCRYPT_CODDING_ERROR_IF_NOT(size == size2);
         return packed_authenticated_buffer;
@@ -703,7 +703,7 @@ namespace credman {
     [[nodiscard]] inline CRED_PROTECTION_TYPE get_protectection_type(wchar_t const *protected_credentials) {
         CRED_PROTECTION_TYPE protection_type{CredUnprotected};
         if (!CredIsProtectedW(const_cast<wchar_t *>(protected_credentials), &protection_type)) {
-            throw std::system_error(hcrypt::get_last_error_code());
+            throw std::system_error(hcrypt::get_last_error_code(), "CredIsProtectedW failed");
         }
         return protection_type;
     }
@@ -726,7 +726,7 @@ namespace credman {
             if (err == hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
                 break;
             } else if (err != hcrypt::make_win32_error_code(ERROR_INSUFFICIENT_BUFFER)) {
-                throw std::system_error(err);
+                throw std::system_error(err, "CredProtectW failed");
             }
             BCRYPT_CODDING_ERROR_IF(0 == size);
         }
@@ -769,7 +769,7 @@ namespace credman {
             if (err == hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
                 break;
             } else if (err != hcrypt::make_win32_error_code(ERROR_INSUFFICIENT_BUFFER)) {
-                throw std::system_error(err);
+                throw std::system_error(err, "CredUnprotectW failed");
             }
             BCRYPT_CODDING_ERROR_IF(0 == size);
         }
@@ -791,7 +791,7 @@ namespace credman {
     void rename(DWORD credentials_type, wchar_t const *old_target_name, wchar_t const *new_target_name) {
         std::error_code err{try_rename(credentials_type, old_target_name, new_target_name)};
         if (err != hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredRenameW failed");
         }
     }
 
@@ -812,7 +812,7 @@ namespace credman {
         std::error_code err{try_read_credentials(target_name, type, &credentials_tmp)};
         if (err != hcrypt::make_win32_error_code(ERROR_SUCCESS) &&
             err != hcrypt::make_win32_error_code(ERROR_NOT_FOUND)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredReadW failed");
         }
         return credentials_tmp;
     }
@@ -828,7 +828,7 @@ namespace credman {
     inline void write_credentials(CREDENTIALW *credentials, DWORD flags = 0) {
         std::error_code err{try_write_credentials(credentials, flags)};
         if (err != hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredWriteW failed");
         }
     }
 
@@ -843,7 +843,7 @@ namespace credman {
     inline void delete_credentials(wchar_t const *target_name, DWORD credentials_type) {
         std::error_code err{try_delete_credentials(target_name, credentials_type)};
         if (err != hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredDeleteW failed");
         }
     }
 
@@ -860,7 +860,7 @@ namespace credman {
                                          DWORD flags = 0) {
         std::error_code err{try_write_domain_credentials(target_info, credentials, flags)};
         if (err != hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredWriteDomainCredentialsW failed");
         }
     }
 
@@ -878,7 +878,7 @@ namespace credman {
                                bool persist = false) {
         std::error_code err{try_store_sso_cred(realm, user_name, password, persist)};
         if (err != hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
-            throw std::system_error(err);
+            throw std::system_error(err, "CredUIStoreSSOCredW failed");
         }
     }
 
@@ -916,7 +916,7 @@ namespace credman {
                                                 new_password_length,
                                                 save_credentials ? &save_credentials_tmp : nullptr,
                                                 flags)) {
-            throw std::system_error(hcrypt::get_last_error_code());
+            throw std::system_error(hcrypt::get_last_error_code(), "CredUICmdLinePromptForCredentialsW failed");
         }
 
         user_name_buffer[user_name_buffer.size() - 1] = L'\0';
@@ -956,7 +956,7 @@ namespace credman {
                                        new_domain_length)};
 
         if (err != ERROR_SUCCESS) {
-            throw std::system_error(hcrypt::make_win32_error_code(err));
+            throw std::system_error(hcrypt::make_win32_error_code(err), "CredUIParseUserNameW failed");
         }
 
         user_name_buffer[user_name_buffer.size() - 1] = L'\0';
