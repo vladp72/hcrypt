@@ -30,7 +30,7 @@ This is a header only library for Windows CNG API that includes functions from n
 
 [This post](https://stackoverflow.com/questions/40596395/cng-when-to-use-bcrypt-vs-ncrypt-family-of-functions) by dbush provides a good summary when to use NCrypt API versus BCrypt API.
 
-[Credential Manager Helpers](https://github.com/vladp72/hcrypt/credman_readme.md) documents helpers for credman APIs located in credman.h and credman_ui.h.
+[Credential Manager Helpers](https://github.com/vladp72/hcrypt/blob/master/CREDMAN_README.md) documents helpers for credman APIs located in credman.h and credman_ui.h.
 
 The BCrypt family of function are classified as Cryptographic Primitives, while the NCrypt family of functions are classified as Key Storage and Retrieval.
 
