@@ -383,7 +383,7 @@ namespace credman {
         using character_type = wchar_t;
     };
 
-    [[nodiscard]] inline std::error_code try_get_credentials(credentials_array *creds,
+    [[nodiscard]] inline std::error_code try_get_credentials(credentials_carray *creds,
                                                              wchar_t const *filter = nullptr,
                                                              DWORD flags = 0) noexcept {
         DWORD count{0};
@@ -391,13 +391,14 @@ namespace credman {
         if (!CredEnumerateW(filter, flags, &count, &creds_tmp)) {
             return hcrypt::get_last_error_code();
         }
-        creds->attach(count, creds_tmp);
+
+        creds->attach(count, const_cast<CREDENTIALW const **>(creds_tmp));
         return hcrypt::make_win32_error_code(ERROR_SUCCESS);
     }
 
-    [[nodiscard]] inline credentials_array get_credentials(wchar_t const *filter = nullptr,
-                                                           DWORD flags = 0) {
-        credentials_array creds;
+    [[nodiscard]] inline credentials_carray get_credentials(wchar_t const *filter = nullptr,
+                                                            DWORD flags = 0) {
+        credentials_carray creds;
         std::error_code err{try_get_credentials(&creds, filter, flags)};
         if (err != hcrypt::make_win32_error_code(ERROR_SUCCESS)) {
             throw std::system_error(err, "CredEnumerateW failed");

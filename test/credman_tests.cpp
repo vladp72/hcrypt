@@ -248,7 +248,7 @@ void test_get_target_info() {
                           });
 
         printf("\nQuery credentials\n");
-        credman::credentials_array arr{credman::get_credentials(target_name.c_str())};
+        credman::credentials_carray arr{credman::get_credentials(target_name.c_str())};
 
         idx = 0;
         std::for_each(cbegin(arr), cend(arr), [&idx](CREDENTIALW const &creds) {
@@ -492,7 +492,7 @@ void test_enumirate_all_credentials() {
         int idx{0};
 
         printf("\nQuery credentials\n");
-        credman::credentials_array arr{credman::get_credentials()};
+        credman::credentials_carray arr{credman::get_credentials()};
 
         std::for_each(cbegin(arr), cend(arr), [&idx](CREDENTIALW const &creds) {
             print(2, creds, idx);
