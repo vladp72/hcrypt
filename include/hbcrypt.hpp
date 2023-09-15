@@ -770,9 +770,8 @@ namespace bcrypt {
         template<typename P>
         [[nodiscard]] std::error_code try_get_property(wchar_t const *property_name,
                                                        P *value,
-                                                       size_t *result_size = nullptr) const
-            noexcept {
-            static_assert(std::is_pod_v<P>);
+                                                       size_t *result_size = nullptr) const noexcept {
+            static_assert(std::is_trivial_v<P> && std::is_standard_layout_v<P>);
             size_t tmp_result_size{0};
             std::error_code status{try_get_property(
                 property_name, reinterpret_cast<char *>(value), sizeof(*value), &tmp_result_size)};

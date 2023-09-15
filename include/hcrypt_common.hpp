@@ -618,7 +618,7 @@ namespace std {
 namespace hcrypt {
 
     //
-    // Define error category for Esent errors
+    // Define hcrypt error category
     //
     class error_category_t: public std::error_category {
     public:
